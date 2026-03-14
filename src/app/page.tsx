@@ -16,7 +16,7 @@ export default function LandingPage() {
     phone: "",
     email: "",
     address: "",
-    bloodType: "Unknown",
+    medicalConditions: "None",
     allergies: "",
     emergencyContact: "",
     emergencyPhone: "",
@@ -37,7 +37,7 @@ export default function LandingPage() {
       dob: formData.dob,
       phone: formData.phone,
       address: formData.address,
-      bloodType: formData.bloodType,
+      bloodType: 'Unknown',
       allergies: formData.allergies ? formData.allergies.split(',').map(a => a.trim()) : [],
       status: 'waiting',
       department: 'opd',
@@ -47,7 +47,8 @@ export default function LandingPage() {
       emergencyContact: formData.emergencyContact,
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 }
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
+      notes: formData.medicalConditions !== 'None' ? `Medical Condition: ${formData.medicalConditions}` : ''
     };
 
     const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
@@ -85,7 +86,7 @@ export default function LandingPage() {
                 phone: "",
                 email: "",
                 address: "",
-                bloodType: "Unknown",
+                medicalConditions: "None",
                 allergies: "",
                 emergencyContact: "",
                 emergencyPhone: "",
@@ -104,16 +105,21 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900">
       <header className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-            </svg>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white">MedConnect</h1>
+              <p className="text-xs text-slate-400">EHR System</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">MedConnect</h1>
-            <p className="text-xs text-slate-400">EHR System</p>
-          </div>
+          <a href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+            Employee Login
+          </a>
         </div>
       </header>
 
@@ -210,21 +216,25 @@ export default function LandingPage() {
               <h3 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b">Medical Information</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Blood Type</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Known Medical Conditions</label>
                   <select
-                    value={formData.bloodType}
-                    onChange={(e) => setFormData({...formData, bloodType: e.target.value})}
+                    value={formData.medicalConditions}
+                    onChange={(e) => setFormData({...formData, medicalConditions: e.target.value})}
                     className="w-full"
                   >
-                    <option value="Unknown">Unknown</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
+                    <option value="None">None</option>
+                    <option value="Diabetes">Diabetes</option>
+                    <option value="Hypertension">Hypertension</option>
+                    <option value="Heart Disease">Heart Disease</option>
+                    <option value="Asthma">Asthma</option>
+                    <option value="Arthritis">Arthritis</option>
+                    <option value="Cancer">Cancer</option>
+                    <option value="Thyroid Disorder">Thyroid Disorder</option>
+                    <option value="Kidney Disease">Kidney Disease</option>
+                    <option value="Liver Disease">Liver Disease</option>
+                    <option value="Mental Health Condition">Mental Health Condition</option>
+                    <option value="Autoimmune Disorder">Autoimmune Disorder</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
