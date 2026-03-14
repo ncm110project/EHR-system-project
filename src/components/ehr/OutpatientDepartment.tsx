@@ -17,7 +17,7 @@ export function OutpatientDepartment() {
     name: "", age: "", gender: "Male" as "Male" | "Female", phone: "", chiefComplaint: ""
   });
   const [renderTime] = useState(() => new Date('2026-03-14T10:30:00').getTime());
-  const [activeTab, setActiveTab] = useState<'queue' | 'in-progress'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
 
   useEffect(() => {
     loadPendingPatients();
@@ -38,20 +38,44 @@ export function OutpatientDepartment() {
     return opdPatients;
   };
 
-  const getInProgressPatients = () => {
+  const getOngoingPatients = () => {
+    if (isNurse) {
+      return opdPatients.filter(p => p.workflowStatus === 'nurse-pending');
+    }
     if (isDoctor) {
       return opdPatients.filter(p => p.workflowStatus === 'doctor-pending');
     }
     return [];
   };
 
+  const getCompletedPatients = () => {
+    return opdPatients.filter(p => p.workflowStatus === 'doctor-completed');
+  };
+
   const queuePatients = getQueuePatients();
-  const inProgressPatients = getInProgressPatients();
+  const ongoingPatients = getOngoingPatients();
+  const completedPatients = getCompletedPatients();
   
-  const filteredPatients = [...queuePatients, ...inProgressPatients].filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getFilteredPatients = () => {
+    let patientsToFilter: Patient[] = [];
+    switch (activeTab) {
+      case 'queue':
+        patientsToFilter = queuePatients;
+        break;
+      case 'ongoing':
+        patientsToFilter = ongoingPatients;
+        break;
+      case 'completed':
+        patientsToFilter = completedPatients;
+        break;
+    }
+    return patientsToFilter.filter(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const filteredPatients = getFilteredPatients();
 
   const getWaitTime = (admissionDate: string) => {
     const diff = renderTime - new Date(admissionDate).getTime();
@@ -289,14 +313,18 @@ export function OutpatientDepartment() {
         >
           Patient Queue ({queuePatients.length})
         </button>
-        {isDoctor && inProgressPatients.length > 0 && (
-          <button
-            onClick={() => setActiveTab('in-progress')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'in-progress' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-          >
-            In Progress ({inProgressPatients.length})
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('ongoing')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'ongoing' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+        >
+          Ongoing ({ongoingPatients.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('completed')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'completed' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+        >
+          Completed ({completedPatients.length})
+        </button>
       </div>
 
       <div className="card">
@@ -638,7 +666,9 @@ function PatientDetailModal({
                       >
                         <option value="">Select Medication</option>
                         {medications.map(med => (
-                          <option key={med.id} value={med.name}>{med.name} ({med.category})</option>
+                          <option key={med.id} value={med.name}>
+                            {med.name} ({med.stock} {med.unit} left) - {med.category}
+                          </option>
                         ))}
                       </select>
                       <input

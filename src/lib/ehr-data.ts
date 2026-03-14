@@ -83,6 +83,7 @@ export interface LabOrder {
   date: string;
   results?: string;
   referenceRange?: string;
+  attachments?: string[];
 }
 
 export interface VitalSigns {

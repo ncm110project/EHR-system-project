@@ -11,6 +11,7 @@ export function Laboratory() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
   const [resultsText, setResultsText] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
 
   const filteredOrders = activeTab === 'all' 
     ? labOrders 
@@ -103,6 +104,7 @@ export function Laboratory() {
     updateLabOrder({ 
       ...selectedOrder, 
       results: resultsText,
+      attachments: attachments,
       status: 'completed' 
     });
     addActivity({
@@ -116,6 +118,7 @@ export function Laboratory() {
     });
     setSelectedOrder(null);
     setResultsText("");
+    setAttachments([]);
   };
 
   const stats = {
@@ -292,6 +295,21 @@ export function Laboratory() {
                   {selectedOrder.referenceRange && (
                     <p className="text-sm text-green-600 mt-2">Reference: {selectedOrder.referenceRange}</p>
                   )}
+                  {selectedOrder.attachments && selectedOrder.attachments.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-green-200">
+                      <p className="font-semibold text-green-700 mb-2">Attachments ({selectedOrder.attachments.length})</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedOrder.attachments.map((url, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-green-200">
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                            </svg>
+                            <span className="text-sm">Attachment {idx + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -307,11 +325,51 @@ export function Laboratory() {
                   {selectedOrder.referenceRange && (
                     <p className="text-sm text-slate-500 mt-2">Reference Range: {selectedOrder.referenceRange}</p>
                   )}
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-2">Attach Files / Pictures</label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        id="file-upload"
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          const fileUrls = files.map(file => URL.createObjectURL(file));
+                          setAttachments([...attachments, ...fileUrls]);
+                        }}
+                        className="hidden"
+                      />
+                      <label htmlFor="file-upload" className="cursor-pointer">
+                        <svg className="mx-auto h-12 w-12 text-slate-400" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+                        </svg>
+                        <p className="mt-1 text-sm text-slate-600">Click to upload files or images</p>
+                      </label>
+                    </div>
+                    {attachments.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {attachments.map((url, idx) => (
+                          <div key={idx} className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-sm">
+                            <span>File {idx + 1}</span>
+                            <button 
+                              type="button"
+                              onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
+                              className="text-red-500 ml-1"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
             <div className="p-6 border-t border-slate-200 flex gap-2 justify-end">
-              <button className="btn btn-secondary" onClick={() => setSelectedOrder(null)}>Cancel</button>
+              <button className="btn btn-secondary" onClick={() => { setSelectedOrder(null); setAttachments([]); }}>Cancel</button>
               {selectedOrder.status === 'in-progress' && (
                 <button className="btn btn-primary" onClick={handleSaveResults}>Save Results</button>
               )}
