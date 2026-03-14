@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { EHRProvider } from "@/lib/ehr-context";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "MedConnect EHR - Electronic Health Records",
+  description: "Hospital Electronic Health Record System connecting OPD, ER, Pharmacy, Lab, and Nursing",
 };
 
 export default function RootLayout({
@@ -24,10 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${dmSans.variable} ${ibmPlexSans.variable}`}>
+        <EHRProvider>
+          {children}
+        </EHRProvider>
       </body>
     </html>
   );
