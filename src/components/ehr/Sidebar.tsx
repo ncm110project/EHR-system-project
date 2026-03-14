@@ -50,7 +50,7 @@ const icons: Record<string, React.ReactNode> = {
   )
 };
 
-const departments = [
+const allDepartments = [
   { id: 'dashboard' as Department, name: 'Dashboard', icon: 'grid' },
   { id: 'opd' as Department, name: 'Outpatient', icon: 'user' },
   { id: 'er' as Department, name: 'Emergency', icon: 'alert' },
@@ -62,6 +62,27 @@ const departments = [
 export function Sidebar() {
   const { currentDepartment, setCurrentDepartment } = useEHR();
   const { user } = useAuth();
+
+  const getVisibleDepartments = () => {
+    if (!user) return allDepartments;
+    
+    switch (user.department) {
+      case 'opd':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'opd');
+      case 'er':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'er');
+      case 'pharmacy':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'pharmacy');
+      case 'lab':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'lab');
+      case 'nursing':
+        return allDepartments.filter(d => d.id === 'nursing');
+      default:
+        return allDepartments;
+    }
+  };
+
+  const visibleDepartments = getVisibleDepartments();
 
   return (
     <aside className="w-[280px] bg-[#1E293B] min-h-screen flex flex-col text-white">
@@ -81,7 +102,7 @@ export function Sidebar() {
 
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {departments.map((dept) => (
+          {visibleDepartments.map((dept) => (
             <li key={dept.id}>
               <button
                 onClick={() => setCurrentDepartment(dept.id)}

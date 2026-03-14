@@ -6,7 +6,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useEHR } from "@/lib/ehr-context";
 import { Sidebar } from "@/components/ehr/Sidebar";
 import { Header } from "@/components/ehr/Header";
-import { Dashboard } from "@/components/ehr/Dashboard";
 import { OutpatientDepartment } from "@/components/ehr/OutpatientDepartment";
 import { EmergencyRoom } from "@/components/ehr/EmergencyRoom";
 import { Pharmacy } from "@/components/ehr/Pharmacy";
@@ -15,7 +14,7 @@ import { NursingAdmin } from "@/components/ehr/NursingAdmin";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
-  const { currentDepartment, setCurrentDepartment } = useEHR();
+  const { setCurrentDepartment } = useEHR();
   const router = useRouter();
 
   useEffect(() => {
@@ -31,9 +30,7 @@ export default function Home() {
   }
 
   const renderDepartment = () => {
-    switch (currentDepartment) {
-      case 'dashboard':
-        return <Dashboard />;
+    switch (user.department) {
       case 'opd':
         return <OutpatientDepartment />;
       case 'er':
@@ -45,7 +42,7 @@ export default function Home() {
       case 'nursing':
         return <NursingAdmin />;
       default:
-        return <Dashboard />;
+        return <OutpatientDepartment />;
     }
   };
 
