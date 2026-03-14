@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { mockUsers } from "@/lib/ehr-data";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +27,7 @@ export default function LoginPage() {
     setTimeout(() => {
       const success = login(username, password);
       if (success) {
-        router.push("/");
+        router.push("/dashboard");
       } else {
         setError("Invalid username or password");
       }
@@ -38,7 +44,7 @@ export default function LoginPage() {
     setTimeout(() => {
       const success = login(userUsername, userPassword);
       if (success) {
-        router.push("/");
+        router.push("/dashboard");
       } else {
         setError("Login failed");
       }
@@ -46,8 +52,17 @@ export default function LoginPage() {
     }, 300);
   };
 
+  if (isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <Link href="/" className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">
+          ← Patient Registration
+        </Link>
+      </div>
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-2xl mb-4">
