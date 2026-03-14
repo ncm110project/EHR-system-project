@@ -2,11 +2,34 @@ export type PatientStatus = 'waiting' | 'in-treatment' | 'admitted' | 'discharge
 
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing';
 
+export type UserRole = 'doctor' | 'nurse' | 'admin';
+
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
 export type LabTestStatus = 'pending' | 'in-progress' | 'completed';
 
 export type ShiftType = 'morning' | 'afternoon' | 'night';
+
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  department: Department;
+  departmentName: string;
+}
+
+export const mockUsers: User[] = [
+  { id: 'U001', username: 'nurse_opd', password: 'nurse123', name: 'Nurse Sarah Johnson', email: 'sjohnson@hospital.org', role: 'nurse', department: 'opd', departmentName: 'Outpatient Department' },
+  { id: 'U002', username: 'doctor_opd', password: 'doctor123', name: 'Dr. Michael Chen', email: 'mchen@hospital.org', role: 'doctor', department: 'opd', departmentName: 'Outpatient Department' },
+  { id: 'U003', username: 'nurse_er', password: 'nurse123', name: 'Nurse Jennifer Adams', email: 'jadams@hospital.org', role: 'nurse', department: 'er', departmentName: 'Emergency Room' },
+  { id: 'U004', username: 'doctor_er', password: 'doctor123', name: 'Dr. Robert Patel', email: 'rpatel@hospital.org', role: 'doctor', department: 'er', departmentName: 'Emergency Room' },
+  { id: 'U005', username: 'pharmacy', password: 'pharmacy123', name: 'Pharmacist Emily Wong', email: 'ewong@hospital.org', role: 'nurse', department: 'pharmacy', departmentName: 'Pharmacy' },
+  { id: 'U006', username: 'nursing_admin', password: 'admin123', name: 'Admin Nurse Manager', email: 'admin@hospital.org', role: 'admin', department: 'nursing', departmentName: 'Nursing Administration' },
+  { id: 'U007', username: 'lab', password: 'lab123', name: 'Lab Technician David Lee', email: 'dlee@hospital.org', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
+];
 
 export interface Patient {
   id: string;

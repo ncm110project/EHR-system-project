@@ -1,16 +1,34 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEHR } from "@/lib/ehr-context";
+import { useAuth } from "@/lib/auth-context";
 import { departments } from "@/lib/ehr-data";
 
 export function Header() {
+  const router = useRouter();
   const { currentDepartment, patients, labOrders, prescriptions } = useEHR();
+  const { user, logout } = useAuth();
 
   const currentDept = departments.find(d => d.id === currentDepartment);
   
   const pendingLabResults = labOrders.filter(o => o.status === 'pending').length;
   const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending').length;
   const criticalPatients = patients.filter(p => p.status === 'critical').length;
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'doctor': return 'bg-blue-100 text-blue-700';
+      case 'nurse': return 'bg-green-100 text-green-700';
+      case 'admin': return 'bg-purple-100 text-purple-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
@@ -58,6 +76,36 @@ export function Header() {
           </svg>
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
+
+        {user && (
+          <>
+            <div className="w-px h-8 bg-slate-200"></div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium">{user.name}</p>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className={`text-xs px-2 py-0.5 rounded ${getRoleBadgeColor(user.role)}`}>
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </span>
+                </div>
+              </div>
+              <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold">
+                {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-red-50 rounded-lg text-slate-500 hover:text-red-600"
+                title="Logout"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

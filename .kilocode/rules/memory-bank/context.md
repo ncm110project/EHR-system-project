@@ -15,6 +15,7 @@ A comprehensive Electronic Health Record (EHR) system connecting 5 hospital depa
 - [x] Memory bank documentation
 - [x] Recipe system for common features
 - [x] **MedConnect EHR System Implementation**
+- [x] **Login Feature with Role-based Access**
 
 ## EHR System Features
 

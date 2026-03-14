@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useEHR } from "@/lib/ehr-context";
+import { useAuth } from "@/lib/auth-context";
 import { Department } from "@/lib/ehr-data";
 
 const icons: Record<string, React.ReactNode> = {
@@ -60,6 +61,7 @@ const departments = [
 
 export function Sidebar() {
   const { currentDepartment, setCurrentDepartment } = useEHR();
+  const { user } = useAuth();
 
   return (
     <aside className="w-[280px] bg-[#1E293B] min-h-screen flex flex-col text-white">
@@ -103,11 +105,11 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-700">
         <div className="flex items-center gap-3 px-4 py-2">
           <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-sm font-semibold">
-            NA
+            {user ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'U'}
           </div>
           <div>
-            <p className="text-sm font-medium">Nurse Admin</p>
-            <p className="text-xs text-slate-400">System Administrator</p>
+            <p className="text-sm font-medium">{user?.name || 'User'}</p>
+            <p className="text-xs text-slate-400">{user?.departmentName || 'Department'}</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { useEHR } from "@/lib/ehr-context";
 import { Sidebar } from "@/components/ehr/Sidebar";
 import { Header } from "@/components/ehr/Header";
@@ -11,7 +14,21 @@ import { Laboratory } from "@/components/ehr/Laboratory";
 import { NursingAdmin } from "@/components/ehr/NursingAdmin";
 
 export default function Home() {
-  const { currentDepartment } = useEHR();
+  const { isAuthenticated, user } = useAuth();
+  const { currentDepartment, setCurrentDepartment } = useEHR();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    } else if (user) {
+      setCurrentDepartment(user.department);
+    }
+  }, [isAuthenticated, user, router, setCurrentDepartment]);
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   const renderDepartment = () => {
     switch (currentDepartment) {
