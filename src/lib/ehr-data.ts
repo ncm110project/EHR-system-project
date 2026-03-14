@@ -1,5 +1,7 @@
 export type PatientStatus = 'waiting' | 'in-treatment' | 'admitted' | 'discharged' | 'critical' | 'stable';
 
+export type WorkflowStatus = 'registered' | 'nurse-pending' | 'nurse-completed' | 'doctor-pending' | 'doctor-completed' | 'completed';
+
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing';
 
 export type UserRole = 'doctor' | 'nurse' | 'admin';
@@ -51,6 +53,12 @@ export interface Patient {
   labOrders?: LabOrder[];
   vitalSigns?: VitalSigns;
   notes?: string;
+  workflowStatus?: WorkflowStatus;
+  nurseNotes?: string;
+  nurseVitals?: VitalSigns;
+  email?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
 }
 
 export interface Prescription {

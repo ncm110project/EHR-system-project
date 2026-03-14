@@ -16,9 +16,16 @@ export function Laboratory() {
     ? labOrders 
     : labOrders.filter(o => o.status === activeTab);
 
-  const getPatientName = (patientId: string) => {
+  const getPatientInfo = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
-    return patient?.name || 'Unknown';
+    if (!patient) return null;
+    return {
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      phone: patient.phone,
+      bloodType: patient.bloodType
+    };
   };
 
   const getTestTypeIcon = (type: string) => {
@@ -84,7 +91,7 @@ export function Laboratory() {
         type: 'lab-result',
         department: 'lab',
         patientId: order.patientId,
-        patientName: getPatientName(order.patientId),
+        patientName: getPatientInfo(order.patientId)?.name || 'Unknown',
         description: `${order.testName} results ready`,
         timestamp: new Date().toISOString()
       });
@@ -103,7 +110,7 @@ export function Laboratory() {
       type: 'lab-result',
       department: 'lab',
       patientId: selectedOrder.patientId,
-      patientName: getPatientName(selectedOrder.patientId),
+      patientName: getPatientInfo(selectedOrder.patientId)?.name || 'Unknown',
       description: `${selectedOrder.testName} results saved`,
       timestamp: new Date().toISOString()
     });
@@ -122,7 +129,7 @@ export function Laboratory() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Laboratory</h2>
-          <p className="text-slate-500">Test orders and results management</p>
+          <p className="text-slate-500">View and process doctor&apos;s lab orders</p>
         </div>
         <div className="flex gap-3">
           <div className="px-4 py-2 bg-amber-50 text-amber-700 rounded-lg">
@@ -164,61 +171,66 @@ export function Laboratory() {
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.map((order) => (
-              <tr key={order.id}>
-                <td className="font-mono text-sm">{order.id}</td>
-                <td className="font-medium">{order.testName}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    {getTestTypeIcon(order.testType)}
-                    <span className="capitalize">{order.testType}</span>
-                  </div>
-                </td>
-                <td>
-                  <button 
-                    className="text-blue-600 hover:underline"
-                    onClick={() => setCurrentDepartment('opd')}
-                  >
-                    {getPatientName(order.patientId)}
-                  </button>
-                </td>
-                <td>Dr. {order.orderedBy}</td>
-                <td className="text-slate-500">{order.date}</td>
-                <td>
-                  <span className={`badge ${getStatusBadge(order.status)}`}>
-                    {order.status.replace('-', ' ')}
-                  </span>
-                </td>
-                <td>
-                  <div className="flex gap-2">
-                    {order.status === 'pending' && (
-                      <button 
-                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                        onClick={() => handleStatusChange(order, 'in-progress')}
-                      >
-                        Start
-                      </button>
+            {filteredOrders.map((order) => {
+              const patientInfo = getPatientInfo(order.patientId);
+              return (
+                <tr key={order.id}>
+                  <td className="font-mono text-sm">{order.id}</td>
+                  <td className="font-medium">{order.testName}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      {getTestTypeIcon(order.testType)}
+                      <span className="capitalize">{order.testType}</span>
+                    </div>
+                  </td>
+                  <td>
+                    {patientInfo ? (
+                      <div>
+                        <p className="font-medium">{patientInfo.name}</p>
+                        <p className="text-xs text-slate-500">{patientInfo.age}y {patientInfo.gender[0]} • {patientInfo.bloodType}</p>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">Unknown</span>
                     )}
-                    {order.status === 'in-progress' && (
-                      <button 
-                        className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        Enter Results
-                      </button>
-                    )}
-                    {order.status === 'completed' && (
-                      <button 
-                        className="px-2 py-1 text-xs bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        View
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>Dr. {order.orderedBy}</td>
+                  <td className="text-slate-500">{order.date}</td>
+                  <td>
+                    <span className={`badge ${getStatusBadge(order.status)}`}>
+                      {order.status.replace('-', ' ')}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex gap-2">
+                      {order.status === 'pending' && (
+                        <button 
+                          className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                          onClick={() => handleStatusChange(order, 'in-progress')}
+                        >
+                          Start
+                        </button>
+                      )}
+                      {order.status === 'in-progress' && (
+                        <button 
+                          className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          Enter Results
+                        </button>
+                      )}
+                      {order.status === 'completed' && (
+                        <button 
+                          className="px-2 py-1 text-xs bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
@@ -234,9 +246,24 @@ export function Laboratory() {
           <div className="bg-white rounded-xl max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-200">
               <h3 className="text-xl font-bold">{selectedOrder.testName}</h3>
-              <p className="text-slate-500">{selectedOrder.id} • Patient: {getPatientName(selectedOrder.patientId)}</p>
+              <p className="text-slate-500">{selectedOrder.id}</p>
             </div>
             <div className="p-6 space-y-4">
+              {(() => {
+                const patientInfo = getPatientInfo(selectedOrder.patientId);
+                return patientInfo ? (
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">Patient Information</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><span className="text-slate-500">Name:</span> <span className="font-medium">{patientInfo.name}</span></div>
+                      <div><span className="text-slate-500">Age/Gender:</span> <span className="font-medium">{patientInfo.age}y {patientInfo.gender[0]}</span></div>
+                      <div><span className="text-slate-500">Phone:</span> <span className="font-medium">{patientInfo.phone}</span></div>
+                      <div><span className="text-slate-500">Blood Type:</span> <span className="font-medium">{patientInfo.bloodType}</span></div>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-500">Test Type</p>

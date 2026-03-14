@@ -34,6 +34,8 @@ interface EHRContextType {
   addLabOrder: (order: LabOrder) => void;
   updateNurse: (nurse: Nurse) => void;
   addActivity: (activity: Activity) => void;
+  updateMedication: (medication: Medication) => void;
+  loadPendingPatients: () => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -51,20 +53,46 @@ interface EHRProviderProps {
 }
 
 export function EHRProvider({ children }: EHRProviderProps) {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients);
-  const [medications] = useState<Medication[]>(mockMedications);
+  const [patients, setPatients] = useState<Patient[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedPatients = localStorage.getItem('pendingPatients');
+      const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+      return [...mockPatients, ...localPatients];
+    }
+    return mockPatients;
+  });
+  const [medications, setMedications] = useState<Medication[]>(mockMedications);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(mockPrescriptions);
   const [labOrders, setLabOrders] = useState<LabOrder[]>(mockLabOrders);
   const [nurses, setNurses] = useState<Nurse[]>(mockNurses);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
 
+  const loadPendingPatients = useCallback(() => {
+    const savedPatients = localStorage.getItem('pendingPatients');
+    const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+    setPatients([...mockPatients, ...localPatients]);
+  }, []);
+
   const updatePatient = useCallback((patient: Patient) => {
     setPatients(prev => prev.map(p => p.id === patient.id ? patient : p));
+    const savedPatients = localStorage.getItem('pendingPatients');
+    if (savedPatients) {
+      const localPatients: Patient[] = JSON.parse(savedPatients);
+      const updatedLocal = localPatients.map((p: Patient) => p.id === patient.id ? patient : p);
+      localStorage.setItem('pendingPatients', JSON.stringify(updatedLocal));
+    }
   }, []);
 
   const addPatient = useCallback((patient: Patient) => {
     setPatients(prev => [...prev, patient]);
+    const savedPatients = localStorage.getItem('pendingPatients');
+    const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+    localStorage.setItem('pendingPatients', JSON.stringify([...localPatients, patient]));
+  }, []);
+
+  const updateMedication = useCallback((medication: Medication) => {
+    setMedications(prev => prev.map(m => m.id === medication.id ? medication : m));
   }, []);
 
   const updatePrescription = useCallback((prescription: Prescription) => {
@@ -108,7 +136,9 @@ export function EHRProvider({ children }: EHRProviderProps) {
       updateLabOrder,
       addLabOrder,
       updateNurse,
-      addActivity
+      addActivity,
+      updateMedication,
+      loadPendingPatients
     }}>
       {children}
     </EHRContext.Provider>

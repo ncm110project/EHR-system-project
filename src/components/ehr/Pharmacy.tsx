@@ -7,9 +7,11 @@ import { Medication, Prescription } from "@/lib/ehr-data";
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function Pharmacy() {
-  const { medications, prescriptions, patients, updatePrescription, addActivity } = useEHR();
+  const { medications, prescriptions, patients, updatePrescription, addActivity, updateMedication } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<'inventory' | 'prescriptions'>('prescriptions');
+  const [editingMed, setEditingMed] = useState<Medication | null>(null);
+  const [newStock, setNewStock] = useState(0);
 
   const filteredMeds = medications.filter(m => 
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -24,7 +26,22 @@ export function Pharmacy() {
     return patient?.name || 'Unknown';
   };
 
+  const getPatientInfo = (patientId: string) => {
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient) return null;
+    return {
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      phone: patient.phone
+    };
+  };
+
   const handleDispense = (prescription: Prescription) => {
+    const medication = medications.find(m => m.name === prescription.medication);
+    if (medication && medication.stock > 0) {
+      updateMedication({ ...medication, stock: medication.stock - 1 });
+    }
     updatePrescription({ ...prescription, status: 'dispensed' });
     addActivity({
       id: generateId(),
@@ -37,6 +54,18 @@ export function Pharmacy() {
     });
   };
 
+  const handleUpdateStock = (medication: Medication) => {
+    updateMedication({ ...medication, stock: newStock });
+    addActivity({
+      id: generateId(),
+      type: 'prescription',
+      department: 'pharmacy',
+      description: `Stock updated for ${medication.name}: ${newStock} ${medication.unit}`,
+      timestamp: new Date().toISOString()
+    });
+    setEditingMed(null);
+  };
+
   const lowStockMeds = medications.filter(m => m.stock < m.minStock);
 
   return (
@@ -44,7 +73,7 @@ export function Pharmacy() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Pharmacy</h2>
-          <p className="text-slate-500">Medication management and dispensing</p>
+          <p className="text-slate-500">Manage inventory and dispense medications</p>
         </div>
         {lowStockMeds.length > 0 && (
           <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg">
@@ -61,13 +90,13 @@ export function Pharmacy() {
       <div className="flex gap-4">
         <button
           onClick={() => setActiveTab('prescriptions')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'prescriptions' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'prescriptions' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Prescriptions ({pendingPrescriptions.length})
+          Doctor&apos;s Orders ({pendingPrescriptions.length})
         </button>
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'inventory' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'inventory' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
           Inventory ({medications.length})
         </button>
@@ -81,33 +110,41 @@ export function Pharmacy() {
               <span className="badge badge-warning">{pendingPrescriptions.length} pending</span>
             </div>
             <div className="divide-y divide-slate-200">
-              {pendingPrescriptions.map((rx) => (
-                <div key={rx.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M10.5 20.5L3.5 13.5C2.12 12.12 2.12 9.88 3.5 8.5L8.5 3.5C9.88 2.12 12.12 2.12 13.5 3.5L20.5 10.5C21.88 11.88 21.88 14.12 20.5 15.5L15.5 20.5C14.12 21.88 11.88 21.88 10.5 20.5Z"></path>
-                      </svg>
+              {pendingPrescriptions.map((rx) => {
+                const patientInfo = getPatientInfo(rx.patientId);
+                return (
+                  <div key={rx.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10.5 20.5L3.5 13.5C2.12 12.12 2.12 9.88 3.5 8.5L8.5 3.5C9.88 2.12 12.12 2.12 13.5 3.5L20.5 10.5C21.88 11.88 21.88 14.12 20.5 15.5L15.5 20.5C14.12 21.88 11.88 21.88 10.5 20.5Z"></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{rx.medication}</p>
+                        <p className="text-sm text-slate-500">
+                          {rx.dosage} • {rx.frequency} • {rx.duration}
+                        </p>
+                        {patientInfo && (
+                          <div className="text-xs text-slate-400 mt-1">
+                            Patient: {patientInfo.name} ({patientInfo.age}y {patientInfo.gender[0]}) • {patientInfo.phone}
+                          </div>
+                        )}
+                        <p className="text-xs text-slate-400">Prescribed by: Dr. {rx.prescribedBy}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">{rx.medication}</p>
-                      <p className="text-sm text-slate-500">
-                        {rx.dosage} • {rx.frequency} • {rx.duration}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">Patient: {getPatientName(rx.patientId)} • Dr. {rx.prescribedBy}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400">{rx.date}</span>
+                      <button 
+                        className="btn btn-primary"
+                        onClick={() => handleDispense(rx)}
+                      >
+                        Dispense
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400">{rx.date}</span>
-                    <button 
-                      className="btn btn-primary"
-                      onClick={() => handleDispense(rx)}
-                    >
-                      Dispense
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {pendingPrescriptions.length === 0 && (
                 <div className="p-8 text-center text-slate-500">
                   No pending prescriptions
@@ -121,22 +158,27 @@ export function Pharmacy() {
               <h3 className="font-semibold text-slate-500">Recently Dispensed</h3>
             </div>
             <div className="divide-y divide-slate-200">
-              {dispensedPrescriptions.slice(0, 5).map((rx) => (
-                <div key={rx.id} className="p-4 flex items-center justify-between opacity-60">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
+              {dispensedPrescriptions.slice(0, 5).map((rx) => {
+                const patientInfo = getPatientInfo(rx.patientId);
+                return (
+                  <div key={rx.id} className="p-4 flex items-center justify-between opacity-60">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{rx.medication}</p>
+                        {patientInfo && (
+                          <p className="text-sm text-slate-500">Patient: {patientInfo.name}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold">{rx.medication}</p>
-                      <p className="text-sm text-slate-500">Patient: {getPatientName(rx.patientId)}</p>
-                    </div>
+                    <span className="text-xs text-slate-400">{rx.date}</span>
                   </div>
-                  <span className="text-xs text-slate-400">{rx.date}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -153,7 +195,7 @@ export function Pharmacy() {
                 <span className="font-semibold text-red-700">Low Stock Alert</span>
               </div>
               <p className="text-sm text-red-600">
-                {lowStockMeds.map(m => m.name).join(', ')} {' '}need restocking
+                {lowStockMeds.map(m => m.name).join(', ')} need restocking
               </p>
             </div>
           )}
@@ -178,6 +220,7 @@ export function Pharmacy() {
                   <th>Unit</th>
                   <th>Price</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,10 +243,52 @@ export function Pharmacy() {
                         <span className="badge badge-success">OK</span>
                       )}
                     </td>
+                    <td>
+                      <button 
+                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        onClick={() => {
+                          setEditingMed(med);
+                          setNewStock(med.stock);
+                        }}
+                      >
+                        Update Stock
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {editingMed && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditingMed(null)}>
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">Update Stock - {editingMed.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Current Stock</label>
+                <p className="text-lg font-semibold">{editingMed.stock} {editingMed.unit}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">New Stock</label>
+                <input
+                  type="number"
+                  value={newStock}
+                  onChange={(e) => setNewStock(parseInt(e.target.value) || 0)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button className="btn btn-primary flex-1" onClick={() => handleUpdateStock(editingMed)}>
+                  Update
+                </button>
+                <button className="btn btn-secondary flex-1" onClick={() => setEditingMed(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
