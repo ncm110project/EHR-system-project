@@ -30,7 +30,18 @@ export default function LandingPage() {
     asthma: false,
     heartDisease: false,
     kidneyDisease: false,
-    allergies: "",
+    allergyPeanuts: false,
+    allergyTreeNuts: false,
+    allergyShellfish: false,
+    allergyFish: false,
+    allergyEggs: false,
+    allergyDairy: false,
+    allergySoy: false,
+    allergyGluten: false,
+    allergyPollen: false,
+    allergyLatex: false,
+    allergyDustMites: false,
+    allergiesOther: "",
     currentMedications: "",
     pastSurgeries: "",
     smoking: "No" as "No" | "Yes" | "Former",
@@ -72,6 +83,20 @@ export default function LandingPage() {
     if (formData.heartDisease) medicalConditions.push("Heart Disease");
     if (formData.kidneyDisease) medicalConditions.push("Kidney Disease");
 
+    const allergiesList: string[] = [];
+    if (formData.allergyPeanuts) allergiesList.push("Peanuts");
+    if (formData.allergyTreeNuts) allergiesList.push("Tree Nuts");
+    if (formData.allergyShellfish) allergiesList.push("Shellfish");
+    if (formData.allergyFish) allergiesList.push("Fish");
+    if (formData.allergyEggs) allergiesList.push("Eggs");
+    if (formData.allergyDairy) allergiesList.push("Dairy");
+    if (formData.allergySoy) allergiesList.push("Soy");
+    if (formData.allergyGluten) allergiesList.push("Gluten");
+    if (formData.allergyPollen) allergiesList.push("Pollen");
+    if (formData.allergyLatex) allergiesList.push("Latex");
+    if (formData.allergyDustMites) allergiesList.push("Dust Mites");
+    if (formData.allergiesOther) allergiesList.push(formData.allergiesOther);
+
     const newPatient: Patient = {
       id: newPatientId,
       name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
@@ -81,7 +106,7 @@ export default function LandingPage() {
       phone: formData.phone,
       address: `${formData.streetAddress}, ${formData.city}, ${formData.province}`.trim(),
       bloodType: 'Unknown',
-      allergies: formData.allergies ? formData.allergies.split(',').map(a => a.trim()) : [],
+      allergies: allergiesList,
       status: 'waiting',
       department: 'opd',
       admissionDate: new Date().toISOString().split('T')[0],
@@ -91,7 +116,7 @@ export default function LandingPage() {
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
       vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
-      notes: `Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${formData.allergies || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
+      notes: `Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
     };
 
     const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
@@ -142,7 +167,18 @@ export default function LandingPage() {
                 asthma: false,
                 heartDisease: false,
                 kidneyDisease: false,
-                allergies: "",
+                allergyPeanuts: false,
+                allergyTreeNuts: false,
+                allergyShellfish: false,
+                allergyFish: false,
+                allergyEggs: false,
+                allergyDairy: false,
+                allergySoy: false,
+                allergyGluten: false,
+                allergyPollen: false,
+                allergyLatex: false,
+                allergyDustMites: false,
+                allergiesOther: "",
                 currentMedications: "",
                 pastSurgeries: "",
                 smoking: "No",
@@ -326,10 +362,61 @@ export default function LandingPage() {
                   </label>
                 </div>
               </div>
+
+              <div className="mb-4">
+                <label className={labelClass}>Do you have any allergies?</label>
+                <div className="grid md:grid-cols-4 gap-3 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyPeanuts} onChange={(e) => setFormData({...formData, allergyPeanuts: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Peanuts</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyTreeNuts} onChange={(e) => setFormData({...formData, allergyTreeNuts: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Tree Nuts</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyShellfish} onChange={(e) => setFormData({...formData, allergyShellfish: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Shellfish</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyFish} onChange={(e) => setFormData({...formData, allergyFish: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Fish</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyEggs} onChange={(e) => setFormData({...formData, allergyEggs: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Eggs</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyDairy} onChange={(e) => setFormData({...formData, allergyDairy: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Dairy</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergySoy} onChange={(e) => setFormData({...formData, allergySoy: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Soy</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyGluten} onChange={(e) => setFormData({...formData, allergyGluten: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Gluten</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyPollen} onChange={(e) => setFormData({...formData, allergyPollen: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Pollen</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyLatex} onChange={(e) => setFormData({...formData, allergyLatex: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Latex</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.allergyDustMites} onChange={(e) => setFormData({...formData, allergyDustMites: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Dust Mites</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="grid gap-4">
                 <div>
-                  <label className={labelClass}>Allergies (if any)</label>
-                  <input type="text" value={formData.allergies} onChange={(e) => setFormData({...formData, allergies: e.target.value})} className={inputClass} placeholder="e.g., Penicillin, Pollen, Latex" />
+                  <label className={labelClass}>Other Allergies</label>
+                  <input type="text" value={formData.allergiesOther} onChange={(e) => setFormData({...formData, allergiesOther: e.target.value})} className={inputClass} placeholder="List any other allergies not mentioned above" />
                 </div>
                 <div>
                   <label className={labelClass}>Current Medications</label>
