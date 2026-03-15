@@ -30,6 +30,13 @@ export default function LandingPage() {
     asthma: false,
     heartDisease: false,
     kidneyDisease: false,
+    stroke: false,
+    cancer: false,
+    tuberculosis: false,
+    arthritis: false,
+    thyroidDisorder: false,
+    epilepsy: false,
+    chronicLungDisease: false,
     allergyPeanuts: false,
     allergyTreeNuts: false,
     allergyShellfish: false,
@@ -82,6 +89,13 @@ export default function LandingPage() {
     if (formData.asthma) medicalConditions.push("Asthma");
     if (formData.heartDisease) medicalConditions.push("Heart Disease");
     if (formData.kidneyDisease) medicalConditions.push("Kidney Disease");
+    if (formData.stroke) medicalConditions.push("Stroke");
+    if (formData.cancer) medicalConditions.push("Cancer");
+    if (formData.tuberculosis) medicalConditions.push("Tuberculosis");
+    if (formData.arthritis) medicalConditions.push("Arthritis");
+    if (formData.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
+    if (formData.epilepsy) medicalConditions.push("Epilepsy / Seizure Disorder");
+    if (formData.chronicLungDisease) medicalConditions.push("Chronic Lung Disease (COPD)");
 
     const allergiesList: string[] = [];
     if (formData.allergyPeanuts) allergiesList.push("Peanuts");
@@ -167,6 +181,13 @@ export default function LandingPage() {
                 asthma: false,
                 heartDisease: false,
                 kidneyDisease: false,
+                stroke: false,
+                cancer: false,
+                tuberculosis: false,
+                arthritis: false,
+                thyroidDisorder: false,
+                epilepsy: false,
+                chronicLungDisease: false,
                 allergyPeanuts: false,
                 allergyTreeNuts: false,
                 allergyShellfish: false,
@@ -359,6 +380,34 @@ export default function LandingPage() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={formData.kidneyDisease} onChange={(e) => setFormData({...formData, kidneyDisease: e.target.checked})} className="w-4 h-4 text-teal-600" />
                     <span className="text-sm">Kidney Disease</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.stroke} onChange={(e) => setFormData({...formData, stroke: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Stroke</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.cancer} onChange={(e) => setFormData({...formData, cancer: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Cancer</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.tuberculosis} onChange={(e) => setFormData({...formData, tuberculosis: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Tuberculosis</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.arthritis} onChange={(e) => setFormData({...formData, arthritis: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Arthritis</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.thyroidDisorder} onChange={(e) => setFormData({...formData, thyroidDisorder: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Thyroid Disorder</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.epilepsy} onChange={(e) => setFormData({...formData, epilepsy: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Epilepsy / Seizure Disorder</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.chronicLungDisease} onChange={(e) => setFormData({...formData, chronicLungDisease: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Chronic Lung Disease (COPD)</span>
                   </label>
                 </div>
               </div>
