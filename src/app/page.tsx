@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Patient } from "@/lib/ehr-data";
 
 const generateId = () => `P${String(Date.now()).slice(-6)}`;
@@ -10,18 +11,51 @@ export default function LandingPage() {
   const [patientId, setPatientId] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
+    middleName: "",
     lastName: "",
     dob: "",
-    gender: "Male" as "Male" | "Female",
+    sex: "Male" as "Male" | "Female",
+    civilStatus: "Single",
     phone: "",
     email: "",
-    address: "",
-    medicalConditions: "None",
-    allergies: "",
-    emergencyContact: "",
+    streetAddress: "",
+    city: "",
+    province: "",
+    emergencyName: "",
+    emergencyRelationship: "",
     emergencyPhone: "",
-    chiefComplaint: ""
+    chiefComplaint: "",
+    hypertension: false,
+    diabetes: false,
+    asthma: false,
+    heartDisease: false,
+    kidneyDisease: false,
+    allergies: "",
+    currentMedications: "",
+    pastSurgeries: "",
+    smoking: "No" as "No" | "Yes" | "Former",
+    alcoholUse: "No" as "No" | "Yes",
+    occupation: "",
+    insuranceProvider: "",
+    policyNumber: "",
+    memberId: "",
+    selfPay: true,
+    consent: false,
+    signatureName: "",
+    signatureDate: ""
   });
+
+  const calculateAge = (dob: string) => {
+    if (!dob) return 0;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,14 +63,23 @@ export default function LandingPage() {
     const newPatientId = generateId();
     setPatientId(newPatientId);
     
+    const age = calculateAge(formData.dob);
+    
+    const medicalConditions: string[] = [];
+    if (formData.hypertension) medicalConditions.push("Hypertension");
+    if (formData.diabetes) medicalConditions.push("Diabetes");
+    if (formData.asthma) medicalConditions.push("Asthma");
+    if (formData.heartDisease) medicalConditions.push("Heart Disease");
+    if (formData.kidneyDisease) medicalConditions.push("Kidney Disease");
+
     const newPatient: Patient = {
       id: newPatientId,
-      name: `${formData.firstName} ${formData.lastName}`,
-      age: formData.dob ? new Date().getFullYear() - new Date(formData.dob).getFullYear() : 0,
-      gender: formData.gender,
+      name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
+      age: age,
+      gender: formData.sex,
       dob: formData.dob,
       phone: formData.phone,
-      address: formData.address,
+      address: `${formData.streetAddress}, ${formData.city}, ${formData.province}`.trim(),
       bloodType: 'Unknown',
       allergies: formData.allergies ? formData.allergies.split(',').map(a => a.trim()) : [],
       status: 'waiting',
@@ -44,11 +87,11 @@ export default function LandingPage() {
       admissionDate: new Date().toISOString().split('T')[0],
       chiefComplaint: formData.chiefComplaint,
       email: formData.email,
-      emergencyContact: formData.emergencyContact,
+      emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
       vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
-      notes: formData.medicalConditions !== 'None' ? `Medical Condition: ${formData.medicalConditions}` : ''
+      notes: `Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${formData.allergies || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
     };
 
     const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
@@ -60,37 +103,58 @@ export default function LandingPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="card p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
+        <div className="card p-8 max-w-lg text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Registration Complete!</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Registration Successful!</h2>
           <p className="text-slate-600 mb-6">
             Your registration has been submitted. Please proceed to the reception desk and wait for your number to be called.
           </p>
           <div className="p-4 bg-teal-50 rounded-lg mb-6">
             <p className="text-sm text-teal-700">Your Patient ID:</p>
-            <p className="text-2xl font-mono font-bold text-teal-800">{patientId}</p>
-            <p className="text-xs text-teal-600 mt-2">Please save this for your records</p>
+            <p className="text-3xl font-mono font-bold text-teal-800">{patientId}</p>
+            <p className="text-xs text-teal-600 mt-2">Please save this ID for your records</p>
           </div>
           <button
             onClick={() => {
               setSubmitted(false);
               setFormData({
                 firstName: "",
+                middleName: "",
                 lastName: "",
                 dob: "",
-                gender: "Male",
+                sex: "Male",
+                civilStatus: "Single",
                 phone: "",
                 email: "",
-                address: "",
-                medicalConditions: "None",
-                allergies: "",
-                emergencyContact: "",
+                streetAddress: "",
+                city: "",
+                province: "",
+                emergencyName: "",
+                emergencyRelationship: "",
                 emergencyPhone: "",
-                chiefComplaint: ""
+                chiefComplaint: "",
+                hypertension: false,
+                diabetes: false,
+                asthma: false,
+                heartDisease: false,
+                kidneyDisease: false,
+                allergies: "",
+                currentMedications: "",
+                pastSurgeries: "",
+                smoking: "No",
+                alcoholUse: "No",
+                occupation: "",
+                insuranceProvider: "",
+                policyNumber: "",
+                memberId: "",
+                selfPay: true,
+                consent: false,
+                signatureName: "",
+                signatureDate: ""
               });
             }}
             className="btn btn-primary"
@@ -101,6 +165,11 @@ export default function LandingPage() {
       </div>
     );
   }
+
+  const inputClass = "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent";
+  const labelClass = "block text-sm font-medium text-slate-700 mb-1";
+  const sectionClass = "bg-white rounded-lg p-6 mb-6";
+  const sectionTitleClass = "text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900">
@@ -117,183 +186,237 @@ export default function LandingPage() {
               <p className="text-xs text-slate-400">EHR System</p>
             </div>
           </div>
-          <a href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+          <Link href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
             Employee Login
-          </a>
+          </Link>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">Patient Registration</h1>
-            <p className="text-slate-300 text-lg">Please fill out this form to register for your appointment</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Patient Registration</h1>
+            <p className="text-slate-300">Please fill out this form accurately and completely</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="card p-8">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b">Personal Information</h3>
-              <div className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* SECTION 1 - PERSONAL INFORMATION */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 1 — PERSONAL INFORMATION</h2>
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                    className="w-full"
-                    placeholder="Enter first name"
-                  />
+                  <label className={labelClass}>First Name *</label>
+                  <input type="text" required value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className={inputClass} placeholder="First Name" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                    className="w-full"
-                    placeholder="Enter last name"
-                  />
+                  <label className={labelClass}>Middle Name</label>
+                  <input type="text" value={formData.middleName} onChange={(e) => setFormData({...formData, middleName: e.target.value})} className={inputClass} placeholder="Middle Name" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth *</label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.dob}
-                    onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                    className="w-full"
-                  />
+                  <label className={labelClass}>Last Name *</label>
+                  <input type="text" required value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className={inputClass} placeholder="Last Name" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Gender *</label>
-                  <select
-                    required
-                    value={formData.gender}
-                    onChange={(e) => setFormData({...formData, gender: e.target.value as "Male" | "Female"})}
-                    className="w-full"
-                  >
+                  <label className={labelClass}>Date of Birth *</label>
+                  <input type="date" required value={formData.dob} onChange={(e) => setFormData({...formData, dob: e.target.value})} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Age</label>
+                  <input type="text" value={calculateAge(formData.dob) || ''} className={`${inputClass} bg-slate-100`} placeholder="Auto-calculated" disabled />
+                </div>
+                <div>
+                  <label className={labelClass}>Sex *</label>
+                  <select required value={formData.sex} onChange={(e) => setFormData({...formData, sex: e.target.value as "Male" | "Female"})} className={inputClass}>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full"
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full"
-                    placeholder="Enter email (optional)"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    className="w-full"
-                    placeholder="Enter address"
-                  />
+                  <label className={labelClass}>Civil Status</label>
+                  <select value={formData.civilStatus} onChange={(e) => setFormData({...formData, civilStatus: e.target.value})} className={inputClass}>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Widowed">Widowed</option>
+                    <option value="Divorced">Divorced</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b">Medical Information</h3>
+            {/* SECTION 2 - CONTACT INFORMATION */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 2 — CONTACT INFORMATION</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Known Medical Conditions</label>
-                  <select
-                    value={formData.medicalConditions}
-                    onChange={(e) => setFormData({...formData, medicalConditions: e.target.value})}
-                    className="w-full"
-                  >
-                    <option value="None">None</option>
-                    <option value="Diabetes">Diabetes</option>
-                    <option value="Hypertension">Hypertension</option>
-                    <option value="Heart Disease">Heart Disease</option>
-                    <option value="Asthma">Asthma</option>
-                    <option value="Arthritis">Arthritis</option>
-                    <option value="Cancer">Cancer</option>
-                    <option value="Thyroid Disorder">Thyroid Disorder</option>
-                    <option value="Kidney Disease">Kidney Disease</option>
-                    <option value="Liver Disease">Liver Disease</option>
-                    <option value="Mental Health Condition">Mental Health Condition</option>
-                    <option value="Autoimmune Disorder">Autoimmune Disorder</option>
-                    <option value="Other">Other</option>
+                  <label className={labelClass}>Phone Number *</label>
+                  <input type="tel" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="Phone Number" />
+                </div>
+                <div>
+                  <label className={labelClass}>Email Address</label>
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className={inputClass} placeholder="Email Address" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Street Address</label>
+                  <input type="text" value={formData.streetAddress} onChange={(e) => setFormData({...formData, streetAddress: e.target.value})} className={inputClass} placeholder="Street Address" />
+                </div>
+                <div>
+                  <label className={labelClass}>City</label>
+                  <input type="text" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className={inputClass} placeholder="City" />
+                </div>
+                <div>
+                  <label className={labelClass}>Province / State</label>
+                  <input type="text" value={formData.province} onChange={(e) => setFormData({...formData, province: e.target.value})} className={inputClass} placeholder="Province / State" />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3 - EMERGENCY CONTACT */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 3 — EMERGENCY CONTACT</h2>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelClass}>Emergency Contact Name *</label>
+                  <input type="text" required value={formData.emergencyName} onChange={(e) => setFormData({...formData, emergencyName: e.target.value})} className={inputClass} placeholder="Contact Name" />
+                </div>
+                <div>
+                  <label className={labelClass}>Relationship to Patient</label>
+                  <input type="text" value={formData.emergencyRelationship} onChange={(e) => setFormData({...formData, emergencyRelationship: e.target.value})} className={inputClass} placeholder="e.g., Spouse, Parent, Sibling" />
+                </div>
+                <div>
+                  <label className={labelClass}>Emergency Contact Phone *</label>
+                  <input type="tel" required value={formData.emergencyPhone} onChange={(e) => setFormData({...formData, emergencyPhone: e.target.value})} className={inputClass} placeholder="Phone Number" />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 4 - VISIT INFORMATION */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 4 — VISIT INFORMATION</h2>
+              <div>
+                <label className={labelClass}>Chief Complaint *</label>
+                <textarea required value={formData.chiefComplaint} onChange={(e) => setFormData({...formData, chiefComplaint: e.target.value})} className={`${inputClass} h-32`} placeholder="Describe the main reason for your visit today..." />
+              </div>
+            </div>
+
+            {/* SECTION 5 - MEDICAL BACKGROUND */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 5 — MEDICAL BACKGROUND</h2>
+              <div className="mb-4">
+                <label className={labelClass}>Do you have any of the following conditions?</label>
+                <div className="grid md:grid-cols-3 gap-3 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.hypertension} onChange={(e) => setFormData({...formData, hypertension: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Hypertension</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.diabetes} onChange={(e) => setFormData({...formData, diabetes: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Diabetes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.asthma} onChange={(e) => setFormData({...formData, asthma: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Asthma</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.heartDisease} onChange={(e) => setFormData({...formData, heartDisease: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Heart Disease</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.kidneyDisease} onChange={(e) => setFormData({...formData, kidneyDisease: e.target.checked})} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm">Kidney Disease</span>
+                  </label>
+                </div>
+              </div>
+              <div className="grid gap-4">
+                <div>
+                  <label className={labelClass}>Allergies (if any)</label>
+                  <input type="text" value={formData.allergies} onChange={(e) => setFormData({...formData, allergies: e.target.value})} className={inputClass} placeholder="e.g., Penicillin, Pollen, Latex" />
+                </div>
+                <div>
+                  <label className={labelClass}>Current Medications</label>
+                  <input type="text" value={formData.currentMedications} onChange={(e) => setFormData({...formData, currentMedications: e.target.value})} className={inputClass} placeholder="List current medications" />
+                </div>
+                <div>
+                  <label className={labelClass}>Past Surgeries (optional)</label>
+                  <input type="text" value={formData.pastSurgeries} onChange={(e) => setFormData({...formData, pastSurgeries: e.target.value})} className={inputClass} placeholder="List any past surgeries" />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 6 - LIFESTYLE INFORMATION */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 6 — LIFESTYLE INFORMATION</h2>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelClass}>Smoking</label>
+                  <select value={formData.smoking} onChange={(e) => setFormData({...formData, smoking: e.target.value as "No" | "Yes" | "Former"})} className={inputClass}>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="Former">Former</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Allergies</label>
-                  <input
-                    type="text"
-                    value={formData.allergies}
-                    onChange={(e) => setFormData({...formData, allergies: e.target.value})}
-                    className="w-full"
-                    placeholder="List any allergies (comma separated)"
-                  />
+                  <label className={labelClass}>Alcohol Use</label>
+                  <select value={formData.alcoholUse} onChange={(e) => setFormData({...formData, alcoholUse: e.target.value as "No" | "Yes"})} className={inputClass}>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Occupation</label>
+                  <input type="text" value={formData.occupation} onChange={(e) => setFormData({...formData, occupation: e.target.value})} className={inputClass} placeholder="Your occupation" />
                 </div>
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b">Emergency Contact</h3>
+            {/* SECTION 7 - INSURANCE INFORMATION */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 7 — INSURANCE INFORMATION</h2>
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={formData.selfPay} onChange={(e) => setFormData({...formData, selfPay: e.target.checked, insuranceProvider: e.target.checked ? '' : formData.insuranceProvider, policyNumber: e.target.checked ? '' : formData.policyNumber, memberId: e.target.checked ? '' : formData.memberId})} className="w-4 h-4 text-teal-600" />
+                  <span className="text-sm font-medium">Self Pay</span>
+                </label>
+              </div>
+              {!formData.selfPay && (
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className={labelClass}>Insurance Provider</label>
+                    <input type="text" value={formData.insuranceProvider} onChange={(e) => setFormData({...formData, insuranceProvider: e.target.value})} className={inputClass} placeholder="Insurance Company" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Policy Number</label>
+                    <input type="text" value={formData.policyNumber} onChange={(e) => setFormData({...formData, policyNumber: e.target.value})} className={inputClass} placeholder="Policy Number" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Member ID</label>
+                    <input type="text" value={formData.memberId} onChange={(e) => setFormData({...formData, memberId: e.target.value})} className={inputClass} placeholder="Member ID" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 8 - CONSENT */}
+            <div className={sectionClass}>
+              <h2 className={sectionTitleClass}>SECTION 8 — CONSENT</h2>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" required checked={formData.consent} onChange={(e) => setFormData({...formData, consent: e.target.checked})} className="w-5 h-5 text-teal-600 mt-0.5" />
+                  <span className="text-sm text-slate-700">I confirm that the information I have provided is accurate and complete to the best of my knowledge. I understand that providing false information may affect my medical care.</span>
+                </label>
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Contact Name</label>
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(e) => setFormData({...formData, emergencyContact: e.target.value})}
-                    className="w-full"
-                    placeholder="Emergency contact name"
-                  />
+                  <label className={labelClass}>Patient Full Name (Signature) *</label>
+                  <input type="text" required value={formData.signatureName} onChange={(e) => setFormData({...formData, signatureName: e.target.value})} className={inputClass} placeholder="Full Name" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Contact Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.emergencyPhone}
-                    onChange={(e) => setFormData({...formData, emergencyPhone: e.target.value})}
-                    className="w-full"
-                    placeholder="Emergency contact phone"
-                  />
+                  <label className={labelClass}>Date *</label>
+                  <input type="date" required value={formData.signatureDate} onChange={(e) => setFormData({...formData, signatureDate: e.target.value})} className={inputClass} />
                 </div>
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b">Visit Information</h3>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Chief Complaint / Reason for Visit *</label>
-                <textarea
-                  required
-                  value={formData.chiefComplaint}
-                  onChange={(e) => setFormData({...formData, chiefComplaint: e.target.value})}
-                  className="w-full h-24"
-                  placeholder="Describe your symptoms or reason for visit..."
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full btn btn-primary py-3 text-lg"
-            >
+            <button type="submit" className="w-full btn btn-primary py-4 text-lg font-semibold">
               Submit Registration
             </button>
           </form>
