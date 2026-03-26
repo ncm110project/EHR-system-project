@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
 import { useAuth } from "@/lib/auth-context";
@@ -9,6 +9,29 @@ const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9
 
 type TimePeriod = 'weekly' | 'monthly' | 'yearly';
 
+const getMonthName = (month: number) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months[month];
+};
+
+const getFullMonthName = (month: number) => {
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return months[month];
+};
+
+const getWeekLabel = (weekIndex: number) => {
+  return `Week ${weekIndex + 1}`;
+};
+
+const getWeeksInMonth = (year: number, month: number) => {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const firstDayOfWeek = firstDay.getDay();
+  const weeks = Math.ceil((daysInMonth + firstDayOfWeek) / 7);
+  return weeks;
+};
+
 export function NursingAdmin() {
   const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders } = useEHR();
   const { user } = useAuth();
@@ -16,6 +39,25 @@ export function NursingAdmin() {
   const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedWeek, setSelectedWeek] = useState<number>(0);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    patients.forEach(p => years.add(new Date(p.admissionDate).getFullYear()));
+    incidentReports.forEach(r => years.add(new Date(r.createdAt).getFullYear()));
+    years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [patients, incidentReports]);
+
+  const availableMonths = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => i);
+  }, []);
+
+  const availableWeeks = useMemo(() => {
+    return getWeeksInMonth(selectedYear, selectedMonth);
+  }, [selectedYear, selectedMonth]);
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const shifts: ShiftType[] = ['morning', 'afternoon', 'night'];
@@ -103,17 +145,19 @@ export function NursingAdmin() {
 
   const filterByTimePeriod = (dateStr: string) => {
     const date = new Date(dateStr);
-    const now = new Date();
     switch (timePeriod) {
-      case 'weekly':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return date >= weekAgo;
-      case 'monthly':
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return date >= monthAgo;
       case 'yearly':
-        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        return date >= yearAgo;
+        return date.getFullYear() === selectedYear;
+      case 'monthly':
+        return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
+      case 'weekly': {
+        const monthStart = new Date(selectedYear, selectedMonth, 1);
+        const startDay = monthStart.getDay() || 7;
+        const weekStart = new Date(selectedYear, selectedMonth, selectedWeek * 7 + (startDay <= 1 ? 1 : 9 - startDay));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        return date >= weekStart && date < weekEnd;
+      }
       default:
         return true;
     }
@@ -168,52 +212,51 @@ export function NursingAdmin() {
     return months[month];
   };
 
-  const getWeekLabel = (weekIndex: number) => {
-    return `Week ${weekIndex + 1}`;
-  };
-
   const generateTimelineData = () => {
-    const now = new Date();
     const patientTimeline: { label: string; count: number }[] = [];
     const incidentTimeline: { label: string; count: number }[] = [];
     const allergyTimeline: { label: string; count: number }[] = [];
     const conditionTimeline: { label: string; count: number }[] = [];
 
     if (timePeriod === 'yearly') {
-      for (let i = 11; i >= 0; i--) {
-        const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+      for (let i = 0; i < 12; i++) {
+        const monthStart = new Date(selectedYear, i, 1);
+        const monthEnd = new Date(selectedYear, i + 1, 0);
 
         const patientCount = patients.filter(p => {
           const d = new Date(p.admissionDate);
-          return d >= targetDate && d <= monthEnd;
+          return d >= monthStart && d <= monthEnd;
         }).length;
 
         const incidentCount = incidentReports.filter(r => {
           const d = new Date(r.createdAt);
-          return d >= targetDate && d <= monthEnd;
+          return d >= monthStart && d <= monthEnd;
         }).length;
 
         const allergyCount = patients.filter(p => {
           const d = new Date(p.admissionDate);
-          return d >= targetDate && d <= monthEnd && p.allergies.length > 0;
+          return d >= monthStart && d <= monthEnd && p.allergies.length > 0;
         }).length;
 
         const conditionCount = patients.filter(p => {
           const d = new Date(p.admissionDate);
           const notes = p.notes || '';
-          return d >= targetDate && d <= monthEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
+          return d >= monthStart && d <= monthEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
         }).length;
 
-        patientTimeline.push({ label: getMonthName(targetDate.getMonth()), count: patientCount });
-        incidentTimeline.push({ label: getMonthName(targetDate.getMonth()), count: incidentCount });
-        allergyTimeline.push({ label: getMonthName(targetDate.getMonth()), count: allergyCount });
-        conditionTimeline.push({ label: getMonthName(targetDate.getMonth()), count: conditionCount });
+        patientTimeline.push({ label: getMonthName(i), count: patientCount });
+        incidentTimeline.push({ label: getMonthName(i), count: incidentCount });
+        allergyTimeline.push({ label: getMonthName(i), count: allergyCount });
+        conditionTimeline.push({ label: getMonthName(i), count: conditionCount });
       }
     } else if (timePeriod === 'monthly') {
-      for (let i = 3; i >= 0; i--) {
-        const weekStart = new Date(now.getTime() - (i * 7 + 7) * 24 * 60 * 60 * 1000);
-        const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const weeksInMonth = getWeeksInMonth(selectedYear, selectedMonth);
+      for (let i = 0; i < weeksInMonth; i++) {
+        const monthStart = new Date(selectedYear, selectedMonth, 1);
+        const startDay = monthStart.getDay() || 7;
+        const weekStart = new Date(selectedYear, selectedMonth, i * 7 + (startDay <= 1 ? 1 : 9 - startDay));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
 
         const patientCount = patients.filter(p => {
           const d = new Date(p.admissionDate);
@@ -236,15 +279,20 @@ export function NursingAdmin() {
           return d >= weekStart && d < weekEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
         }).length;
 
-        patientTimeline.push({ label: getWeekLabel(3 - i), count: patientCount });
-        incidentTimeline.push({ label: getWeekLabel(3 - i), count: incidentCount });
-        allergyTimeline.push({ label: getWeekLabel(3 - i), count: allergyCount });
-        conditionTimeline.push({ label: getWeekLabel(3 - i), count: conditionCount });
+        patientTimeline.push({ label: getWeekLabel(i), count: patientCount });
+        incidentTimeline.push({ label: getWeekLabel(i), count: incidentCount });
+        allergyTimeline.push({ label: getWeekLabel(i), count: allergyCount });
+        conditionTimeline.push({ label: getWeekLabel(i), count: conditionCount });
       }
     } else {
-      for (let i = 6; i >= 0; i--) {
-        const dayStart = new Date(now);
-        dayStart.setDate(dayStart.getDate() - i);
+      const daysInWeek = 7;
+      const monthStart = new Date(selectedYear, selectedMonth, 1);
+      const startDay = monthStart.getDay() || 7;
+      const weekStart = new Date(selectedYear, selectedMonth, selectedWeek * 7 + (startDay <= 1 ? 1 : 9 - startDay));
+
+      for (let i = 0; i < daysInWeek; i++) {
+        const dayStart = new Date(weekStart);
+        dayStart.setDate(dayStart.getDate() + i);
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(dayStart);
         dayEnd.setDate(dayEnd.getDate() + 1);
@@ -690,21 +738,56 @@ export function NursingAdmin() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Hospital Statistics</h3>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-500">Filter by:</span>
-              <div className="flex gap-2">
-                {(['weekly', 'monthly', 'yearly'] as TimePeriod[]).map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setTimePeriod(period)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      timePeriod === period
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500">View:</span>
+                <div className="flex gap-2">
+                  {(['weekly', 'monthly', 'yearly'] as TimePeriod[]).map((period) => (
+                    <button
+                      key={period}
+                      onClick={() => setTimePeriod(period)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        timePeriod === period
+                          ? 'bg-teal-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {period.charAt(0).toUpperCase() + period.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
+                >
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                {timePeriod !== 'yearly' && (
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
                   >
-                    {period.charAt(0).toUpperCase() + period.slice(1)}
-                  </button>
-                ))}
+                    {availableMonths.map((month) => (
+                      <option key={month} value={month}>{getFullMonthName(month)}</option>
+                    ))}
+                  </select>
+                )}
+                {timePeriod === 'weekly' && (
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
+                    className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
+                  >
+                    {Array.from({ length: availableWeeks }, (_, i) => (
+                      <option key={i} value={i}>{getWeekLabel(i)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           </div>
