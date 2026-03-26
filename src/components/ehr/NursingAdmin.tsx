@@ -163,6 +163,126 @@ export function NursingAdmin() {
     nursing: filteredIncidents.filter(r => r.reporterDepartment === 'nursing').length,
   };
 
+  const getMonthName = (month: number) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month];
+  };
+
+  const getWeekLabel = (weekIndex: number) => {
+    return `Week ${weekIndex + 1}`;
+  };
+
+  const generateTimelineData = () => {
+    const now = new Date();
+    const patientTimeline: { label: string; count: number }[] = [];
+    const incidentTimeline: { label: string; count: number }[] = [];
+    const allergyTimeline: { label: string; count: number }[] = [];
+    const conditionTimeline: { label: string; count: number }[] = [];
+
+    if (timePeriod === 'yearly') {
+      for (let i = 11; i >= 0; i--) {
+        const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+
+        const patientCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= targetDate && d <= monthEnd;
+        }).length;
+
+        const incidentCount = incidentReports.filter(r => {
+          const d = new Date(r.createdAt);
+          return d >= targetDate && d <= monthEnd;
+        }).length;
+
+        const allergyCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= targetDate && d <= monthEnd && p.allergies.length > 0;
+        }).length;
+
+        const conditionCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          const notes = p.notes || '';
+          return d >= targetDate && d <= monthEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
+        }).length;
+
+        patientTimeline.push({ label: getMonthName(targetDate.getMonth()), count: patientCount });
+        incidentTimeline.push({ label: getMonthName(targetDate.getMonth()), count: incidentCount });
+        allergyTimeline.push({ label: getMonthName(targetDate.getMonth()), count: allergyCount });
+        conditionTimeline.push({ label: getMonthName(targetDate.getMonth()), count: conditionCount });
+      }
+    } else if (timePeriod === 'monthly') {
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date(now.getTime() - (i * 7 + 7) * 24 * 60 * 60 * 1000);
+        const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+
+        const patientCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= weekStart && d < weekEnd;
+        }).length;
+
+        const incidentCount = incidentReports.filter(r => {
+          const d = new Date(r.createdAt);
+          return d >= weekStart && d < weekEnd;
+        }).length;
+
+        const allergyCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= weekStart && d < weekEnd && p.allergies.length > 0;
+        }).length;
+
+        const conditionCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          const notes = p.notes || '';
+          return d >= weekStart && d < weekEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
+        }).length;
+
+        patientTimeline.push({ label: getWeekLabel(3 - i), count: patientCount });
+        incidentTimeline.push({ label: getWeekLabel(3 - i), count: incidentCount });
+        allergyTimeline.push({ label: getWeekLabel(3 - i), count: allergyCount });
+        conditionTimeline.push({ label: getWeekLabel(3 - i), count: conditionCount });
+      }
+    } else {
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(now);
+        dayStart.setDate(dayStart.getDate() - i);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        const patientCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= dayStart && d < dayEnd;
+        }).length;
+
+        const incidentCount = incidentReports.filter(r => {
+          const d = new Date(r.createdAt);
+          return d >= dayStart && d < dayEnd;
+        }).length;
+
+        const allergyCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          return d >= dayStart && d < dayEnd && p.allergies.length > 0;
+        }).length;
+
+        const conditionCount = patients.filter(p => {
+          const d = new Date(p.admissionDate);
+          const notes = p.notes || '';
+          return d >= dayStart && d < dayEnd && (notes.includes('Hypertension') || notes.includes('Diabetes') || notes.includes('Asthma') || notes.includes('Heart Disease') || notes.includes('Kidney Disease'));
+        }).length;
+
+        const dayLabel = dayStart.toLocaleDateString('en-US', { weekday: 'short' });
+        patientTimeline.push({ label: dayLabel, count: patientCount });
+        incidentTimeline.push({ label: dayLabel, count: incidentCount });
+        allergyTimeline.push({ label: dayLabel, count: allergyCount });
+        conditionTimeline.push({ label: dayLabel, count: conditionCount });
+      }
+    }
+
+    return { patientTimeline, incidentTimeline, allergyTimeline, conditionTimeline };
+  };
+
+  const timelineData = generateTimelineData();
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -585,6 +705,92 @@ export function NursingAdmin() {
                     {period.charAt(0).toUpperCase() + period.slice(1)}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">
+                Patient Registrations - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
+              </h4>
+              <div className="flex items-end gap-2 h-48">
+                {timelineData.patientTimeline.map((item, idx) => {
+                  const maxCount = Math.max(...timelineData.patientTimeline.map(i => i.count), 1);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <span className="text-xs font-semibold mb-1">{item.count}</span>
+                      <div
+                        className="w-full bg-blue-500 rounded-t-md min-h-[4px] transition-all"
+                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
+                      ></div>
+                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">
+                Incident Reports - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
+              </h4>
+              <div className="flex items-end gap-2 h-48">
+                {timelineData.incidentTimeline.map((item, idx) => {
+                  const maxCount = Math.max(...timelineData.incidentTimeline.map(i => i.count), 1);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <span className="text-xs font-semibold mb-1">{item.count}</span>
+                      <div
+                        className="w-full bg-red-500 rounded-t-md min-h-[4px] transition-all"
+                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
+                      ></div>
+                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">
+                Patients with Allergies - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
+              </h4>
+              <div className="flex items-end gap-2 h-48">
+                {timelineData.allergyTimeline.map((item, idx) => {
+                  const maxCount = Math.max(...timelineData.allergyTimeline.map(i => i.count), 1);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <span className="text-xs font-semibold mb-1">{item.count}</span>
+                      <div
+                        className="w-full bg-amber-500 rounded-t-md min-h-[4px] transition-all"
+                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
+                      ></div>
+                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">
+                Patients with Conditions - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
+              </h4>
+              <div className="flex items-end gap-2 h-48">
+                {timelineData.conditionTimeline.map((item, idx) => {
+                  const maxCount = Math.max(...timelineData.conditionTimeline.map(i => i.count), 1);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <span className="text-xs font-semibold mb-1">{item.count}</span>
+                      <div
+                        className="w-full bg-purple-500 rounded-t-md min-h-[4px] transition-all"
+                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
+                      ></div>
+                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
