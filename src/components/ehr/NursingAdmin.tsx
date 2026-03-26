@@ -3,14 +3,19 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
+import { useAuth } from "@/lib/auth-context";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+type TimePeriod = 'weekly' | 'monthly' | 'yearly';
+
 export function NursingAdmin() {
   const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders } = useEHR();
+  const { user } = useAuth();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
   const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const shifts: ShiftType[] = ['morning', 'afternoon', 'night'];
@@ -94,6 +99,68 @@ export function NursingAdmin() {
       reviewed: incidentReports.filter(r => r.status === 'reviewed').length,
       resolved: incidentReports.filter(r => r.status === 'resolved').length,
     }
+  };
+
+  const filterByTimePeriod = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    switch (timePeriod) {
+      case 'weekly':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return date >= weekAgo;
+      case 'monthly':
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return date >= monthAgo;
+      case 'yearly':
+        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        return date >= yearAgo;
+      default:
+        return true;
+    }
+  };
+
+  const filteredPatients = patients.filter(p => filterByTimePeriod(p.admissionDate));
+  const filteredIncidents = incidentReports.filter(r => filterByTimePeriod(r.createdAt));
+
+  const allergyNames = ['Peanuts', 'Tree Nuts', 'Shellfish', 'Fish', 'Eggs', 'Dairy', 'Soy', 'Gluten', 'Pollen', 'Latex', 'Dust Mites'];
+  const allergyCounts = allergyNames.map(allergy => ({
+    name: allergy,
+    count: filteredPatients.filter(p => p.allergies.some(a => a.toLowerCase().includes(allergy.toLowerCase()))).length
+  }));
+
+  const conditionNames = ['Hypertension', 'Diabetes', 'Asthma', 'Heart Disease', 'Kidney Disease', 'Stroke', 'Cancer', 'Tuberculosis', 'Arthritis', 'Thyroid Disorder', 'Epilepsy', 'Chronic Lung Disease'];
+  const conditionCounts = conditionNames.map(condition => ({
+    name: condition,
+    count: filteredPatients.filter(p => {
+      const notes = p.notes || '';
+      return notes.includes(condition);
+    }).length
+  }));
+
+  const insuredCount = filteredPatients.filter(p => {
+    const notes = p.notes || '';
+    return notes.includes('Insurance:') && !notes.includes('Self Pay');
+  }).length;
+  const selfPayCount = filteredPatients.filter(p => {
+    const notes = p.notes || '';
+    return notes.includes('Self Pay');
+  }).length;
+
+  const incidentTypeCounts = {
+    'patient-fall': filteredIncidents.filter(r => r.incidentType === 'patient-fall').length,
+    'medication-error': filteredIncidents.filter(r => r.incidentType === 'medication-error').length,
+    'equipment-failure': filteredIncidents.filter(r => r.incidentType === 'equipment-failure').length,
+    'worker-injury': filteredIncidents.filter(r => r.incidentType === 'worker-injury').length,
+    'near-miss': filteredIncidents.filter(r => r.incidentType === 'near-miss').length,
+    'other': filteredIncidents.filter(r => r.incidentType === 'other').length,
+  };
+
+  const incidentByDept = {
+    er: filteredIncidents.filter(r => r.reporterDepartment === 'er').length,
+    opd: filteredIncidents.filter(r => r.reporterDepartment === 'opd').length,
+    lab: filteredIncidents.filter(r => r.reporterDepartment === 'lab').length,
+    pharmacy: filteredIncidents.filter(r => r.reporterDepartment === 'pharmacy').length,
+    nursing: filteredIncidents.filter(r => r.reporterDepartment === 'nursing').length,
   };
 
   return (
@@ -502,7 +569,24 @@ export function NursingAdmin() {
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Hospital Statistics</h3>
-            <p className="text-sm text-slate-500">Current date: {new Date().toLocaleDateString()}</p>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-slate-500">Filter by:</span>
+              <div className="flex gap-2">
+                {(['weekly', 'monthly', 'yearly'] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setTimePeriod(period)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      timePeriod === period
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -510,10 +594,10 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">Outpatient Department (OPD)</h4>
               <div className="space-y-4">
                 {[
-                  { label: 'Total Visits', value: censusData.opd.totalVisits, color: 'bg-blue-500', width: 'w-full' },
-                  { label: 'Waiting', value: censusData.opd.waiting, color: 'bg-amber-500', width: 'w-2/3' },
-                  { label: 'In Treatment', value: censusData.opd.inTreatment, color: 'bg-blue-400', width: 'w-1/2' },
-                  { label: 'Completed', value: censusData.opd.completed, color: 'bg-green-500', width: 'w-1/3' },
+                  { label: 'Total Visits', value: filteredPatients.filter(p => p.department === 'opd').length, color: 'bg-blue-500' },
+                  { label: 'Waiting', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'waiting').length, color: 'bg-amber-500' },
+                  { label: 'In Treatment', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'in-treatment').length, color: 'bg-blue-400' },
+                  { label: 'Completed', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'discharged').length, color: 'bg-green-500' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-1">
@@ -521,7 +605,7 @@ export function NursingAdmin() {
                       <span className="text-sm font-semibold">{item.value}</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.opd.totalVisits, 1)) * 100, 5)}%` }}></div>
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(filteredPatients.filter(p => p.department === 'opd').length, 1)) * 100, 5)}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -532,11 +616,11 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">Emergency Room (ER)</h4>
               <div className="space-y-4">
                 {[
-                  { label: 'Total Visits', value: censusData.er.totalVisits, color: 'bg-red-500', width: 'w-full' },
-                  { label: 'Critical', value: censusData.er.critical, color: 'bg-red-700', width: 'w-1/4' },
-                  { label: 'Stable', value: censusData.er.stable, color: 'bg-green-500', width: 'w-1/2' },
-                  { label: 'Waiting', value: censusData.er.waiting, color: 'bg-amber-500', width: 'w-1/3' },
-                  { label: 'In Treatment', value: censusData.er.inTreatment, color: 'bg-blue-500', width: 'w-1/4' },
+                  { label: 'Total Visits', value: filteredPatients.filter(p => p.department === 'er').length, color: 'bg-red-500' },
+                  { label: 'Critical', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'critical').length, color: 'bg-red-700' },
+                  { label: 'Stable', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'stable').length, color: 'bg-green-500' },
+                  { label: 'Waiting', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'waiting').length, color: 'bg-amber-500' },
+                  { label: 'In Treatment', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'in-treatment').length, color: 'bg-blue-500' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-1">
@@ -544,7 +628,7 @@ export function NursingAdmin() {
                       <span className="text-sm font-semibold">{item.value}</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.er.totalVisits, 1)) * 100, 5)}%` }}></div>
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(filteredPatients.filter(p => p.department === 'er').length, 1)) * 100, 5)}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -561,9 +645,9 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">Pharmacy</h4>
               <div className="space-y-4">
                 {[
-                  { label: 'Total Prescriptions', value: censusData.pharmacy.totalPrescriptions, color: 'bg-purple-500', width: 'w-full' },
-                  { label: 'Pending', value: censusData.pharmacy.pending, color: 'bg-amber-500', width: 'w-1/3' },
-                  { label: 'Dispensed', value: censusData.pharmacy.dispensed, color: 'bg-green-500', width: 'w-2/3' },
+                  { label: 'Total Prescriptions', value: filteredPatients.reduce((acc, p) => acc + (p.prescriptions?.length || 0), 0), color: 'bg-purple-500' },
+                  { label: 'Pending', value: prescriptions.filter(p => p.status === 'pending').length, color: 'bg-amber-500' },
+                  { label: 'Dispensed', value: prescriptions.filter(p => p.status === 'dispensed').length, color: 'bg-green-500' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-1">
@@ -571,7 +655,7 @@ export function NursingAdmin() {
                       <span className="text-sm font-semibold">{item.value}</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.pharmacy.totalPrescriptions, 1)) * 100, 5)}%` }}></div>
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(prescriptions.length, 1)) * 100, 5)}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -582,10 +666,10 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">Laboratory</h4>
               <div className="space-y-4">
                 {[
-                  { label: 'Total Orders', value: censusData.lab.totalOrders, color: 'bg-amber-500', width: 'w-full' },
-                  { label: 'Pending', value: censusData.lab.pending, color: 'bg-amber-600', width: 'w-1/4' },
-                  { label: 'In Progress', value: censusData.lab.inProgress, color: 'bg-blue-500', width: 'w-1/4' },
-                  { label: 'Completed', value: censusData.lab.completed, color: 'bg-green-500', width: 'w-1/2' },
+                  { label: 'Total Orders', value: filteredPatients.reduce((acc, p) => acc + (p.labOrders?.length || 0), 0), color: 'bg-amber-500' },
+                  { label: 'Pending', value: labOrders.filter(o => o.status === 'pending').length, color: 'bg-amber-600' },
+                  { label: 'In Progress', value: labOrders.filter(o => o.status === 'in-progress').length, color: 'bg-blue-500' },
+                  { label: 'Completed', value: labOrders.filter(o => o.status === 'completed').length, color: 'bg-green-500' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-1">
@@ -593,57 +677,7 @@ export function NursingAdmin() {
                       <span className="text-sm font-semibold">{item.value}</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.lab.totalOrders, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Nursing Staff</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Staff', value: censusData.nursing.totalStaff, color: 'bg-teal-500', width: 'w-full' },
-                  { label: 'On Duty', value: censusData.nursing.onDuty, color: 'bg-green-500', width: 'w-1/2' },
-                  { label: 'Available', value: censusData.nursing.available, color: 'bg-blue-500', width: 'w-1/3' },
-                  { label: 'Off Duty', value: censusData.nursing.offDuty, color: 'bg-slate-400', width: 'w-1/4' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.nursing.totalStaff, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 p-4 bg-teal-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-teal-800">Utilization Rate</span>
-                  <span className="text-xl font-bold text-teal-600">{Math.round((censusData.nursing.onDuty / Math.max(censusData.nursing.totalStaff, 1)) * 100)}%</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Incident Reports</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Reports', value: censusData.incidents.total, color: 'bg-orange-500', width: 'w-full' },
-                  { label: 'Pending', value: censusData.incidents.pending, color: 'bg-amber-500', width: 'w-1/4' },
-                  { label: 'Reviewed', value: censusData.incidents.reviewed, color: 'bg-blue-500', width: 'w-1/4' },
-                  { label: 'Resolved', value: censusData.incidents.resolved, color: 'bg-green-500', width: 'w-1/2' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.incidents.total, 1)) * 100, 5)}%` }}></div>
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(labOrders.length, 1)) * 100, 5)}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -652,27 +686,143 @@ export function NursingAdmin() {
           </div>
 
           <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6">Department Overview - Horizontal Bar Chart</h4>
-            <div className="space-y-6">
-              {[
-                { label: 'OPD Total Visits', value: censusData.opd.totalVisits, color: 'bg-blue-500' },
-                { label: 'ER Total Visits', value: censusData.er.totalVisits, color: 'bg-red-500' },
-                { label: 'Pharmacy Rx', value: censusData.pharmacy.totalPrescriptions, color: 'bg-purple-500' },
-                { label: 'Lab Orders', value: censusData.lab.totalOrders, color: 'bg-amber-500' },
-                { label: 'Staff Total', value: censusData.nursing.totalStaff, color: 'bg-teal-500' },
-              ].map((item) => {
-                const maxValue = Math.max(censusData.opd.totalVisits, censusData.er.totalVisits, censusData.pharmacy.totalPrescriptions, censusData.lab.totalOrders, censusData.nursing.totalStaff);
-                return (
-                  <div key={item.label} className="flex items-center gap-4">
-                    <div className="w-32 text-sm text-slate-600">{item.label}</div>
-                    <div className="flex-1 bg-slate-200 rounded-full h-6">
-                      <div className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`} style={{ width: `${Math.max((item.value / Math.max(maxValue, 1)) * 100, 10)}%` }}>
-                        <span className="text-xs font-semibold text-white">{item.value}</span>
-                      </div>
+            <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Allergy Distribution</h4>
+            <div className="space-y-3">
+              {allergyCounts.filter(a => a.count > 0).sort((a, b) => b.count - a.count).map((item) => (
+                <div key={item.name}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-slate-600">{item.name}</span>
+                    <span className="text-sm font-semibold">{item.count} patients</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-4">
+                    <div className="bg-red-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...allergyCounts.map(a => a.count), 1)) * 100, 5)}%` }}></div>
+                  </div>
+                </div>
+              ))}
+              {allergyCounts.filter(a => a.count > 0).length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-4">No allergy data for selected period</p>
+              )}
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Medical Conditions</h4>
+            <div className="space-y-3">
+              {conditionCounts.filter(c => c.count > 0).sort((a, b) => b.count - a.count).map((item) => (
+                <div key={item.name}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-slate-600">{item.name}</span>
+                    <span className="text-sm font-semibold">{item.count} patients</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-4">
+                    <div className="bg-amber-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...conditionCounts.map(c => c.count), 1)) * 100, 5)}%` }}></div>
+                  </div>
+                </div>
+              ))}
+              {conditionCounts.filter(c => c.count > 0).length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-4">No medical condition data for selected period</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Insurance Status</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Insured', value: insuredCount, color: 'bg-green-500' },
+                  { label: 'Self-Pay', value: selfPayCount, color: 'bg-slate-500' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value} patients</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(insuredCount + selfPayCount, 1)) * 100, 5)}%` }}></div>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{Math.round((insuredCount / Math.max(insuredCount + selfPayCount, 1)) * 100)}%</p>
+                  <p className="text-xs text-slate-500">Insured Rate</p>
+                </div>
+                <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <p className="text-2xl font-bold text-slate-600">{filteredPatients.length}</p>
+                  <p className="text-xs text-slate-500">Total Patients</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Type</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Patient Fall', value: incidentTypeCounts['patient-fall'], color: 'bg-red-500' },
+                  { label: 'Medication Error', value: incidentTypeCounts['medication-error'], color: 'bg-orange-500' },
+                  { label: 'Equipment Failure', value: incidentTypeCounts['equipment-failure'], color: 'bg-amber-500' },
+                  { label: 'Worker Injury', value: incidentTypeCounts['worker-injury'], color: 'bg-blue-500' },
+                  { label: 'Near Miss', value: incidentTypeCounts['near-miss'], color: 'bg-yellow-500' },
+                  { label: 'Other', value: incidentTypeCounts['other'], color: 'bg-slate-500' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(...Object.values(incidentTypeCounts), 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Department</h4>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                {[
+                  { label: 'Emergency Room', value: incidentByDept.er, color: 'bg-red-500' },
+                  { label: 'Outpatient (OPD)', value: incidentByDept.opd, color: 'bg-blue-500' },
+                  { label: 'Laboratory', value: incidentByDept.lab, color: 'bg-amber-500' },
+                  { label: 'Pharmacy', value: incidentByDept.pharmacy, color: 'bg-purple-500' },
+                  { label: 'Nursing Admin', value: incidentByDept.nursing, color: 'bg-teal-500' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(...Object.values(incidentByDept), 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col justify-center">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-slate-50 rounded-lg">
+                    <p className="text-3xl font-bold text-slate-800">{filteredIncidents.length}</p>
+                    <p className="text-sm text-slate-500">Total Incidents</p>
+                  </div>
+                  <div className="text-center p-4 bg-amber-50 rounded-lg">
+                    <p className="text-3xl font-bold text-amber-600">{filteredIncidents.filter(r => r.status === 'pending').length}</p>
+                    <p className="text-sm text-slate-500">Pending Review</p>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <p className="text-3xl font-bold text-blue-600">{filteredIncidents.filter(r => r.status === 'reviewed').length}</p>
+                    <p className="text-sm text-slate-500">Reviewed</p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <p className="text-3xl font-bold text-green-600">{filteredIncidents.filter(r => r.status === 'resolved').length}</p>
+                    <p className="text-sm text-slate-500">Resolved</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
