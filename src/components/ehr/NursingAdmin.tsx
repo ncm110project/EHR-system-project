@@ -9,7 +9,7 @@ const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9
 export function NursingAdmin() {
   const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders } = useEHR();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'census'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -187,10 +187,10 @@ export function NursingAdmin() {
           )}
         </button>
         <button
-          onClick={() => setActiveTab('census')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'census' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          onClick={() => setActiveTab('statistics')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'statistics' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Census
+          Statistics
         </button>
       </div>
 
@@ -498,288 +498,181 @@ export function NursingAdmin() {
         </div>
       )}
 
-      {activeTab === 'census' && (
-        <div className="space-y-6">
+      {activeTab === 'statistics' && (
+        <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Hospital Census</h3>
+            <h3 className="text-lg font-semibold">Hospital Statistics</h3>
             <p className="text-sm text-slate-500">Current date: {new Date().toLocaleDateString()}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="8.5" cy="7" r="4"></circle>
-                    <line x1="20" y1="8" x2="20" y2="14"></line>
-                    <line x1="23" y1="11" x2="17" y2="11"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Outpatient (OPD)</h4>
-                  <p className="text-xs text-slate-500">Department</p>
-                </div>
+              <h4 className="font-semibold text-slate-800 mb-6">Outpatient Department (OPD)</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Visits', value: censusData.opd.totalVisits, color: 'bg-blue-500', width: 'w-full' },
+                  { label: 'Waiting', value: censusData.opd.waiting, color: 'bg-amber-500', width: 'w-2/3' },
+                  { label: 'In Treatment', value: censusData.opd.inTreatment, color: 'bg-blue-400', width: 'w-1/2' },
+                  { label: 'Completed', value: censusData.opd.completed, color: 'bg-green-500', width: 'w-1/3' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.opd.totalVisits, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{censusData.opd.totalVisits}</p>
-                  <p className="text-xs text-slate-500">Total Visits</p>
-                </div>
-                <div className="text-center p-3 bg-amber-50 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-600">{censusData.opd.waiting}</p>
-                  <p className="text-xs text-slate-500">Waiting</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{censusData.opd.inTreatment}</p>
-                  <p className="text-xs text-slate-500">In Treatment</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{censusData.opd.completed}</p>
-                  <p className="text-xs text-slate-500">Completed</p>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-6">Emergency Room (ER)</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Visits', value: censusData.er.totalVisits, color: 'bg-red-500', width: 'w-full' },
+                  { label: 'Critical', value: censusData.er.critical, color: 'bg-red-700', width: 'w-1/4' },
+                  { label: 'Stable', value: censusData.er.stable, color: 'bg-green-500', width: 'w-1/2' },
+                  { label: 'Waiting', value: censusData.er.waiting, color: 'bg-amber-500', width: 'w-1/3' },
+                  { label: 'In Treatment', value: censusData.er.inTreatment, color: 'bg-blue-500', width: 'w-1/4' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.er.totalVisits, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-red-50 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-red-800">Mortality Rate</span>
+                  <span className="text-xl font-bold text-red-600">{censusData.er.mortality}%</span>
                 </div>
               </div>
             </div>
 
             <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Emergency Room (ER)</h4>
-                  <p className="text-xs text-slate-500">Department</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-red-600">{censusData.er.totalVisits}</p>
-                  <p className="text-xs text-slate-500">Total Visits</p>
-                </div>
-                <div className="text-center p-3 bg-red-100 rounded-lg">
-                  <p className="text-2xl font-bold text-red-700">{censusData.er.critical}</p>
-                  <p className="text-xs text-slate-500">Critical</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{censusData.er.stable}</p>
-                  <p className="text-xs text-slate-500">Stable</p>
-                </div>
-                <div className="text-center p-3 bg-amber-50 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-600">{censusData.er.waiting}</p>
-                  <p className="text-xs text-slate-500">Waiting</p>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-slate-100 rounded-lg text-center">
-                <p className="text-sm text-slate-600">
-                  Mortality Rate: <span className="font-bold">{censusData.er.mortality}%</span>
-                </p>
+              <h4 className="font-semibold text-slate-800 mb-6">Pharmacy</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Prescriptions', value: censusData.pharmacy.totalPrescriptions, color: 'bg-purple-500', width: 'w-full' },
+                  { label: 'Pending', value: censusData.pharmacy.pending, color: 'bg-amber-500', width: 'w-1/3' },
+                  { label: 'Dispensed', value: censusData.pharmacy.dispensed, color: 'bg-green-500', width: 'w-2/3' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.pharmacy.totalPrescriptions, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10.5 20.5L3.5 13.5C2.12 12.12 2.12 9.88 3.5 8.5L8.5 3.5C9.88 2.12 12.12 2.12 13.5 3.5L20.5 10.5C21.88 11.88 21.88 14.12 20.5 15.5L15.5 20.5C14.12 21.88 11.88 21.88 10.5 20.5Z"></path>
-                    <line x1="8.5" y1="8.5" x2="15.5" y2="15.5"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Pharmacy</h4>
-                  <p className="text-xs text-slate-500">Department</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">{censusData.pharmacy.totalPrescriptions}</p>
-                  <p className="text-xs text-slate-500">Total Rx</p>
-                </div>
-                <div className="text-center p-3 bg-amber-50 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-600">{censusData.pharmacy.pending}</p>
-                  <p className="text-xs text-slate-500">Pending</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg col-span-2">
-                  <p className="text-2xl font-bold text-green-600">{censusData.pharmacy.dispensed}</p>
-                  <p className="text-xs text-slate-500">Dispensed</p>
-                </div>
+              <h4 className="font-semibold text-slate-800 mb-6">Laboratory</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Orders', value: censusData.lab.totalOrders, color: 'bg-amber-500', width: 'w-full' },
+                  { label: 'Pending', value: censusData.lab.pending, color: 'bg-amber-600', width: 'w-1/4' },
+                  { label: 'In Progress', value: censusData.lab.inProgress, color: 'bg-blue-500', width: 'w-1/4' },
+                  { label: 'Completed', value: censusData.lab.completed, color: 'bg-green-500', width: 'w-1/2' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.lab.totalOrders, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 3h6v6l5 9H4l5-9V3z"></path>
-                    <line x1="9" y1="3" x2="15" y2="3"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Laboratory</h4>
-                  <p className="text-xs text-slate-500">Department</p>
-                </div>
+              <h4 className="font-semibold text-slate-800 mb-6">Nursing Staff</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Staff', value: censusData.nursing.totalStaff, color: 'bg-teal-500', width: 'w-full' },
+                  { label: 'On Duty', value: censusData.nursing.onDuty, color: 'bg-green-500', width: 'w-1/2' },
+                  { label: 'Available', value: censusData.nursing.available, color: 'bg-blue-500', width: 'w-1/3' },
+                  { label: 'Off Duty', value: censusData.nursing.offDuty, color: 'bg-slate-400', width: 'w-1/4' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.nursing.totalStaff, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-600">{censusData.lab.totalOrders}</p>
-                  <p className="text-xs text-slate-500">Total Orders</p>
-                </div>
-                <div className="text-center p-3 bg-amber-100 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-700">{censusData.lab.pending}</p>
-                  <p className="text-xs text-slate-500">Pending</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{censusData.lab.inProgress}</p>
-                  <p className="text-xs text-slate-500">In Progress</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{censusData.lab.completed}</p>
-                  <p className="text-xs text-slate-500">Completed</p>
+              <div className="mt-6 p-4 bg-teal-50 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-teal-800">Utilization Rate</span>
+                  <span className="text-xl font-bold text-teal-600">{Math.round((censusData.nursing.onDuty / Math.max(censusData.nursing.totalStaff, 1)) * 100)}%</span>
                 </div>
               </div>
             </div>
 
             <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Nursing Staff</h4>
-                  <p className="text-xs text-slate-500">Utilization</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-teal-600">{censusData.nursing.totalStaff}</p>
-                  <p className="text-xs text-slate-500">Total Staff</p>
-                </div>
-                <div className="text-center p-3 bg-green-100 rounded-lg">
-                  <p className="text-2xl font-bold text-green-700">{censusData.nursing.onDuty}</p>
-                  <p className="text-xs text-slate-500">On Duty</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{censusData.nursing.available}</p>
-                  <p className="text-xs text-slate-500">Available</p>
-                </div>
-                <div className="text-center p-3 bg-slate-100 rounded-lg">
-                  <p className="text-2xl font-bold text-slate-600">{censusData.nursing.offDuty}</p>
-                  <p className="text-xs text-slate-500">Off Duty</p>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-teal-50 rounded-lg text-center">
-                <p className="text-sm text-teal-700">
-                  Utilization: <span className="font-bold">{Math.round((censusData.nursing.onDuty / censusData.nursing.totalStaff) * 100)}%</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">Incident Reports</h4>
-                  <p className="text-xs text-slate-500">Summary</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-orange-600">{censusData.incidents.total}</p>
-                  <p className="text-xs text-slate-500">Total Reports</p>
-                </div>
-                <div className="text-center p-3 bg-amber-100 rounded-lg">
-                  <p className="text-2xl font-bold text-amber-700">{censusData.incidents.pending}</p>
-                  <p className="text-xs text-slate-500">Pending</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{censusData.incidents.reviewed}</p>
-                  <p className="text-xs text-slate-500">Reviewed</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{censusData.incidents.resolved}</p>
-                  <p className="text-xs text-slate-500">Resolved</p>
-                </div>
+              <h4 className="font-semibold text-slate-800 mb-6">Incident Reports</h4>
+              <div className="space-y-4">
+                {[
+                  { label: 'Total Reports', value: censusData.incidents.total, color: 'bg-orange-500', width: 'w-full' },
+                  { label: 'Pending', value: censusData.incidents.pending, color: 'bg-amber-500', width: 'w-1/4' },
+                  { label: 'Reviewed', value: censusData.incidents.reviewed, color: 'bg-blue-500', width: 'w-1/4' },
+                  { label: 'Resolved', value: censusData.incidents.resolved, color: 'bg-green-500', width: 'w-1/2' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.value}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(censusData.incidents.total, 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-4">Department Summary</h4>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Department</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-slate-600">Total</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-slate-600">Active</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-slate-600">Pending</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-slate-600">Completed</th>
-                    <th className="text-center py-3 px-4 text-sm font-semibold text-slate-600">Critical</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-3 px-4 text-sm font-medium">Outpatient (OPD)</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.opd.totalVisits}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.opd.inTreatment}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.opd.waiting}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.opd.completed}</td>
-                    <td className="py-3 px-4 text-sm text-center">-</td>
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-3 px-4 text-sm font-medium">Emergency Room (ER)</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.er.totalVisits}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.er.inTreatment + censusData.er.stable}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.er.waiting}</td>
-                    <td className="py-3 px-4 text-sm text-center">-</td>
-                    <td className="py-3 px-4 text-sm text-center text-red-600 font-semibold">{censusData.er.critical}</td>
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-3 px-4 text-sm font-medium">Pharmacy</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.pharmacy.totalPrescriptions}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.pharmacy.dispensed}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.pharmacy.pending}</td>
-                    <td className="py-3 px-4 text-sm text-center">-</td>
-                    <td className="py-3 px-4 text-sm text-center">-</td>
-                  </tr>
-                  <tr className="border-b border-slate-100">
-                    <td className="py-3 px-4 text-sm font-medium">Laboratory</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.lab.totalOrders}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.lab.inProgress}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.lab.pending}</td>
-                    <td className="py-3 px-4 text-sm text-center">{censusData.lab.completed}</td>
-                    <td className="py-3 px-4 text-sm text-center">-</td>
-                  </tr>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <td className="py-3 px-4 text-sm font-bold">Total</td>
-                    <td className="py-3 px-4 text-sm text-center font-bold">
-                      {censusData.opd.totalVisits + censusData.er.totalVisits + censusData.pharmacy.totalPrescriptions + censusData.lab.totalOrders}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-center font-bold">
-                      {censusData.opd.inTreatment + censusData.er.inTreatment + censusData.er.stable + censusData.pharmacy.dispensed + censusData.lab.inProgress}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-center font-bold">
-                      {censusData.opd.waiting + censusData.er.waiting + censusData.pharmacy.pending + censusData.lab.pending}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-center font-bold">
-                      {censusData.opd.completed + censusData.lab.completed}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-center font-bold text-red-600">{censusData.er.critical}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <h4 className="font-semibold text-slate-800 mb-6">Department Overview - Horizontal Bar Chart</h4>
+            <div className="space-y-6">
+              {[
+                { label: 'OPD Total Visits', value: censusData.opd.totalVisits, color: 'bg-blue-500' },
+                { label: 'ER Total Visits', value: censusData.er.totalVisits, color: 'bg-red-500' },
+                { label: 'Pharmacy Rx', value: censusData.pharmacy.totalPrescriptions, color: 'bg-purple-500' },
+                { label: 'Lab Orders', value: censusData.lab.totalOrders, color: 'bg-amber-500' },
+                { label: 'Staff Total', value: censusData.nursing.totalStaff, color: 'bg-teal-500' },
+              ].map((item) => {
+                const maxValue = Math.max(censusData.opd.totalVisits, censusData.er.totalVisits, censusData.pharmacy.totalPrescriptions, censusData.lab.totalOrders, censusData.nursing.totalStaff);
+                return (
+                  <div key={item.label} className="flex items-center gap-4">
+                    <div className="w-32 text-sm text-slate-600">{item.label}</div>
+                    <div className="flex-1 bg-slate-200 rounded-full h-6">
+                      <div className={`${item.color} h-6 rounded-full flex items-center justify-end pr-2`} style={{ width: `${Math.max((item.value / Math.max(maxValue, 1)) * 100, 10)}%` }}>
+                        <span className="text-xs font-semibold text-white">{item.value}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
