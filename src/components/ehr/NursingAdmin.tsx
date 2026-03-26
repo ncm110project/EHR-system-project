@@ -714,20 +714,36 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">
                 Patient Registrations - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
               </h4>
-              <div className="flex items-end gap-2 h-48">
-                {timelineData.patientTimeline.map((item, idx) => {
+              <div className="relative h-64 border-b border-l border-slate-300">
+                {(() => {
                   const maxCount = Math.max(...timelineData.patientTimeline.map(i => i.count), 1);
+                  const chartHeight = 224;
+                  const chartWidth = 100;
+                  const gridLines = 5;
+                  const barWidth = `${100 / timelineData.patientTimeline.length - 2}%`;
+                  const barGap = '1%';
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-semibold mb-1">{item.count}</span>
-                      <div
-                        className="w-full bg-blue-500 rounded-t-md min-h-[4px] transition-all"
-                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
-                      ></div>
-                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
-                    </div>
+                    <>
+                      {[...Array(gridLines)].map((_, i) => (
+                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
+                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
+                        </div>
+                      ))}
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
+                        {timelineData.patientTimeline.map((item, idx) => (
+                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
+                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
+                            <div
+                              className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
+                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
+                            ></div>
+                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
 
@@ -735,20 +751,35 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">
                 Incident Reports - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
               </h4>
-              <div className="flex items-end gap-2 h-48">
-                {timelineData.incidentTimeline.map((item, idx) => {
+              <div className="relative h-64 border-b border-l border-slate-300">
+                {(() => {
                   const maxCount = Math.max(...timelineData.incidentTimeline.map(i => i.count), 1);
+                  const chartHeight = 224;
+                  const gridLines = 5;
+                  const barWidth = `${100 / timelineData.incidentTimeline.length - 2}%`;
+                  const barGap = '1%';
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-semibold mb-1">{item.count}</span>
-                      <div
-                        className="w-full bg-red-500 rounded-t-md min-h-[4px] transition-all"
-                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
-                      ></div>
-                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
-                    </div>
+                    <>
+                      {[...Array(gridLines)].map((_, i) => (
+                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
+                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
+                        </div>
+                      ))}
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
+                        {timelineData.incidentTimeline.map((item, idx) => (
+                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
+                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
+                            <div
+                              className="w-full bg-red-500 rounded-t hover:bg-red-600 transition-colors"
+                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
+                            ></div>
+                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
 
@@ -756,20 +787,35 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">
                 Patients with Allergies - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
               </h4>
-              <div className="flex items-end gap-2 h-48">
-                {timelineData.allergyTimeline.map((item, idx) => {
+              <div className="relative h-64 border-b border-l border-slate-300">
+                {(() => {
                   const maxCount = Math.max(...timelineData.allergyTimeline.map(i => i.count), 1);
+                  const chartHeight = 224;
+                  const gridLines = 5;
+                  const barWidth = `${100 / timelineData.allergyTimeline.length - 2}%`;
+                  const barGap = '1%';
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-semibold mb-1">{item.count}</span>
-                      <div
-                        className="w-full bg-amber-500 rounded-t-md min-h-[4px] transition-all"
-                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
-                      ></div>
-                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
-                    </div>
+                    <>
+                      {[...Array(gridLines)].map((_, i) => (
+                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
+                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
+                        </div>
+                      ))}
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
+                        {timelineData.allergyTimeline.map((item, idx) => (
+                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
+                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
+                            <div
+                              className="w-full bg-amber-500 rounded-t hover:bg-amber-600 transition-colors"
+                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
+                            ></div>
+                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
 
@@ -777,20 +823,35 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">
                 Patients with Conditions - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
               </h4>
-              <div className="flex items-end gap-2 h-48">
-                {timelineData.conditionTimeline.map((item, idx) => {
+              <div className="relative h-64 border-b border-l border-slate-300">
+                {(() => {
                   const maxCount = Math.max(...timelineData.conditionTimeline.map(i => i.count), 1);
+                  const chartHeight = 224;
+                  const gridLines = 5;
+                  const barWidth = `${100 / timelineData.conditionTimeline.length - 2}%`;
+                  const barGap = '1%';
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center">
-                      <span className="text-xs font-semibold mb-1">{item.count}</span>
-                      <div
-                        className="w-full bg-purple-500 rounded-t-md min-h-[4px] transition-all"
-                        style={{ height: `${Math.max((item.count / maxCount) * 100, 5)}%` }}
-                      ></div>
-                      <span className="text-xs text-slate-500 mt-2">{item.label}</span>
-                    </div>
+                    <>
+                      {[...Array(gridLines)].map((_, i) => (
+                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
+                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
+                        </div>
+                      ))}
+                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
+                        {timelineData.conditionTimeline.map((item, idx) => (
+                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
+                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
+                            <div
+                              className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors"
+                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
+                            ></div>
+                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   );
-                })}
+                })()}
               </div>
             </div>
           </div>
