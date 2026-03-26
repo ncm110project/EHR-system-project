@@ -259,7 +259,7 @@ export default function LandingPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* SECTION 1 - PERSONAL INFORMATION */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 1 — PERSONAL INFORMATION</h2>
+              <h2 className={sectionTitleClass}>PERSONAL INFORMATION</h2>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>First Name *</label>
@@ -302,7 +302,7 @@ export default function LandingPage() {
 
             {/* SECTION 2 - CONTACT INFORMATION */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 2 — CONTACT INFORMATION</h2>
+              <h2 className={sectionTitleClass}>CONTACT INFORMATION</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Phone Number *</label>
@@ -329,7 +329,7 @@ export default function LandingPage() {
 
             {/* SECTION 3 - EMERGENCY CONTACT */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 3 — EMERGENCY CONTACT</h2>
+              <h2 className={sectionTitleClass}>EMERGENCY CONTACT</h2>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Emergency Contact Name *</label>
@@ -348,7 +348,7 @@ export default function LandingPage() {
 
             {/* SECTION 4 - VISIT INFORMATION */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 4 — VISIT INFORMATION</h2>
+              <h2 className={sectionTitleClass}>VISIT INFORMATION</h2>
               <div>
                 <label className={labelClass}>Chief Complaint *</label>
                 <textarea required value={formData.chiefComplaint} onChange={(e) => setFormData({...formData, chiefComplaint: e.target.value})} className={`${inputClass} h-32`} placeholder="Describe the main reason for your visit today..." />
@@ -357,7 +357,7 @@ export default function LandingPage() {
 
             {/* SECTION 5 - MEDICAL BACKGROUND */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 5 — MEDICAL BACKGROUND</h2>
+              <h2 className={sectionTitleClass}>MEDICAL BACKGROUND</h2>
               <div className="mb-4">
                 <label className={labelClass}>Do you have any of the following conditions?</label>
                 <div className="grid md:grid-cols-3 gap-3 mt-2">
@@ -480,7 +480,7 @@ export default function LandingPage() {
 
             {/* SECTION 6 - LIFESTYLE INFORMATION */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 6 — LIFESTYLE INFORMATION</h2>
+              <h2 className={sectionTitleClass}>LIFESTYLE INFORMATION</h2>
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className={labelClass}>Smoking</label>
@@ -506,7 +506,7 @@ export default function LandingPage() {
 
             {/* SECTION 7 - INSURANCE INFORMATION */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 7 — INSURANCE INFORMATION</h2>
+              <h2 className={sectionTitleClass}>INSURANCE INFORMATION</h2>
               <div className="mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={formData.selfPay} onChange={(e) => setFormData({...formData, selfPay: e.target.checked, insuranceProvider: e.target.checked ? '' : formData.insuranceProvider, policyNumber: e.target.checked ? '' : formData.policyNumber, memberId: e.target.checked ? '' : formData.memberId})} className="w-4 h-4 text-teal-600" />
@@ -533,7 +533,7 @@ export default function LandingPage() {
 
             {/* SECTION 8 - CONSENT */}
             <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>SECTION 8 — CONSENT</h2>
+              <h2 className={sectionTitleClass}>CONSENT</h2>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input type="checkbox" required checked={formData.consent} onChange={(e) => setFormData({...formData, consent: e.target.checked})} className="w-5 h-5 text-teal-600 mt-0.5" />
