@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { departments } from "@/lib/ehr-data";
+import { IncidentReportForm } from "./IncidentReportForm";
 
 export function Header() {
   const router = useRouter();
   const { currentDepartment, patients, labOrders, prescriptions } = useEHR();
   const { user, logout } = useAuth();
+  const [showIncidentForm, setShowIncidentForm] = useState(false);
 
   const currentDept = departments.find(d => d.id === currentDepartment);
   
@@ -31,15 +34,16 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-semibold" style={{ color: currentDept?.color || '#0F766E' }}>
-          {currentDept?.name || 'Dashboard'}
-        </h2>
-        <span className="text-sm text-slate-500">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
-      </div>
+    <>
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold" style={{ color: currentDept?.color || '#0F766E' }}>
+            {currentDept?.name || 'Dashboard'}
+          </h2>
+          <span className="text-sm text-slate-500">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </span>
+        </div>
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
@@ -77,6 +81,18 @@ export function Header() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
 
+        <button
+          onClick={() => setShowIncidentForm(true)}
+          className="p-2 hover:bg-amber-100 rounded-lg text-amber-600"
+          title="Report Incident"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+
         {user && (
           <>
             <div className="w-px h-8 bg-slate-200"></div>
@@ -108,5 +124,26 @@ export function Header() {
         )}
       </div>
     </header>
+
+    {showIncidentForm && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">Incident Report</h3>
+            <button
+              onClick={() => setShowIncidentForm(false)}
+              className="p-2 hover:bg-slate-100 rounded-lg"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <IncidentReportForm />
+        </div>
+      </div>
+    )}
+    </>
   );
 }

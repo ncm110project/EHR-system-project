@@ -12,6 +12,25 @@ export type LabTestStatus = 'pending' | 'in-progress' | 'completed';
 
 export type ShiftType = 'morning' | 'afternoon' | 'night';
 
+export type IncidentStatus = 'pending' | 'reviewed' | 'resolved';
+
+export interface IncidentReport {
+  id: string;
+  reportedBy: string;
+  reporterDepartment: Department;
+  incidentDate: string;
+  incidentTime: string;
+  incidentType: 'patient-fall' | 'medication-error' | 'equipment-failure' | 'worker-injury' | 'near-miss' | 'other';
+  incidentLocation: string;
+  description: string;
+  personsInvolved: string;
+  actionsTaken: string;
+  status: IncidentStatus;
+  reviewedBy?: string;
+  reviewNotes?: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   username: string;

@@ -7,9 +7,10 @@ import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function NursingAdmin() {
-  const { nurses, patients, updateNurse, addActivity } = useEHR();
+  const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport } = useEHR();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'schedule'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents'>('roster');
+  const [selectedIncident, setSelectedIncident] = useState<any>(null);
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const shifts: ShiftType[] = ['morning', 'afternoon', 'night'];
@@ -132,7 +133,18 @@ export function NursingAdmin() {
           onClick={() => setActiveTab('schedule')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'schedule' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Weekly Schedule
+          Schedule
+        </button>
+        <button
+          onClick={() => setActiveTab('incidents')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'incidents' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          Incident Reports
+          {incidentReports.filter(r => r.status === 'pending').length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+              {incidentReports.filter(r => r.status === 'pending').length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -272,6 +284,169 @@ export function NursingAdmin() {
             <div className="p-6 border-t border-slate-200 flex gap-2 justify-end">
               <button className="btn btn-secondary" onClick={() => setSelectedNurse(null)}>Close</button>
               <button className="btn btn-primary">Edit Profile</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'incidents' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Incident Reports</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedIncident(null)}
+                className={`px-3 py-1.5 rounded-lg text-sm ${!selectedIncident ? 'bg-teal-600 text-white' : 'bg-slate-100'}`}
+              >
+                All ({incidentReports.length})
+              </button>
+              <button
+                onClick={() => setSelectedIncident({ status: 'pending' })}
+                className={`px-3 py-1.5 rounded-lg text-sm ${selectedIncident?.status === 'pending' ? 'bg-amber-600 text-white' : 'bg-slate-100'}`}
+              >
+                Pending ({incidentReports.filter(r => r.status === 'pending').length})
+              </button>
+              <button
+                onClick={() => setSelectedIncident({ status: 'reviewed' })}
+                className={`px-3 py-1.5 rounded-lg text-sm ${selectedIncident?.status === 'reviewed' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}
+              >
+                Reviewed ({incidentReports.filter(r => r.status === 'reviewed').length})
+              </button>
+              <button
+                onClick={() => setSelectedIncident({ status: 'resolved' })}
+                className={`px-3 py-1.5 rounded-lg text-sm ${selectedIncident?.status === 'resolved' ? 'bg-green-600 text-white' : 'bg-slate-100'}`}
+              >
+                Resolved ({incidentReports.filter(r => r.status === 'resolved').length})
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {(selectedIncident?.status 
+              ? incidentReports.filter(r => r.status === selectedIncident.status) 
+              : incidentReports).map((report) => (
+              <div key={report.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        report.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        report.status === 'reviewed' ? 'bg-blue-100 text-blue-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                      </span>
+                      <span className="text-sm text-slate-500">{report.incidentType.replace('-', ' ')}</span>
+                    </div>
+                    <p className="font-medium">{report.description}</p>
+                    <div className="text-sm text-slate-500">
+                      <span>Reported by: {report.reportedBy}</span>
+                      <span className="mx-2">|</span>
+                      <span>{report.incidentDate} at {report.incidentTime}</span>
+                      <span className="mx-2">|</span>
+                      <span>Location: {report.incidentLocation}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedIncident(report)}
+                    className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700"
+                  >
+                    Review
+                  </button>
+                </div>
+              </div>
+            ))}
+            {incidentReports.length === 0 && (
+              <div className="card p-8 text-center text-slate-500">
+                No incident reports found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {selectedIncident && typeof selectedIncident === 'object' && !selectedIncident.status && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold">Review Incident Report</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-500">Reported By</p>
+                  <p className="font-medium">{selectedIncident.reportedBy}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Department</p>
+                  <p className="font-medium">{selectedIncident.reporterDepartment}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Date & Time</p>
+                  <p className="font-medium">{selectedIncident.incidentDate} at {selectedIncident.incidentTime}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Type</p>
+                  <p className="font-medium">{selectedIncident.incidentType.replace('-', ' ')}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-500">Location</p>
+                  <p className="font-medium">{selectedIncident.incidentLocation}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-500">Description</p>
+                  <p className="font-medium">{selectedIncident.description}</p>
+                </div>
+                {selectedIncident.personsInvolved && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-slate-500">Persons Involved</p>
+                    <p className="font-medium">{selectedIncident.personsInvolved}</p>
+                  </div>
+                )}
+                {selectedIncident.actionsTaken && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-slate-500">Actions Taken</p>
+                    <p className="font-medium">{selectedIncident.actionsTaken}</p>
+                  </div>
+                )}
+              </div>
+              <div className="border-t pt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Review Notes</label>
+                <textarea
+                  id="reviewNotes"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  rows={3}
+                  placeholder="Add review notes..."
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t flex gap-2 justify-end">
+              <button
+                onClick={() => setSelectedIncident(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const notes = (document.getElementById('reviewNotes') as HTMLTextAreaElement)?.value;
+                  updateIncidentReport({ ...selectedIncident, status: 'reviewed', reviewedBy: 'Nursing Admin', reviewNotes: notes });
+                  setSelectedIncident(null);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Mark as Reviewed
+              </button>
+              <button
+                onClick={() => {
+                  const notes = (document.getElementById('reviewNotes') as HTMLTextAreaElement)?.value;
+                  updateIncidentReport({ ...selectedIncident, status: 'resolved', reviewedBy: 'Nursing Admin', reviewNotes: notes });
+                  setSelectedIncident(null);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Resolve
+              </button>
             </div>
           </div>
         </div>
