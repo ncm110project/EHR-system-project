@@ -7,6 +7,24 @@ import { Patient, VitalSigns, LabOrder, Prescription } from "@/lib/ehr-data";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+const commonLabTests = [
+  { name: 'Complete Blood Count (CBC)', type: 'blood' as const },
+  { name: 'Basic Metabolic Panel (BMP)', type: 'blood' as const },
+  { name: 'Comprehensive Metabolic Panel (CMP)', type: 'blood' as const },
+  { name: 'Lipid Panel', type: 'blood' as const },
+  { name: 'Liver Function Tests (LFT)', type: 'blood' as const },
+  { name: 'Thyroid Panel (TSH/T3/T4)', type: 'blood' as const },
+  { name: 'Hemoglobin A1C', type: 'blood' as const },
+  { name: 'Urinalysis', type: 'urine' as const },
+  { name: 'Urine Culture', type: 'urine' as const },
+  { name: 'Chest X-Ray', type: 'imaging' as const },
+  { name: 'CT Scan Head', type: 'imaging' as const },
+  { name: 'CT Scan Abdomen', type: 'imaging' as const },
+  { name: 'MRI Brain', type: 'imaging' as const },
+  { name: 'ECG/EKG', type: 'imaging' as const },
+  { name: 'Blood Culture', type: 'pathology' as const },
+];
+
 export function OutpatientDepartment() {
   const { user } = useAuth();
   const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, loadPendingPatients } = useEHR();
@@ -618,27 +636,27 @@ function PatientDetailModal({
                   {showLabOrder && (
                     <div className="p-3 bg-slate-50 rounded-lg space-y-2">
                       <select 
-                        value={labTestType}
-                        onChange={(e) => setLabTestType(e.target.value as any)}
+                        value={labTestName}
+                        onChange={(e) => {
+                          const selectedTest = commonLabTests.find(t => t.name === e.target.value);
+                          setLabTestName(e.target.value);
+                          if (selectedTest) {
+                            setLabTestType(selectedTest.type);
+                          }
+                        }}
                         className="w-full"
                       >
-                        <option value="blood">Blood Test</option>
-                        <option value="urine">Urine Test</option>
-                        <option value="imaging">Imaging (X-Ray, CT, MRI)</option>
-                        <option value="pathology">Pathology</option>
+                        <option value="">Select Lab Test</option>
+                        {commonLabTests.map((test) => (
+                          <option key={test.name} value={test.name}>{test.name}</option>
+                        ))}
                       </select>
-                      <input
-                        type="text"
-                        placeholder="Test name"
-                        value={labTestName}
-                        onChange={(e) => setLabTestName(e.target.value)}
-                        className="w-full"
-                      />
                       <button 
                         className="btn btn-primary"
                         onClick={() => {
                           if (labTestName) {
-                            onOrderLab(patient, labTestName, labTestType);
+                            const selectedTest = commonLabTests.find(t => t.name === labTestName);
+                            onOrderLab(patient, labTestName, selectedTest?.type || labTestType);
                             setShowLabOrder(false);
                             setLabTestName('');
                           }

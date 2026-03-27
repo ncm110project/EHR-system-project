@@ -143,7 +143,7 @@ export interface NurseSchedule {
 
 export interface Activity {
   id: string;
-  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign';
+  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals';
   department: Department;
   patientId?: string;
   patientName?: string;
