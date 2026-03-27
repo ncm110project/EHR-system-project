@@ -15,9 +15,21 @@ export function Header() {
 
   const currentDept = departments.find(d => d.id === currentDepartment);
   
-  const pendingLabResults = labOrders.filter(o => o.status === 'pending').length;
-  const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending').length;
-  const criticalPatients = patients.filter(p => p.status === 'critical').length;
+  const deptPatients = patients.filter(p => p.department === currentDepartment);
+  const deptLabOrders = labOrders.filter(o => {
+    const patient = patients.find(p => p.id === o.patientId);
+    return patient?.department === currentDepartment;
+  });
+  const deptPrescriptions = prescriptions.filter(rx => {
+    const patient = patients.find(p => p.id === rx.patientId);
+    return patient?.department === currentDepartment;
+  });
+
+  const pendingLabResults = deptLabOrders.filter(o => o.status === 'pending').length;
+  const pendingPrescriptions = deptPrescriptions.filter(p => p.status === 'pending').length;
+  const criticalPatients = deptPatients.filter(p => p.status === 'critical').length;
+  const waitingPatients = deptPatients.filter(p => p.status === 'waiting').length;
+  const inTreatmentPatients = deptPatients.filter(p => p.status === 'in-treatment').length;
 
   const handleLogout = () => {
     logout();
@@ -47,27 +59,52 @@ export function Header() {
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
-          {criticalPatients > 0 && (
+          {currentDepartment === 'er' && criticalPatients > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg">
               <span className="status-dot critical"></span>
               <span className="text-sm font-medium">{criticalPatients} Critical</span>
             </div>
           )}
-          {pendingLabResults > 0 && (
+          {currentDepartment === 'er' && waitingPatients > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg">
+              <span className="text-sm font-medium">{waitingPatients} Waiting</span>
+            </div>
+          )}
+          {currentDepartment === 'opd' && waitingPatients > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg">
+              <span className="text-sm font-medium">{waitingPatients} In Queue</span>
+            </div>
+          )}
+          {currentDepartment === 'lab' && pendingLabResults > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 3h6v6l5 9H4l5-9V3z"></path>
               </svg>
-              <span className="text-sm font-medium">{pendingLabResults} Lab Pending</span>
+              <span className="text-sm font-medium">{pendingLabResults} Orders Pending</span>
             </div>
           )}
-          {pendingPrescriptions > 0 && (
+          {currentDepartment === 'pharmacy' && pendingPrescriptions > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M10.5 20.5L3.5 13.5C2.12 12.12 2.12 9.88 3.5 8.5L8.5 3.5C9.88 2.12 12.12 2.12 13.5 3.5L20.5 10.5C21.88 11.88 21.88 14.12 20.5 15.5L15.5 20.5C14.12 21.88 11.88 21.88 10.5 20.5Z"></path>
               </svg>
               <span className="text-sm font-medium">{pendingPrescriptions} Rx Pending</span>
             </div>
+          )}
+          {currentDepartment === 'dashboard' && (
+            <>
+              {criticalPatients > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg">
+                  <span className="status-dot critical"></span>
+                  <span className="text-sm font-medium">{criticalPatients} Critical</span>
+                </div>
+              )}
+              {inTreatmentPatients > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg">
+                  <span className="text-sm font-medium">{inTreatmentPatients} In Treatment</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
