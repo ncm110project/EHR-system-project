@@ -283,70 +283,10 @@ export function OutpatientDepartment() {
             {isNurse ? 'Outpatient - Nurse Station' : 'Outpatient - Doctor Office'}
           </h2>
           <p className="text-slate-500">
-            {isNurse ? 'Register patients, take vitals and notes' : 'Consult patients and prescribe treatment'}
+            {isNurse ? 'Review patient charts, record vitals and notes' : 'Consult patients and prescribe treatment'}
           </p>
         </div>
-        {isNurse && (
-          <button 
-            className="btn btn-primary flex items-center gap-2"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Register Patient
-          </button>
-        )}
       </div>
-
-      {showAddForm && isNurse && (
-        <div className="card p-6 animate-slide-in">
-          <h3 className="text-lg font-semibold mb-4">New Patient Registration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <input
-              type="text"
-              placeholder="Patient Name"
-              value={newPatient.name}
-              onChange={(e) => setNewPatient({...newPatient, name: e.target.value})}
-              className="w-full"
-            />
-            <input
-              type="number"
-              placeholder="Age"
-              value={newPatient.age}
-              onChange={(e) => setNewPatient({...newPatient, age: e.target.value})}
-              className="w-full"
-            />
-            <select
-              value={newPatient.gender}
-              onChange={(e) => setNewPatient({...newPatient, gender: e.target.value as "Male" | "Female"})}
-              className="w-full"
-            >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-            <input
-              type="tel"
-              placeholder="Phone Number"
-              value={newPatient.phone}
-              onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
-              className="w-full"
-            />
-            <input
-              type="text"
-              placeholder="Chief Complaint"
-              value={newPatient.chiefComplaint}
-              onChange={(e) => setNewPatient({...newPatient, chiefComplaint: e.target.value})}
-              className="w-full lg:col-span-2"
-            />
-          </div>
-          <div className="flex gap-2 mt-4">
-            <button className="btn btn-primary" onClick={handleAddPatient}>Register</button>
-            <button className="btn btn-secondary" onClick={() => setShowAddForm(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-4">
         <button
@@ -416,7 +356,7 @@ export function OutpatientDepartment() {
                     className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                     onClick={() => setSelectedPatient(patient)}
                   >
-                    {isNurse ? 'Triage' : 'Examine'}
+                    {isNurse ? 'Open Chart' : 'Examine'}
                   </button>
                 </td>
               </tr>
