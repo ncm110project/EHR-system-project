@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, LabOrder, Prescription } from "@/lib/ehr-data";
+import { PatientRecordPrint } from "./PatientRecordPrint";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -36,6 +37,7 @@ export function OutpatientDepartment() {
   });
   const [renderTime] = useState(() => new Date('2026-03-14T10:30:00').getTime());
   const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
+  const [showPrintPreview, setShowPrintPreview] = useState<Patient | null>(null);
 
   useEffect(() => {
     loadPendingPatients();
@@ -44,7 +46,7 @@ export function OutpatientDepartment() {
   const isNurse = user?.role === 'nurse';
   const isDoctor = user?.role === 'doctor';
 
-  const opdPatients = patients.filter(p => p.department === 'opd');
+  const opdPatients = patients.filter(p => p.department === 'opd' && p.registrationStatus === 'confirmed');
   
   const getQueuePatients = () => {
     if (isNurse) {
@@ -419,6 +421,14 @@ export function OutpatientDepartment() {
           onOrderLab={handleOrderLab}
           onPrescribe={handlePrescribe}
           onCompleteVisit={handleCompleteDoctorVisit}
+          onPrint={(p) => setShowPrintPreview(p)}
+        />
+      )}
+
+      {showPrintPreview && (
+        <PatientRecordPrint 
+          patient={showPrintPreview} 
+          onClose={() => setShowPrintPreview(null)} 
         />
       )}
     </div>
@@ -435,7 +445,8 @@ function PatientDetailModal({
   onSendToDoctor,
   onOrderLab,
   onPrescribe,
-  onCompleteVisit
+  onCompleteVisit,
+  onPrint
 }: { 
   patient: Patient;
   isNurse: boolean;
@@ -447,6 +458,7 @@ function PatientDetailModal({
   onOrderLab: (patient: Patient, testName: string, testType: any) => void;
   onPrescribe: (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => void;
   onCompleteVisit: (patient: Patient, diagnosis: string) => void;
+  onPrint: (patient: Patient) => void;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
     bloodPressure: '',
@@ -751,6 +763,17 @@ function PatientDetailModal({
                 <p className="font-semibold text-green-800">Visit Completed</p>
                 {patient.diagnosis && <p className="text-sm text-green-700 mt-1">Diagnosis: {patient.diagnosis}</p>}
               </div>
+              <button
+                onClick={() => onPrint(patient)}
+                className="mt-3 w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span className="font-medium">Print Patient Record</span>
+              </button>
             </div>
           )}
         </div>

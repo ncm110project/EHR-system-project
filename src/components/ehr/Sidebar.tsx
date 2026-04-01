@@ -52,6 +52,7 @@ const icons: Record<string, React.ReactNode> = {
 
 const allDepartments = [
   { id: 'dashboard' as Department, name: 'Dashboard', icon: 'grid' },
+  { id: 'registration' as Department, name: 'Registration', icon: 'clipboard' },
   { id: 'opd' as Department, name: 'Outpatient', icon: 'user' },
   { id: 'er' as Department, name: 'Emergency', icon: 'alert' },
   { id: 'pharmacy' as Department, name: 'Pharmacy', icon: 'pill' },
@@ -67,6 +68,8 @@ export function Sidebar() {
     if (!user) return allDepartments;
     
     switch (user.department) {
+      case 'registration':
+        return allDepartments.filter(d => d.id === 'registration');
       case 'opd':
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'opd');
       case 'er':

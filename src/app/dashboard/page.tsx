@@ -11,6 +11,7 @@ import { EmergencyRoom } from "@/components/ehr/EmergencyRoom";
 import { Pharmacy } from "@/components/ehr/Pharmacy";
 import { Laboratory } from "@/components/ehr/Laboratory";
 import { NursingAdmin } from "@/components/ehr/NursingAdmin";
+import { RegistrationClerk } from "@/components/ehr/RegistrationClerk";
 
 export default function Dashboard() {
   const { isAuthenticated, user } = useAuth();
@@ -31,6 +32,8 @@ export default function Dashboard() {
 
   const renderDepartment = () => {
     switch (user.department) {
+      case 'registration':
+        return <RegistrationClerk />;
       case 'opd':
         return <OutpatientDepartment />;
       case 'er':

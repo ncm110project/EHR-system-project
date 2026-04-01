@@ -2,9 +2,11 @@ export type PatientStatus = 'waiting' | 'in-treatment' | 'admitted' | 'discharge
 
 export type WorkflowStatus = 'registered' | 'nurse-pending' | 'nurse-completed' | 'doctor-pending' | 'doctor-completed' | 'completed';
 
-export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing';
+export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected';
 
-export type UserRole = 'doctor' | 'nurse' | 'admin';
+export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration';
+
+export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk';
 
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
@@ -50,6 +52,7 @@ export const mockUsers: User[] = [
   { id: 'U005', username: 'pharmacy', password: 'pharmacy123', name: 'Pharmacist Emily Wong', email: 'ewong@hospital.org', role: 'nurse', department: 'pharmacy', departmentName: 'Pharmacy' },
   { id: 'U006', username: 'nursing_admin', password: 'admin123', name: 'Admin Nurse Manager', email: 'admin@hospital.org', role: 'admin', department: 'nursing', departmentName: 'Nursing Administration' },
   { id: 'U007', username: 'lab', password: 'lab123', name: 'Lab Technician David Lee', email: 'dlee@hospital.org', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
+  { id: 'U008', username: 'clerk', password: 'clerk123', name: 'Registration Clerk Maria Santos', email: 'msantos@hospital.org', role: 'clerk', department: 'registration', departmentName: 'Patient Registration' },
 ];
 
 export interface Patient {
@@ -65,6 +68,7 @@ export interface Patient {
   status: PatientStatus;
   department: Department;
   admissionDate: string;
+  registrationStatus?: RegistrationStatus;
   triagePriority?: TriagePriority;
   chiefComplaint?: string;
   diagnosis?: string;
