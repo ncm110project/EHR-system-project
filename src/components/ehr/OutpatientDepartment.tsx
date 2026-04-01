@@ -253,6 +253,28 @@ export function OutpatientDepartment() {
     setSelectedPatient(null);
   };
 
+  const handleReopenVisit = (patient: Patient) => {
+    const updated = {
+      ...patient,
+      workflowStatus: 'registered' as const,
+      status: 'waiting' as const,
+      diagnosis: '',
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
+      nurseNotes: ''
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission' as const,
+      department: 'opd' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Patient visit reopened for follow-up`,
+      timestamp: new Date().toISOString()
+    });
+    setSelectedPatient(null);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -422,6 +444,7 @@ export function OutpatientDepartment() {
           onPrescribe={handlePrescribe}
           onCompleteVisit={handleCompleteDoctorVisit}
           onPrint={(p) => setShowPrintPreview(p)}
+          onReopenVisit={handleReopenVisit}
         />
       )}
 
@@ -446,7 +469,8 @@ function PatientDetailModal({
   onOrderLab,
   onPrescribe,
   onCompleteVisit,
-  onPrint
+  onPrint,
+  onReopenVisit
 }: { 
   patient: Patient;
   isNurse: boolean;
@@ -459,6 +483,7 @@ function PatientDetailModal({
   onPrescribe: (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => void;
   onCompleteVisit: (patient: Patient, diagnosis: string) => void;
   onPrint: (patient: Patient) => void;
+  onReopenVisit: (patient: Patient) => void;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
     bloodPressure: '',
@@ -805,6 +830,20 @@ function PatientDetailModal({
                 </svg>
                 <span className="font-medium">Print Patient Record</span>
               </button>
+              {isNurse && (
+                <button
+                  onClick={() => onReopenVisit(patient)}
+                  className="mt-2 w-full p-3 border border-blue-200 bg-blue-50 rounded-lg text-left hover:bg-blue-100 flex items-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                    <path d="M21 3v5h-5"></path>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                    <path d="M3 21v-5h5"></path>
+                  </svg>
+                  <span className="font-medium text-blue-700">Reopen Visit (Follow-up)</span>
+                </button>
+              )}
             </div>
           )}
         </div>
