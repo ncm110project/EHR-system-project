@@ -472,7 +472,7 @@ function PatientDetailModal({
   const [showPrescribe, setShowPrescribe] = useState(false);
   const [labTestName, setLabTestName] = useState('');
   const [labTestType, setLabTestType] = useState<'blood' | 'urine' | 'imaging' | 'pathology'>('blood');
-  const [prescription, setPrescription] = useState({ medication: '', dosage: '', frequency: '', duration: '' });
+  const [prescription, setPrescription] = useState({ medication: '', dosage: '', frequency: 'OD', route: 'Oral', duration: '', instructions: '' });
   const [diagnosis, setDiagnosis] = useState(patient.diagnosis || '');
 
   const handleSave = () => {
@@ -697,7 +697,7 @@ function PatientDetailModal({
                         <option value="">Select Medication</option>
                         {medications.map(med => (
                           <option key={med.id} value={med.name}>
-                            {med.name} ({med.stock} {med.unit} left) - {med.category}
+                            {med.name} ({med.stock} {med.unit} left) - {med.classification}
                           </option>
                         ))}
                       </select>
@@ -708,18 +708,49 @@ function PatientDetailModal({
                         onChange={(e) => setPrescription({...prescription, dosage: e.target.value})}
                         className="w-full"
                       />
-                      <input
-                        type="text"
-                        placeholder="Frequency (e.g., 3x daily)"
+                      <select
                         value={prescription.frequency}
                         onChange={(e) => setPrescription({...prescription, frequency: e.target.value})}
                         className="w-full"
-                      />
+                      >
+                        <option value="">Select Frequency</option>
+                        <option value="STAT">STAT (Immediately)</option>
+                        <option value="OD">OD (Once daily)</option>
+                        <option value="BID">BID (Twice daily)</option>
+                        <option value="TID">TID (Three times daily)</option>
+                        <option value="QID">QID (Four times daily)</option>
+                        <option value="q4h">q4h (Every 4 hours)</option>
+                        <option value="q6h">q6h (Every 6 hours)</option>
+                        <option value="q8h">q8h (Every 8 hours)</option>
+                        <option value="q12h">q12h (Every 12 hours)</option>
+                        <option value="PRN">PRN (As needed)</option>
+                      </select>
+                      <select
+                        value={prescription.route}
+                        onChange={(e) => setPrescription({...prescription, route: e.target.value})}
+                        className="w-full"
+                      >
+                        <option value="">Select Route</option>
+                        <option value="Oral">Oral</option>
+                        <option value="IV">IV (Intravenous)</option>
+                        <option value="IM">IM (Intramuscular)</option>
+                        <option value="Topical">Topical</option>
+                        <option value="Rectal">Rectal</option>
+                        <option value="Vaginal">Vaginal</option>
+                        <option value="Sublingual">Sublingual</option>
+                      </select>
                       <input
                         type="text"
                         placeholder="Duration (e.g., 7 days)"
                         value={prescription.duration}
                         onChange={(e) => setPrescription({...prescription, duration: e.target.value})}
+                        className="w-full"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Instructions (optional)"
+                        value={prescription.instructions}
+                        onChange={(e) => setPrescription({...prescription, instructions: e.target.value})}
                         className="w-full"
                       />
                       <button 
@@ -728,7 +759,7 @@ function PatientDetailModal({
                           if (prescription.medication && prescription.dosage) {
                             onPrescribe(patient, prescription.medication, prescription.dosage, prescription.frequency, prescription.duration);
                             setShowPrescribe(false);
-                            setPrescription({ medication: '', dosage: '', frequency: '', duration: '' });
+                            setPrescription({ medication: '', dosage: '', frequency: 'OD', route: 'Oral', duration: '', instructions: '' });
                           }
                         }}
                       >

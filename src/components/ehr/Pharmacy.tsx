@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
-import { Medication, Prescription } from "@/lib/ehr-data";
+import { Medication, Prescription, medicationClassifications, drugInteractions } from "@/lib/ehr-data";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -12,11 +12,24 @@ export function Pharmacy() {
   const [activeTab, setActiveTab] = useState<'inventory' | 'prescriptions'>('prescriptions');
   const [editingMed, setEditingMed] = useState<Medication | null>(null);
   const [newStock, setNewStock] = useState(0);
+  const [selectedClassification, setSelectedClassification] = useState<string>('all');
+  const [dispenseWarning, setDispenseWarning] = useState<{ prescription: Prescription; message: string } | null>(null);
 
-  const filteredMeds = medications.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMeds = medications.filter(m => {
+    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.classification.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClassification = selectedClassification === 'all' || m.classification === selectedClassification;
+    return matchesSearch && matchesClassification;
+  });
+
+  const groupedMeds = medicationClassifications.reduce((acc, classification) => {
+    const meds = filteredMeds.filter(m => m.classification === classification);
+    if (meds.length > 0) {
+      acc[classification] = meds;
+    }
+    return acc;
+  }, {} as Record<string, Medication[]>);
 
   const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending');
   const dispensedPrescriptions = prescriptions.filter(p => p.status === 'dispensed');
@@ -37,11 +50,47 @@ export function Pharmacy() {
     };
   };
 
+  const checkDrugInteractions = (medicationName: string, patientId: string) => {
+    const patientPrescriptions = prescriptions.filter(
+      rx => rx.patientId === patientId && rx.status === 'dispensed'
+    );
+    
+    const interactions = [];
+    for (const rx of patientPrescriptions) {
+      const interaction = drugInteractions.find(
+        di => (di.drugA === medicationName && di.drugB === rx.medication) ||
+              (di.drugB === medicationName && di.drugA === rx.medication)
+      );
+      if (interaction) {
+        interactions.push(interaction);
+      }
+    }
+    return interactions;
+  };
+
   const handleDispense = (prescription: Prescription) => {
     const medication = medications.find(m => m.name === prescription.medication);
-    if (medication && medication.stock > 0) {
-      updateMedication({ ...medication, stock: medication.stock - 1 });
+    
+    if (!medication) {
+      setDispenseWarning({ prescription, message: 'Medication not found in inventory' });
+      return;
     }
+    
+    if (medication.stock <= 0) {
+      setDispenseWarning({ prescription, message: `Insufficient stock: ${medication.name} is out of stock` });
+      return;
+    }
+
+    const interactions = checkDrugInteractions(prescription.medication, prescription.patientId);
+    if (interactions.length > 0 && interactions.some(i => i.severity === 'severe')) {
+      setDispenseWarning({ 
+        prescription, 
+        message: `Warning: ${interactions[0].description}` 
+      });
+      return;
+    }
+
+    updateMedication({ ...medication, stock: medication.stock - 1 });
     updatePrescription({ ...prescription, status: 'dispensed' });
     addActivity({
       id: generateId(),
@@ -52,6 +101,27 @@ export function Pharmacy() {
       description: `Dispensed - ${prescription.medication}`,
       timestamp: new Date().toISOString()
     });
+  };
+
+  const handleForceDispense = () => {
+    if (!dispenseWarning) return;
+    const prescription = dispenseWarning.prescription;
+    const medication = medications.find(m => m.name === prescription.medication);
+    
+    if (medication && medication.stock > 0) {
+      updateMedication({ ...medication, stock: medication.stock - 1 });
+      updatePrescription({ ...prescription, status: 'dispensed' });
+      addActivity({
+        id: generateId(),
+        type: 'prescription',
+        department: 'pharmacy',
+        patientId: prescription.patientId,
+        patientName: getPatientName(prescription.patientId),
+        description: `Dispensed (override) - ${prescription.medication}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    setDispenseWarning(null);
   };
 
   const handleUpdateStock = (medication: Medication) => {
@@ -67,6 +137,20 @@ export function Pharmacy() {
   };
 
   const lowStockMeds = medications.filter(m => m.stock < m.minStock);
+
+  const getDosageFormIcon = (form: string) => {
+    switch (form) {
+      case 'tablet': return '💊';
+      case 'capsule': return '💊';
+      case 'syrup': return '🧴';
+      case 'injection': return '💉';
+      case 'cream': return '🧴';
+      case 'drops': return '💧';
+      case 'inhaler': return '🫁';
+      case 'suppository': return '💊';
+      default: return '💊';
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -112,6 +196,7 @@ export function Pharmacy() {
             <div className="divide-y divide-slate-200">
               {pendingPrescriptions.map((rx) => {
                 const patientInfo = getPatientInfo(rx.patientId);
+                const medication = medications.find(m => m.name === rx.medication);
                 return (
                   <div key={rx.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
                     <div className="flex items-center gap-4">
@@ -123,23 +208,29 @@ export function Pharmacy() {
                       <div>
                         <p className="font-semibold">{rx.medication}</p>
                         <p className="text-sm text-slate-500">
-                          {rx.dosage} • {rx.frequency} • {rx.duration}
+                          {rx.dosage} • {rx.frequency} • {rx.route || 'Oral'} • {rx.duration}
                         </p>
+                        {medication && (
+                          <p className={`text-xs ${medication.stock <= 0 ? 'text-red-600' : medication.stock < medication.minStock ? 'text-amber-600' : 'text-green-600'}`}>
+                            Stock: {medication.stock} available
+                          </p>
+                        )}
                         {patientInfo && (
                           <div className="text-xs text-slate-400 mt-1">
                             Patient: {patientInfo.name} ({patientInfo.age}y {patientInfo.gender[0]}) • {patientInfo.phone}
                           </div>
                         )}
-                        <p className="text-xs text-slate-400">Prescribed by: Dr. {rx.prescribedBy}</p>
+                        <p className="text-xs text-slate-400">Prescribed by: {rx.prescribedBy}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-slate-400">{rx.date}</span>
                       <button 
-                        className="btn btn-primary"
+                        className={`btn ${medication && medication.stock <= 0 ? 'btn-disabled' : 'btn-primary'}`}
                         onClick={() => handleDispense(rx)}
+                        disabled={medication && medication.stock <= 0}
                       >
-                        Dispense
+                        {medication && medication.stock <= 0 ? 'Out of Stock' : 'Dispense'}
                       </button>
                     </div>
                   </div>
@@ -201,63 +292,86 @@ export function Pharmacy() {
           )}
 
           <div className="card">
-            <div className="p-4 border-b border-slate-200">
+            <div className="p-4 border-b border-slate-200 flex items-center gap-4">
               <input
                 type="text"
                 placeholder="Search medications..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full max-w-md"
+                className="flex-1 max-w-md"
               />
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Medication</th>
-                  <th>Category</th>
-                  <th>Stock</th>
-                  <th>Min Stock</th>
-                  <th>Unit</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMeds.map((med) => (
-                  <tr key={med.id}>
-                    <td className="font-medium">{med.name}</td>
-                    <td>
-                      <span className="badge badge-info">{med.category}</span>
-                    </td>
-                    <td className={med.stock < med.minStock ? 'text-red-600 font-semibold' : ''}>
-                      {med.stock}
-                    </td>
-                    <td>{med.minStock}</td>
-                    <td>{med.unit}</td>
-                    <td>${med.price.toFixed(2)}</td>
-                    <td>
-                      {med.stock < med.minStock ? (
-                        <span className="badge badge-error">Low</span>
-                      ) : (
-                        <span className="badge badge-success">OK</span>
-                      )}
-                    </td>
-                    <td>
-                      <button 
-                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                        onClick={() => {
-                          setEditingMed(med);
-                          setNewStock(med.stock);
-                        }}
-                      >
-                        Update Stock
-                      </button>
-                    </td>
-                  </tr>
+              <select
+                value={selectedClassification}
+                onChange={(e) => setSelectedClassification(e.target.value)}
+                className="px-3 py-2 border border-slate-300 rounded-lg"
+              >
+                <option value="all">All Classifications</option>
+                {medicationClassifications.map((classification) => (
+                  <option key={classification} value={classification}>{classification}</option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+            
+            <div className="p-4 space-y-6">
+              {Object.entries(groupedMeds).map(([classification, meds]) => (
+                <div key={classification}>
+                  <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    {classification}
+                    <span className="text-sm font-normal text-slate-500">({meds.length} medications)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {meds.map((med) => (
+                      <div 
+                        key={med.id} 
+                        className={`p-4 rounded-lg border ${med.stock < med.minStock ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span>{getDosageFormIcon(med.dosageForm)}</span>
+                              <p className="font-semibold">{med.name}</p>
+                            </div>
+                            <p className="text-sm text-slate-500 capitalize">{med.dosageForm}</p>
+                          </div>
+                          <button 
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                            onClick={() => {
+                              setEditingMed(med);
+                              setNewStock(med.stock);
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <div>
+                            <p className={`text-lg font-bold ${med.stock < med.minStock ? 'text-red-600' : 'text-slate-800'}`}>
+                              {med.stock}
+                            </p>
+                            <p className="text-xs text-slate-500">{med.unit}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-slate-500">Min: {med.minStock}</p>
+                            <p className="text-sm font-medium">${med.price.toFixed(2)}</p>
+                          </div>
+                        </div>
+                        {med.stock < med.minStock && (
+                          <div className="mt-2 text-xs text-red-600 font-medium">
+                            ⚠️ Below minimum stock level
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {Object.keys(groupedMeds).length === 0 && (
+                <div className="text-center text-slate-500 py-8">
+                  No medications found
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -267,6 +381,14 @@ export function Pharmacy() {
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold mb-4">Update Stock - {editingMed.name}</h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Classification</label>
+                <p className="text-slate-600">{editingMed.classification}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Dosage Form</label>
+                <p className="text-slate-600 capitalize">{editingMed.dosageForm}</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Current Stock</label>
                 <p className="text-lg font-semibold">{editingMed.stock} {editingMed.unit}</p>
@@ -288,6 +410,40 @@ export function Pharmacy() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dispenseWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Warning</h3>
+            </div>
+            <p className="text-slate-600 mb-6">{dispenseWarning.message}</p>
+            <div className="flex gap-3">
+              <button 
+                className="btn btn-secondary flex-1" 
+                onClick={() => setDispenseWarning(null)}
+              >
+                Cancel
+              </button>
+              {!dispenseWarning.message.includes('Insufficient') && (
+                <button 
+                  className="btn btn-primary flex-1" 
+                  onClick={handleForceDispense}
+                >
+                  Dispense Anyway
+                </button>
+              )}
             </div>
           </div>
         </div>

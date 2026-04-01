@@ -90,7 +90,9 @@ export interface Prescription {
   medication: string;
   dosage: string;
   frequency: string;
+  route?: string;
   duration: string;
+  instructions?: string;
   prescribedBy: string;
   status: 'pending' | 'dispensed';
   date: string;
@@ -121,10 +123,32 @@ export interface Medication {
   id: string;
   name: string;
   category: string;
+  classification: string;
   stock: number;
   minStock: number;
   unit: string;
   price: number;
+  dosageForm: 'tablet' | 'capsule' | 'syrup' | 'injection' | 'cream' | 'drops' | 'inhaler' | 'suppository';
+}
+
+export interface DrugInteraction {
+  id: string;
+  drugA: string;
+  drugB: string;
+  severity: 'mild' | 'moderate' | 'severe';
+  description: string;
+}
+
+export interface InventoryLog {
+  id: string;
+  medicationId: string;
+  medicationName: string;
+  quantity: number;
+  actionType: 'dispense' | 'restock' | 'adjust';
+  userId: string;
+  userName: string;
+  patientId?: string;
+  timestamp: string;
 }
 
 export interface Nurse {
@@ -291,18 +315,193 @@ export const mockPatients: Patient[] = [
   }
 ];
 
-export const mockMedications: Medication[] = [
-  { id: 'M001', name: 'Amoxicillin', category: 'Antibiotic', stock: 150, minStock: 50, unit: 'capsules', price: 12.50 },
-  { id: 'M002', name: 'Ibuprofen', category: 'Pain Relief', stock: 200, minStock: 100, unit: 'tablets', price: 8.75 },
-  { id: 'M003', name: 'Metformin', category: 'Diabetes', stock: 80, minStock: 60, unit: 'tablets', price: 15.00 },
-  { id: 'M004', name: 'Lisinopril', category: 'Blood Pressure', stock: 45, minStock: 50, unit: 'tablets', price: 18.25 },
-  { id: 'M005', name: 'Omeprazole', category: 'GI', stock: 120, minStock: 40, unit: 'capsules', price: 22.00 },
-  { id: 'M006', name: 'Atorvastatin', category: 'Cholesterol', stock: 30, minStock: 40, unit: 'tablets', price: 28.50 },
-  { id: 'M007', name: 'Prednisone', category: 'Steroid', stock: 60, minStock: 30, unit: 'tablets', price: 14.75 },
-  { id: 'M008', name: 'Azithromycin', category: 'Antibiotic', stock: 25, minStock: 40, unit: 'tablets', price: 35.00 },
-  { id: 'M009', name: 'Acetaminophen', category: 'Pain Relief', stock: 180, minStock: 80, unit: 'tablets', price: 6.50 },
-  { id: 'M010', name: 'Salbutamol', category: 'Respiratory', stock: 40, minStock: 25, unit: 'inhalers', price: 45.00 }
+export const medicationClassifications = [
+  'Analgesics', 'Antacids', 'Antianxiety Drugs', 'Antiarrhythmics', 'Antibiotics',
+  'Anticoagulants and Thrombolytics', 'Anticonvulsants', 'Antidepressants', 'Antidiarrheals',
+  'Antiemetics', 'Antifungals', 'Antihistamines', 'Antihypertensives', 'Anti-Inflammatories',
+  'Antineoplastics', 'Antipsychotics', 'Antipyretics', 'Antivirals', 'Barbiturates',
+  'Beta-Blockers', 'Bronchodilators', 'Corticosteroids', 'Cough Suppressants', 'Cytotoxic',
+  'Decongestants', 'Diuretics', 'Expectorant', 'Hypoglycemics', 'Immunosuppressives',
+  'Laxatives', 'Muscle Relaxants', 'Vitamins'
 ];
+
+export const mockMedications: Medication[] = [
+  // Analgesics
+  { id: 'M001', name: 'Paracetamol', category: 'Pain Relief', classification: 'Analgesics', stock: 200, minStock: 50, unit: 'tablets', price: 5.00, dosageForm: 'tablet' },
+  { id: 'M002', name: 'Ibuprofen', category: 'Pain Relief', classification: 'Analgesics', stock: 180, minStock: 50, unit: 'tablets', price: 8.75, dosageForm: 'tablet' },
+  { id: 'M003', name: 'Morphine', category: 'Pain Relief', classification: 'Analgesics', stock: 30, minStock: 10, unit: 'injections', price: 45.00, dosageForm: 'injection' },
+
+  // Antacids
+  { id: 'M004', name: 'Aluminum Hydroxide', category: 'GI', classification: 'Antacids', stock: 100, minStock: 30, unit: 'tablets', price: 6.50, dosageForm: 'tablet' },
+  { id: 'M005', name: 'Magnesium Hydroxide', category: 'GI', classification: 'Antacids', stock: 90, minStock: 30, unit: 'tablets', price: 7.00, dosageForm: 'tablet' },
+  { id: 'M006', name: 'Calcium Carbonate', category: 'GI', classification: 'Antacids', stock: 120, minStock: 40, unit: 'tablets', price: 5.50, dosageForm: 'tablet' },
+
+  // Antianxiety Drugs
+  { id: 'M007', name: 'Diazepam', category: 'Anxiety', classification: 'Antianxiety Drugs', stock: 50, minStock: 20, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+  { id: 'M008', name: 'Alprazolam', category: 'Anxiety', classification: 'Antianxiety Drugs', stock: 40, minStock: 15, unit: 'tablets', price: 15.00, dosageForm: 'tablet' },
+  { id: 'M009', name: 'Lorazepam', category: 'Anxiety', classification: 'Antianxiety Drugs', stock: 35, minStock: 15, unit: 'tablets', price: 14.00, dosageForm: 'tablet' },
+
+  // Antiarrhythmics
+  { id: 'M010', name: 'Amiodarone', category: 'Cardiac', classification: 'Antiarrhythmics', stock: 25, minStock: 10, unit: 'tablets', price: 35.00, dosageForm: 'tablet' },
+  { id: 'M011', name: 'Lidocaine', category: 'Cardiac', classification: 'Antiarrhythmics', stock: 40, minStock: 15, unit: 'injections', price: 28.00, dosageForm: 'injection' },
+  { id: 'M012', name: 'Procainamide', category: 'Cardiac', classification: 'Antiarrhythmics', stock: 20, minStock: 10, unit: 'capsules', price: 32.00, dosageForm: 'capsule' },
+
+  // Antibiotics
+  { id: 'M013', name: 'Amoxicillin', category: 'Antibiotic', classification: 'Antibiotics', stock: 150, minStock: 50, unit: 'capsules', price: 12.50, dosageForm: 'capsule' },
+  { id: 'M014', name: 'Ciprofloxacin', category: 'Antibiotic', classification: 'Antibiotics', stock: 80, minStock: 30, unit: 'tablets', price: 18.00, dosageForm: 'tablet' },
+  { id: 'M015', name: 'Azithromycin', category: 'Antibiotic', classification: 'Antibiotics', stock: 60, minStock: 25, unit: 'tablets', price: 25.00, dosageForm: 'tablet' },
+
+  // Anticoagulants and Thrombolytics
+  { id: 'M016', name: 'Heparin', category: 'Blood Thinner', classification: 'Anticoagulants and Thrombolytics', stock: 45, minStock: 20, unit: 'injections', price: 40.00, dosageForm: 'injection' },
+  { id: 'M017', name: 'Warfarin', category: 'Blood Thinner', classification: 'Anticoagulants and Thrombolytics', stock: 70, minStock: 30, unit: 'tablets', price: 15.00, dosageForm: 'tablet' },
+  { id: 'M018', name: 'Alteplase', category: 'Blood Thinner', classification: 'Anticoagulants and Thrombolytics', stock: 10, minStock: 5, unit: 'injections', price: 250.00, dosageForm: 'injection' },
+
+  // Anticonvulsants
+  { id: 'M019', name: 'Phenytoin', category: 'Seizure', classification: 'Anticonvulsants', stock: 60, minStock: 25, unit: 'capsules', price: 20.00, dosageForm: 'capsule' },
+  { id: 'M020', name: 'Valproic Acid', category: 'Seizure', classification: 'Anticonvulsants', stock: 45, minStock: 20, unit: 'syrup', price: 28.00, dosageForm: 'syrup' },
+  { id: 'M021', name: 'Carbamazepine', category: 'Seizure', classification: 'Anticonvulsants', stock: 55, minStock: 20, unit: 'tablets', price: 22.00, dosageForm: 'tablet' },
+
+  // Antidepressants
+  { id: 'M022', name: 'Fluoxetine', category: 'Mental Health', classification: 'Antidepressants', stock: 80, minStock: 30, unit: 'capsules', price: 18.00, dosageForm: 'capsule' },
+  { id: 'M023', name: 'Sertraline', category: 'Mental Health', classification: 'Antidepressants', stock: 75, minStock: 30, unit: 'tablets', price: 20.00, dosageForm: 'tablet' },
+  { id: 'M024', name: 'Amitriptyline', category: 'Mental Health', classification: 'Antidepressants', stock: 60, minStock: 25, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+
+  // Antidiarrheals
+  { id: 'M025', name: 'Loperamide', category: 'GI', classification: 'Antidiarrheals', stock: 100, minStock: 40, unit: 'capsules', price: 8.00, dosageForm: 'capsule' },
+  { id: 'M026', name: 'Bismuth Subsalicylate', category: 'GI', classification: 'Antidiarrheals', stock: 90, minStock: 35, unit: 'tablets', price: 7.50, dosageForm: 'tablet' },
+  { id: 'M027', name: 'Diphenoxylate', category: 'GI', classification: 'Antidiarrheals', stock: 50, minStock: 20, unit: 'tablets', price: 15.00, dosageForm: 'tablet' },
+
+  // Antiemetics
+  { id: 'M028', name: 'Ondansetron', category: 'Nausea', classification: 'Antiemetics', stock: 70, minStock: 30, unit: 'tablets', price: 22.00, dosageForm: 'tablet' },
+  { id: 'M029', name: 'Metoclopramide', category: 'Nausea', classification: 'Antiemetics', stock: 65, minStock: 25, unit: 'tablets', price: 10.00, dosageForm: 'tablet' },
+  { id: 'M030', name: 'Promethazine', category: 'Nausea', classification: 'Antiemetics', stock: 55, minStock: 20, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+
+  // Antifungals
+  { id: 'M031', name: 'Fluconazole', category: 'Antifungal', classification: 'Antifungals', stock: 60, minStock: 25, unit: 'capsules', price: 18.00, dosageForm: 'capsule' },
+  { id: 'M032', name: 'Ketoconazole', category: 'Antifungal', classification: 'Antifungals', stock: 45, minStock: 20, unit: 'tablets', price: 22.00, dosageForm: 'tablet' },
+  { id: 'M033', name: 'Nystatin', category: 'Antifungal', classification: 'Antifungals', stock: 80, minStock: 30, unit: 'drops', price: 15.00, dosageForm: 'drops' },
+
+  // Antihistamines
+  { id: 'M034', name: 'Diphenhydramine', category: 'Allergy', classification: 'Antihistamines', stock: 120, minStock: 40, unit: 'capsules', price: 8.00, dosageForm: 'capsule' },
+  { id: 'M035', name: 'Loratadine', category: 'Allergy', classification: 'Antihistamines', stock: 100, minStock: 35, unit: 'tablets', price: 10.00, dosageForm: 'tablet' },
+  { id: 'M036', name: 'Cetirizine', category: 'Allergy', classification: 'Antihistamines', stock: 110, minStock: 40, unit: 'tablets', price: 9.00, dosageForm: 'tablet' },
+
+  // Antihypertensives
+  { id: 'M037', name: 'Amlodipine', category: 'Blood Pressure', classification: 'Antihypertensives', stock: 90, minStock: 35, unit: 'tablets', price: 14.00, dosageForm: 'tablet' },
+  { id: 'M038', name: 'Losartan', category: 'Blood Pressure', classification: 'Antihypertensives', stock: 85, minStock: 30, unit: 'tablets', price: 16.00, dosageForm: 'tablet' },
+  { id: 'M039', name: 'Enalapril', category: 'Blood Pressure', classification: 'Antihypertensives', stock: 75, minStock: 30, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+
+  // Anti-Inflammatories
+  { id: 'M040', name: 'Diclofenac', category: 'Pain Relief', classification: 'Anti-Inflammatories', stock: 100, minStock: 40, unit: 'tablets', price: 11.00, dosageForm: 'tablet' },
+  { id: 'M041', name: 'Naproxen', category: 'Pain Relief', classification: 'Anti-Inflammatories', stock: 95, minStock: 35, unit: 'tablets', price: 10.00, dosageForm: 'tablet' },
+  { id: 'M042', name: 'Celecoxib', category: 'Pain Relief', classification: 'Anti-Inflammatories', stock: 60, minStock: 25, unit: 'capsules', price: 28.00, dosageForm: 'capsule' },
+
+  // Antineoplastics
+  { id: 'M043', name: 'Cyclophosphamide', category: 'Oncology', classification: 'Antineoplastics', stock: 15, minStock: 5, unit: 'tablets', price: 150.00, dosageForm: 'tablet' },
+  { id: 'M044', name: 'Methotrexate', category: 'Oncology', classification: 'Antineoplastics', stock: 20, minStock: 8, unit: 'tablets', price: 85.00, dosageForm: 'tablet' },
+  { id: 'M045', name: 'Doxorubicin', category: 'Oncology', classification: 'Antineoplastics', stock: 12, minStock: 5, unit: 'injections', price: 200.00, dosageForm: 'injection' },
+
+  // Antipsychotics
+  { id: 'M046', name: 'Haloperidol', category: 'Mental Health', classification: 'Antipsychotics', stock: 40, minStock: 15, unit: 'tablets', price: 18.00, dosageForm: 'tablet' },
+  { id: 'M047', name: 'Risperidone', category: 'Mental Health', classification: 'Antipsychotics', stock: 45, minStock: 18, unit: 'tablets', price: 25.00, dosageForm: 'tablet' },
+  { id: 'M048', name: 'Olanzapine', category: 'Mental Health', classification: 'Antipsychotics', stock: 35, minStock: 15, unit: 'tablets', price: 30.00, dosageForm: 'tablet' },
+
+  // Antipyretics
+  { id: 'M049', name: 'Aspirin', category: 'Pain Relief', classification: 'Antipyretics', stock: 180, minStock: 60, unit: 'tablets', price: 4.00, dosageForm: 'tablet' },
+
+  // Antivirals
+  { id: 'M050', name: 'Acyclovir', category: 'Antiviral', classification: 'Antivirals', stock: 70, minStock: 25, unit: 'tablets', price: 22.00, dosageForm: 'tablet' },
+  { id: 'M051', name: 'Oseltamivir', category: 'Antiviral', classification: 'Antivirals', stock: 50, minStock: 20, unit: 'capsules', price: 45.00, dosageForm: 'capsule' },
+  { id: 'M052', name: 'Zidovudine', category: 'Antiviral', classification: 'Antivirals', stock: 30, minStock: 10, unit: 'capsules', price: 80.00, dosageForm: 'capsule' },
+
+  // Barbiturates
+  { id: 'M053', name: 'Phenobarbital', category: 'Sedative', classification: 'Barbiturates', stock: 25, minStock: 10, unit: 'tablets', price: 15.00, dosageForm: 'tablet' },
+  { id: 'M054', name: 'Thiopental', category: 'Sedative', classification: 'Barbiturates', stock: 15, minStock: 5, unit: 'injections', price: 60.00, dosageForm: 'injection' },
+  { id: 'M055', name: 'Secobarbital', category: 'Sedative', classification: 'Barbiturates', stock: 20, minStock: 8, unit: 'capsules', price: 25.00, dosageForm: 'capsule' },
+
+  // Beta-Blockers
+  { id: 'M056', name: 'Atenolol', category: 'Blood Pressure', classification: 'Beta-Blockers', stock: 80, minStock: 30, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+  { id: 'M057', name: 'Metoprolol', category: 'Blood Pressure', classification: 'Beta-Blockers', stock: 85, minStock: 35, unit: 'tablets', price: 14.00, dosageForm: 'tablet' },
+  { id: 'M058', name: 'Propranolol', category: 'Blood Pressure', classification: 'Beta-Blockers', stock: 70, minStock: 25, unit: 'tablets', price: 10.00, dosageForm: 'tablet' },
+
+  // Bronchodilators
+  { id: 'M059', name: 'Salbutamol', category: 'Respiratory', classification: 'Bronchodilators', stock: 60, minStock: 25, unit: 'inhalers', price: 35.00, dosageForm: 'inhaler' },
+  { id: 'M060', name: 'Ipratropium', category: 'Respiratory', classification: 'Bronchodilators', stock: 45, minStock: 20, unit: 'inhalers', price: 40.00, dosageForm: 'inhaler' },
+  { id: 'M061', name: 'Theophylline', category: 'Respiratory', classification: 'Bronchodilators', stock: 55, minStock: 20, unit: 'tablets', price: 18.00, dosageForm: 'tablet' },
+
+  // Corticosteroids
+  { id: 'M062', name: 'Prednisone', category: 'Steroid', classification: 'Corticosteroids', stock: 100, minStock: 40, unit: 'tablets', price: 8.00, dosageForm: 'tablet' },
+  { id: 'M063', name: 'Dexamethasone', category: 'Steroid', classification: 'Corticosteroids', stock: 70, minStock: 25, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+  { id: 'M064', name: 'Hydrocortisone', category: 'Steroid', classification: 'Corticosteroids', stock: 80, minStock: 30, unit: 'cream', price: 15.00, dosageForm: 'cream' },
+
+  // Cough Suppressants
+  { id: 'M065', name: 'Dextromethorphan', category: 'Cough', classification: 'Cough Suppressants', stock: 120, minStock: 40, unit: 'syrup', price: 9.00, dosageForm: 'syrup' },
+  { id: 'M066', name: 'Codeine', category: 'Cough', classification: 'Cough Suppressants', stock: 40, minStock: 15, unit: 'syrup', price: 25.00, dosageForm: 'syrup' },
+  { id: 'M067', name: 'Benzonatate', category: 'Cough', classification: 'Cough Suppressants', stock: 60, minStock: 20, unit: 'capsules', price: 18.00, dosageForm: 'capsule' },
+
+  // Cytotoxic
+  { id: 'M068', name: 'Cisplatin', category: 'Oncology', classification: 'Cytotoxic', stock: 10, minStock: 5, unit: 'injections', price: 180.00, dosageForm: 'injection' },
+  { id: 'M069', name: 'Vincristine', category: 'Oncology', classification: 'Cytotoxic', stock: 8, minStock: 3, unit: 'injections', price: 220.00, dosageForm: 'injection' },
+  { id: 'M070', name: 'Bleomycin', category: 'Oncology', classification: 'Cytotoxic', stock: 12, minStock: 5, unit: 'injections', price: 160.00, dosageForm: 'injection' },
+
+  // Decongestants
+  { id: 'M071', name: 'Pseudoephedrine', category: 'Cold/Flu', classification: 'Decongestants', stock: 100, minStock: 35, unit: 'tablets', price: 8.00, dosageForm: 'tablet' },
+  { id: 'M072', name: 'Phenylephrine', category: 'Cold/Flu', classification: 'Decongestants', stock: 90, minStock: 30, unit: 'tablets', price: 7.00, dosageForm: 'tablet' },
+  { id: 'M073', name: 'Oxymetazoline', category: 'Cold/Flu', classification: 'Decongestants', stock: 75, minStock: 25, unit: 'drops', price: 10.00, dosageForm: 'drops' },
+
+  // Diuretics
+  { id: 'M074', name: 'Furosemide', category: 'Diuretic', classification: 'Diuretics', stock: 90, minStock: 35, unit: 'tablets', price: 8.00, dosageForm: 'tablet' },
+  { id: 'M075', name: 'Hydrochlorothiazide', category: 'Diuretic', classification: 'Diuretics', stock: 100, minStock: 40, unit: 'tablets', price: 7.00, dosageForm: 'tablet' },
+  { id: 'M076', name: 'Spironolactone', category: 'Diuretic', classification: 'Diuretics', stock: 70, minStock: 25, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+
+  // Expectorant
+  { id: 'M077', name: 'Guaifenesin', category: 'Cough', classification: 'Expectorant', stock: 110, minStock: 40, unit: 'syrup', price: 9.00, dosageForm: 'syrup' },
+  { id: 'M078', name: 'Bromhexine', category: 'Cough', classification: 'Expectorant', stock: 85, minStock: 30, unit: 'tablets', price: 8.00, dosageForm: 'tablet' },
+  { id: 'M079', name: 'Ambroxol', category: 'Cough', classification: 'Expectorant', stock: 95, minStock: 35, unit: 'syrup', price: 10.00, dosageForm: 'syrup' },
+
+  // Hypoglycemics
+  { id: 'M080', name: 'Metformin', category: 'Diabetes', classification: 'Hypoglycemics', stock: 150, minStock: 50, unit: 'tablets', price: 10.00, dosageForm: 'tablet' },
+  { id: 'M081', name: 'Glibenclamide', category: 'Diabetes', classification: 'Hypoglycemics', stock: 80, minStock: 30, unit: 'tablets', price: 12.00, dosageForm: 'tablet' },
+  { id: 'M082', name: 'Insulin', category: 'Diabetes', classification: 'Hypoglycemics', stock: 50, minStock: 20, unit: 'injections', price: 85.00, dosageForm: 'injection' },
+
+  // Immunosuppressives
+  { id: 'M083', name: 'Cyclosporine', category: 'Immunosuppressant', classification: 'Immunosuppressives', stock: 25, minStock: 10, unit: 'capsules', price: 120.00, dosageForm: 'capsule' },
+  { id: 'M084', name: 'Tacrolimus', category: 'Immunosuppressant', classification: 'Immunosuppressives', stock: 20, minStock: 8, unit: 'capsules', price: 150.00, dosageForm: 'capsule' },
+  { id: 'M085', name: 'Azathioprine', category: 'Immunosuppressant', classification: 'Immunosuppressives', stock: 30, minStock: 12, unit: 'tablets', price: 45.00, dosageForm: 'tablet' },
+
+  // Laxatives
+  { id: 'M086', name: 'Lactulose', category: 'GI', classification: 'Laxatives', stock: 90, minStock: 35, unit: 'syrup', price: 12.00, dosageForm: 'syrup' },
+  { id: 'M087', name: 'Bisacodyl', category: 'GI', classification: 'Laxatives', stock: 100, minStock: 40, unit: 'tablets', price: 7.00, dosageForm: 'tablet' },
+  { id: 'M088', name: 'Senna', category: 'GI', classification: 'Laxatives', stock: 80, minStock: 30, unit: 'tablets', price: 6.00, dosageForm: 'tablet' },
+
+  // Muscle Relaxants
+  { id: 'M089', name: 'Baclofen', category: 'Muscle Relaxant', classification: 'Muscle Relaxants', stock: 50, minStock: 20, unit: 'tablets', price: 15.00, dosageForm: 'tablet' },
+  { id: 'M090', name: 'Tizanidine', category: 'Muscle Relaxant', classification: 'Muscle Relaxants', stock: 45, minStock: 18, unit: 'tablets', price: 18.00, dosageForm: 'tablet' },
+
+  // Vitamins
+  { id: 'M091', name: 'Vitamin C', category: 'Supplement', classification: 'Vitamins', stock: 200, minStock: 60, unit: 'tablets', price: 5.00, dosageForm: 'tablet' },
+  { id: 'M092', name: 'Vitamin D', category: 'Supplement', classification: 'Vitamins', stock: 180, minStock: 50, unit: 'tablets', price: 8.00, dosageForm: 'tablet' },
+  { id: 'M093', name: 'Vitamin B Complex', category: 'Supplement', classification: 'Vitamins', stock: 160, minStock: 50, unit: 'tablets', price: 10.00, dosageForm: 'tablet' }
+];
+
+export const drugInteractions: DrugInteraction[] = [
+  { id: 'DI001', drugA: 'Warfarin', drugB: 'Aspirin', severity: 'severe', description: 'Increased risk of bleeding. Monitor INR closely.' },
+  { id: 'DI002', drugA: 'Diazepam', drugB: 'Codeine', severity: 'moderate', description: 'Enhanced sedation. Use with caution.' },
+  { id: 'DI003', drugA: 'Ibuprofen', drugB: 'Enalapril', severity: 'mild', description: 'Reduced antihypertensive effect. Monitor blood pressure.' },
+  { id: 'DI004', drugA: 'Metformin', drugB: 'Furosemide', severity: 'mild', description: 'May increase risk of lactic acidosis. Monitor renal function.' },
+  { id: 'DI005', drugA: 'Amoxicillin', drugB: 'Warfarin', severity: 'moderate', description: 'May increase anticoagulant effect. Monitor INR.' },
+  { id: 'DI006', drugA: 'Fluoxetine', drugB: 'Tramadol', severity: 'severe', description: 'Risk of serotonin syndrome. Avoid combination.' },
+  { id: 'DI007', drugA: 'Ciprofloxacin', drugB: 'Theophylline', severity: 'moderate', description: 'Increased theophylline levels. Monitor for toxicity.' },
+  { id: 'DI008', drugA: 'Amlodipine', drugB: 'Simvastatin', severity: 'moderate', description: 'Increased simvastatin levels. Limit dose to 20mg.' },
+  { id: 'DI009', drugA: 'Omeprazole', drugB: 'Clopidogrel', severity: 'severe', description: 'Reduced antiplatelet effect. Use alternative PPI.' },
+  { id: 'DI010', drugA: 'Lisinopril', drugB: 'Potassium', severity: 'moderate', description: 'Risk of hyperkalemia. Monitor potassium levels.' }
+];
+
+export let inventoryLogs: InventoryLog[] = [];
+
+export const addInventoryLog = (log: InventoryLog) => {
+  inventoryLogs.push(log);
+};
 
 export const mockPrescriptions: Prescription[] = [
   { id: 'RX001', patientId: 'P001', medication: 'Amoxicillin', dosage: '500mg', frequency: '3x daily', duration: '7 days', prescribedBy: 'Dr. Martinez', status: 'pending', date: '2026-03-14' },
