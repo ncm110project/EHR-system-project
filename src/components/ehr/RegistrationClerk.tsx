@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient } from "@/lib/ehr-data";
@@ -8,17 +8,13 @@ import { Patient } from "@/lib/ehr-data";
 const generateId = () => `RC${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function RegistrationClerk() {
-  const { patients, updatePatient, addActivity, loadPendingPatients } = useEHR();
+  const { patients, updatePatient, addActivity } = useEHR();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'pending' | 'confirmed' | 'rejected'>('pending');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [visitType, setVisitType] = useState<'opd' | 'er'>('opd');
 
-  useEffect(() => {
-    loadPendingPatients();
-  }, [loadPendingPatients]);
-
-  const pendingRegistrations = patients.filter(p => !p.registrationStatus || p.registrationStatus === 'pending');
+  const pendingRegistrations = patients.filter(p => p.department === 'registration' && (!p.registrationStatus || p.registrationStatus === 'pending'));
   const confirmedRegistrations = patients.filter(p => p.registrationStatus === 'confirmed');
   const rejectedRegistrations = patients.filter(p => p.registrationStatus === 'rejected');
 

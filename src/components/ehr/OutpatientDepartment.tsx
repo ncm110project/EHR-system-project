@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, LabOrder, Prescription } from "@/lib/ehr-data";
@@ -28,7 +28,7 @@ const commonLabTests = [
 
 export function OutpatientDepartment() {
   const { user } = useAuth();
-  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, loadPendingPatients } = useEHR();
+  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -38,10 +38,6 @@ export function OutpatientDepartment() {
   const [renderTime] = useState(() => new Date('2026-03-14T10:30:00').getTime());
   const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
   const [showPrintPreview, setShowPrintPreview] = useState<Patient | null>(null);
-
-  useEffect(() => {
-    loadPendingPatients();
-  }, [loadPendingPatients]);
 
   const isNurse = user?.role === 'nurse';
   const isDoctor = user?.role === 'doctor';
