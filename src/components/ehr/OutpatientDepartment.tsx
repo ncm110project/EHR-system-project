@@ -370,7 +370,10 @@ export function OutpatientDepartment() {
       ...patient,
       workflowStatus: 'registered' as const,
       status: 'waiting' as const,
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now }
+      diagnosis: undefined,
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now },
+      nurseVitals: undefined,
+      nurseNotes: undefined
     };
     updatePatient(updated);
     addActivity({
@@ -379,7 +382,7 @@ export function OutpatientDepartment() {
       department: 'opd' as const,
       patientId: patient.id,
       patientName: patient.name,
-      description: `Patient visit reopened for follow-up`,
+      description: `Patient visit reopened for follow-up - new chart started`,
       timestamp: now
     });
     setSelectedPatient(null);
