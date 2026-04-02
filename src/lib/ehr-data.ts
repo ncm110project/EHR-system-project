@@ -16,17 +16,87 @@ export type ShiftType = 'morning' | 'afternoon' | 'night';
 
 export type IncidentStatus = 'pending' | 'reviewed' | 'resolved';
 
+export type IncidentType = 
+  | 'medication-error'
+  | 'patient-fall'
+  | 'equipment-failure'
+  | 'needle-stick-injury'
+  | 'misidentification'
+  | 'documentation-error'
+  | 'delay-in-treatment'
+  | 'adverse-drug-reaction'
+  | 'infection-control-issue'
+  | 'other';
+
+export type IncidentLocation = 
+  | 'er'
+  | 'opd'
+  | 'laboratory'
+  | 'pharmacy'
+  | 'ward'
+  | 'icu'
+  | 'operating-room'
+  | 'waiting-area'
+  | 'other';
+
+export type SeverityLevel = 
+  | 'near-miss'
+  | 'mild'
+  | 'moderate'
+  | 'severe'
+  | 'sentinel-event';
+
+export type IncidentOutcome = 
+  | 'no-harm'
+  | 'minor-injury'
+  | 'temporary-harm'
+  | 'permanent-harm'
+  | 'death'
+  | 'unknown';
+
+export type StaffRole = 
+  | 'doctor'
+  | 'nurse'
+  | 'pharmacist'
+  | 'lab-technician'
+  | 'registration-clerk'
+  | 'other';
+
+export type ContributingFactor = 
+  | 'human-error'
+  | 'equipment-malfunction'
+  | 'communication-failure'
+  | 'high-workload'
+  | 'lack-of-training'
+  | 'system-process-failure'
+  | 'environmental-factors'
+  | 'other';
+
+export type ActionTaken = 
+  | 'notified-doctor'
+  | 'provided-first-aid'
+  | 'stopped-medication'
+  | 'replaced-equipment'
+  | 'escalated-to-supervisor'
+  | 'no-action-needed';
+
 export interface IncidentReport {
   id: string;
   reportedBy: string;
   reporterDepartment: Department;
   incidentDate: string;
   incidentTime: string;
-  incidentType: 'patient-fall' | 'medication-error' | 'equipment-failure' | 'worker-injury' | 'near-miss' | 'other';
-  incidentLocation: string;
+  incidentType: IncidentType;
+  location: IncidentLocation;
+  severity: SeverityLevel;
+  patientId?: string;
+  patientName?: string;
+  staffRoles: StaffRole[];
+  contributingFactors: ContributingFactor[];
+  actionsTaken: ActionTaken[];
+  additionalActionsTaken?: string;
+  outcome: IncidentOutcome;
   description: string;
-  personsInvolved: string;
-  actionsTaken: string;
   status: IncidentStatus;
   reviewedBy?: string;
   reviewNotes?: string;

@@ -194,17 +194,22 @@ export function NursingAdmin() {
     'patient-fall': filteredIncidents.filter(r => r.incidentType === 'patient-fall').length,
     'medication-error': filteredIncidents.filter(r => r.incidentType === 'medication-error').length,
     'equipment-failure': filteredIncidents.filter(r => r.incidentType === 'equipment-failure').length,
-    'worker-injury': filteredIncidents.filter(r => r.incidentType === 'worker-injury').length,
-    'near-miss': filteredIncidents.filter(r => r.incidentType === 'near-miss').length,
+    'needle-stick-injury': filteredIncidents.filter(r => r.incidentType === 'needle-stick-injury').length,
+    'misidentification': filteredIncidents.filter(r => r.incidentType === 'misidentification').length,
+    'documentation-error': filteredIncidents.filter(r => r.incidentType === 'documentation-error').length,
+    'delay-in-treatment': filteredIncidents.filter(r => r.incidentType === 'delay-in-treatment').length,
+    'adverse-drug-reaction': filteredIncidents.filter(r => r.incidentType === 'adverse-drug-reaction').length,
+    'infection-control-issue': filteredIncidents.filter(r => r.incidentType === 'infection-control-issue').length,
     'other': filteredIncidents.filter(r => r.incidentType === 'other').length,
   };
 
   const incidentByDept = {
-    er: filteredIncidents.filter(r => r.reporterDepartment === 'er').length,
-    opd: filteredIncidents.filter(r => r.reporterDepartment === 'opd').length,
-    lab: filteredIncidents.filter(r => r.reporterDepartment === 'lab').length,
-    pharmacy: filteredIncidents.filter(r => r.reporterDepartment === 'pharmacy').length,
-    nursing: filteredIncidents.filter(r => r.reporterDepartment === 'nursing').length,
+    er: filteredIncidents.filter(r => r.location === 'er').length,
+    opd: filteredIncidents.filter(r => r.location === 'opd').length,
+    lab: filteredIncidents.filter(r => r.location === 'laboratory').length,
+    pharmacy: filteredIncidents.filter(r => r.location === 'pharmacy').length,
+    ward: filteredIncidents.filter(r => r.location === 'ward').length,
+    icu: filteredIncidents.filter(r => r.location === 'icu').length,
   };
 
   const getMonthName = (month: number) => {
@@ -625,7 +630,7 @@ export function NursingAdmin() {
                       <span className="mx-2">|</span>
                       <span>{report.incidentDate} at {report.incidentTime}</span>
                       <span className="mx-2">|</span>
-                      <span>Location: {report.incidentLocation}</span>
+                      <span>Location: {report.location}</span>
                     </div>
                   </div>
                   <button
@@ -672,24 +677,38 @@ export function NursingAdmin() {
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-slate-500">Location</p>
-                  <p className="font-medium">{selectedIncident.incidentLocation}</p>
+                  <p className="font-medium">{selectedIncident.location}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Severity</p>
+                  <p className="font-medium">{selectedIncident.severity}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Outcome</p>
+                  <p className="font-medium">{selectedIncident.outcome}</p>
+                </div>
+                {selectedIncident.patientName && (
+                  <div>
+                    <p className="text-sm text-slate-500">Patient Involved</p>
+                    <p className="font-medium">{selectedIncident.patientName}</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-500">Staff Roles</p>
+                  <p className="font-medium">{selectedIncident.staffRoles?.join(', ') || 'None'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-500">Contributing Factors</p>
+                  <p className="font-medium">{selectedIncident.contributingFactors?.join(', ') || 'None'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-500">Actions Taken</p>
+                  <p className="font-medium">{selectedIncident.actionsTaken?.join(', ') || 'None'}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-slate-500">Description</p>
                   <p className="font-medium">{selectedIncident.description}</p>
                 </div>
-                {selectedIncident.personsInvolved && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-slate-500">Persons Involved</p>
-                    <p className="font-medium">{selectedIncident.personsInvolved}</p>
-                  </div>
-                )}
-                {selectedIncident.actionsTaken && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-slate-500">Actions Taken</p>
-                    <p className="font-medium">{selectedIncident.actionsTaken}</p>
-                  </div>
-                )}
               </div>
               <div className="border-t pt-4">
                 <label className="block text-sm font-medium text-slate-700 mb-2">Review Notes</label>
@@ -1110,11 +1129,11 @@ export function NursingAdmin() {
               <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Type</h4>
               <div className="space-y-4">
                 {[
-                  { label: 'Patient Fall', value: incidentTypeCounts['patient-fall'], color: 'bg-red-500' },
                   { label: 'Medication Error', value: incidentTypeCounts['medication-error'], color: 'bg-orange-500' },
+                  { label: 'Patient Fall', value: incidentTypeCounts['patient-fall'], color: 'bg-red-500' },
                   { label: 'Equipment Failure', value: incidentTypeCounts['equipment-failure'], color: 'bg-amber-500' },
-                  { label: 'Worker Injury', value: incidentTypeCounts['worker-injury'], color: 'bg-blue-500' },
-                  { label: 'Near Miss', value: incidentTypeCounts['near-miss'], color: 'bg-yellow-500' },
+                  { label: 'Needle Stick Injury', value: incidentTypeCounts['needle-stick-injury'], color: 'bg-blue-500' },
+                  { label: 'Adverse Drug Reaction', value: incidentTypeCounts['adverse-drug-reaction'], color: 'bg-purple-500' },
                   { label: 'Other', value: incidentTypeCounts['other'], color: 'bg-slate-500' },
                 ].map((item) => (
                   <div key={item.label}>
@@ -1132,7 +1151,7 @@ export function NursingAdmin() {
           </div>
 
           <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Department</h4>
+            <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Location</h4>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
                 {[
@@ -1140,7 +1159,8 @@ export function NursingAdmin() {
                   { label: 'Outpatient (OPD)', value: incidentByDept.opd, color: 'bg-blue-500' },
                   { label: 'Laboratory', value: incidentByDept.lab, color: 'bg-amber-500' },
                   { label: 'Pharmacy', value: incidentByDept.pharmacy, color: 'bg-purple-500' },
-                  { label: 'Nursing Admin', value: incidentByDept.nursing, color: 'bg-teal-500' },
+                  { label: 'Ward', value: incidentByDept.ward, color: 'bg-teal-500' },
+                  { label: 'ICU', value: incidentByDept.icu, color: 'bg-pink-500' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-1">
