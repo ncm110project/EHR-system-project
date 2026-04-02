@@ -130,7 +130,7 @@ export default function LandingPage() {
       emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() },
       notes: `Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
     };
 

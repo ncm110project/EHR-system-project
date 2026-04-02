@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription } from "@/lib/ehr-data";
+import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -83,7 +83,8 @@ export function EmergencyRoom() {
     heartRate: 0,
     temperature: 0,
     respiratoryRate: 0,
-    oxygenSaturation: 0
+    oxygenSaturation: 0,
+    recordedAt: new Date().toISOString()
   });
   const [selectedLabTest, setSelectedLabTest] = useState('');
   const [prescriptionData, setPrescriptionData] = useState({
@@ -135,7 +136,20 @@ export function EmergencyRoom() {
 
   const handleUpdateVitals = (patient: Patient) => {
     if (!isNurse) return;
-    updatePatient({ ...patient, vitalSigns: vitalsData });
+    const now = new Date().toISOString();
+    const nurseName = user?.name || 'ER Nurse';
+    
+    const vitalsEntry: VitalSignsEntry = {
+      vitals: { ...vitalsData, recordedAt: now },
+      timestamp: now,
+      recordedBy: nurseName
+    };
+    
+    updatePatient({ 
+      ...patient, 
+      vitalSigns: { ...vitalsData, recordedAt: now },
+      vitalSignsHistory: [...(patient.vitalSignsHistory || []), vitalsEntry]
+    });
     addActivity({
       id: generateId(),
       type: 'vitals',
@@ -143,10 +157,10 @@ export function EmergencyRoom() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Vitals updated: BP ${vitalsData.bloodPressure}, HR ${vitalsData.heartRate}`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
     setShowVitalsForm(false);
-    setVitalsData({ bloodPressure: '', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 });
+    setVitalsData({ bloodPressure: '', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now });
   };
 
   const handleOrderLab = (patient: Patient, testName: string, testType: 'blood' | 'urine' | 'imaging' | 'pathology') => {
@@ -233,7 +247,7 @@ export function EmergencyRoom() {
       admissionDate: new Date().toISOString(),
       triagePriority: notification.priority,
       chiefComplaint: notification.chiefComplaint,
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 }
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() }
     };
     updatePatient(newPatient);
     setEmtNotifications(prev => prev.map(n => 
@@ -252,6 +266,7 @@ export function EmergencyRoom() {
 
   const handleDischarge = (patient: Patient) => {
     if (!isDoctor) return;
+    const now = new Date().toISOString();
     updatePatient({ ...patient, status: 'discharged' });
     addActivity({
       id: generateId(),
@@ -260,10 +275,103 @@ export function EmergencyRoom() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Patient discharged from ER`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
     setSelectedPatient(null);
   };
+
+  const handleAddVitalsForCompleted = (patient: Patient, vitals: VitalSigns) => {
+    const now = new Date().toISOString();
+    const staffName = user?.name || 'Medical Staff';
+    
+    const vitalsEntry: VitalSignsEntry = {
+      vitals: { ...vitals, recordedAt: now },
+      timestamp: now,
+      recordedBy: staffName
+    };
+    
+    const updated = {
+      ...patient,
+      vitalSigns: { ...vitals, recordedAt: now },
+      vitalSignsHistory: [...(patient.vitalSignsHistory || []), vitalsEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'vitals' as const,
+      department: 'er' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New vitals recorded: BP ${vitals.bloodPressure}, HR ${vitals.heartRate}`,
+      timestamp: now
+    });
+  };
+
+  const handleAddNotesForCompleted = (patient: Patient, notes: string) => {
+    const now = new Date().toISOString();
+    const staffName = user?.name || 'Medical Staff';
+    
+    const notesEntry: NotesEntry = {
+      notes,
+      timestamp: now,
+      recordedBy: staffName
+    };
+    
+    const updated = {
+      ...patient,
+      notesHistory: [...(patient.notesHistory || []), notesEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission' as const,
+      department: 'er' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New progress note added`,
+      timestamp: now
+    });
+  };
+
+  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string) => {
+    const now = new Date().toISOString();
+    const doctorName = user?.name || 'Doctor';
+    
+    const diagnosisEntry: DiagnosisEntry = {
+      diagnosis,
+      timestamp: now,
+      diagnosedBy: doctorName
+    };
+    
+    const updated = {
+      ...patient,
+      diagnosis: diagnosis,
+      diagnosisHistory: [...(patient.diagnosisHistory || []), diagnosisEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission' as const,
+      department: 'er' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New diagnosis added: ${diagnosis}`,
+      timestamp: now
+    });
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString();
+  };
+
+  const isCompleted = selectedPatient?.status === 'discharged' || selectedPatient?.status === 'admitted';
+
+  const [showAddVitals, setShowAddVitals] = useState(false);
+  const [showAddNotes, setShowAddNotes] = useState(false);
+  const [showAddDiagnosis, setShowAddDiagnosis] = useState(false);
+  const [newNotes, setNewNotes] = useState('');
+  const [newDiagnosisInput, setNewDiagnosisInput] = useState('');
 
   const triageCounts = {
     1: erPatients.filter(p => p.triagePriority === 1).length,
@@ -589,16 +697,21 @@ export function EmergencyRoom() {
 
       {selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedPatient(null)}>
-          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className={`p-6 border-b border-slate-200 ${selectedPatient.triagePriority === 1 ? 'bg-red-50' : selectedPatient.triagePriority === 2 ? 'bg-orange-50' : 'bg-white'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold">{selectedPatient.name}</h3>
                   <p className="text-slate-500">{selectedPatient.id} • {selectedPatient.age} years • {selectedPatient.gender}</p>
                 </div>
-                <span className={`badge ${getTriageClass(selectedPatient.triagePriority)} px-4 py-2`}>
-                  Priority {selectedPatient.triagePriority || '?'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`badge ${getTriageClass(selectedPatient.triagePriority)} px-4 py-2`}>
+                    Priority {selectedPatient.triagePriority || '?'}
+                  </span>
+                  {isCompleted && (
+                    <span className="badge badge-success">Discharged</span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="p-6 space-y-6">
@@ -619,11 +732,17 @@ export function EmergencyRoom() {
                   <p className="text-sm text-slate-500">Status</p>
                   <p className="font-semibold capitalize">{selectedPatient.status}</p>
                 </div>
+                {selectedPatient.diagnosis && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-slate-500">Diagnosis</p>
+                    <p className="font-semibold">{selectedPatient.diagnosis}</p>
+                  </div>
+                )}
               </div>
 
               {selectedPatient.vitalSigns && (
                 <div>
-                  <h4 className="font-semibold mb-3">Vital Signs</h4>
+                  <h4 className="font-semibold mb-3">Current Vital Signs</h4>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div className="p-3 bg-slate-50 rounded-lg text-center">
                       <p className="text-xs text-slate-500">BP</p>
@@ -646,174 +765,372 @@ export function EmergencyRoom() {
                       <p className="font-semibold">{selectedPatient.vitalSigns.oxygenSaturation}%</p>
                     </div>
                   </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Recorded: {formatDateTime(selectedPatient.vitalSigns.recordedAt)}
+                  </p>
                 </div>
               )}
 
-              <div className="border-t border-slate-200 pt-4">
-                <h4 className="font-semibold mb-3">Actions</h4>
-                <div className="space-y-3">
-                  {isNurse && (
-                    <>
-                      <button 
-                        className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
-                        onClick={() => setShowVitalsForm(!showVitalsForm)}
-                      >
-                        <span className="font-medium">Record Vitals</span>
-                        <p className="text-sm text-slate-500">Update patient vital signs</p>
-                      </button>
-                      
-                      {showVitalsForm && (
-                        <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
+              {(selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0) && (
+                <div>
+                  <h4 className="font-semibold mb-3">Vital Signs History</h4>
+                  <div className="space-y-3">
+                    {selectedPatient.vitalSignsHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <div className="grid grid-cols-5 gap-2 text-sm mb-1">
+                          <div><span className="text-xs text-slate-500">BP:</span> {entry.vitals.bloodPressure}</div>
+                          <div><span className="text-xs text-slate-500">HR:</span> {entry.vitals.heartRate}</div>
+                          <div><span className="text-xs text-slate-500">Temp:</span> {entry.vitals.temperature}°F</div>
+                          <div><span className="text-xs text-slate-500">RR:</span> {entry.vitals.respiratoryRate}</div>
+                          <div><span className="text-xs text-slate-500">SpO2:</span> {entry.vitals.oxygenSaturation}%</div>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Recorded: {formatDateTime(entry.timestamp)} by {entry.recordedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPatient.diagnosisHistory && selectedPatient.diagnosisHistory.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Diagnosis History</h4>
+                  <div className="space-y-2">
+                    {selectedPatient.diagnosisHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-sm">{entry.diagnosis}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatDateTime(entry.timestamp)} by {entry.diagnosedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedPatient.notesHistory && selectedPatient.notesHistory.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3">Notes History</h4>
+                  <div className="space-y-2">
+                    {selectedPatient.notesHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-sm">{entry.notes}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatDateTime(entry.timestamp)} by {entry.recordedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isCompleted ? (
+                <div className="border-t border-slate-200 pt-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                    <p className="font-semibold text-blue-800">Patient Discharged - Chart is View Only</p>
+                    <p className="text-sm text-blue-600 mt-1">To add new entries, use the buttons below</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setShowAddVitals(!showAddVitals)}
+                      className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                      </svg>
+                      <span className="font-medium">Add New Vital Signs</span>
+                    </button>
+                    {showAddVitals && (
+                      <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Blood Pressure (e.g., 120/80)"
+                            value={vitalsData.bloodPressure}
+                            onChange={(e) => setVitalsData({...vitalsData, bloodPressure: e.target.value})}
+                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Heart Rate (e.g., 72)"
+                            value={vitalsData.heartRate || ''}
+                            onChange={(e) => setVitalsData({...vitalsData, heartRate: parseInt(e.target.value) || 0})}
+                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                          <input
+                            type="number"
+                            step="0.1"
+                            placeholder="Temperature (e.g., 98.6)"
+                            value={vitalsData.temperature || ''}
+                            onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
+                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Respiratory Rate (e.g., 16)"
+                            value={vitalsData.respiratoryRate || ''}
+                            onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: parseInt(e.target.value) || 0})}
+                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                          <input
+                            type="number"
+                            placeholder="SpO2 (e.g., 98)"
+                            value={vitalsData.oxygenSaturation || ''}
+                            onChange={(e) => setVitalsData({...vitalsData, oxygenSaturation: parseInt(e.target.value) || 0})}
+                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => {
+                            if (vitalsData.bloodPressure && vitalsData.heartRate > 0) {
+                              handleAddVitalsForCompleted(selectedPatient, vitalsData);
+                              setShowAddVitals(false);
+                              setVitalsData({ bloodPressure: '', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() });
+                            }
+                          }}
+                        >
+                          Save New Vitals
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setShowAddNotes(!showAddNotes)}
+                      className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                      <span className="font-medium">Add New Progress Note</span>
+                    </button>
+                    {showAddNotes && (
+                      <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                        <textarea
+                          value={newNotes}
+                          onChange={(e) => setNewNotes(e.target.value)}
+                          placeholder="Enter new progress note..."
+                          className="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg"
+                        />
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => {
+                            if (newNotes.trim()) {
+                              handleAddNotesForCompleted(selectedPatient, newNotes);
+                              setShowAddNotes(false);
+                              setNewNotes('');
+                            }
+                          }}
+                        >
+                          Save Note
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setShowAddDiagnosis(!showAddDiagnosis)}
+                      className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                      </svg>
+                      <span className="font-medium">Add New Diagnosis</span>
+                    </button>
+                    {showAddDiagnosis && (
+                      <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                        <textarea
+                          value={newDiagnosisInput}
+                          onChange={(e) => setNewDiagnosisInput(e.target.value)}
+                          placeholder="Enter new diagnosis..."
+                          className="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg"
+                        />
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => {
+                            if (newDiagnosisInput.trim()) {
+                              handleAddDiagnosisForCompleted(selectedPatient, newDiagnosisInput);
+                              setShowAddDiagnosis(false);
+                              setNewDiagnosisInput('');
+                            }
+                          }}
+                        >
+                          Save Diagnosis
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t border-slate-200 pt-4">
+                  <h4 className="font-semibold mb-3">Actions</h4>
+                  <div className="space-y-3">
+                    {isNurse && (
+                      <>
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowVitalsForm(!showVitalsForm)}
+                        >
+                          <span className="font-medium">Record Vitals</span>
+                          <p className="text-sm text-slate-500">Update patient vital signs</p>
+                        </button>
+                        
+                        {showVitalsForm && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                placeholder="Blood Pressure (e.g., 120/80)"
+                                value={vitalsData.bloodPressure}
+                                onChange={(e) => setVitalsData({...vitalsData, bloodPressure: e.target.value})}
+                                className="px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                              <input
+                                type="number"
+                                placeholder="Heart Rate (e.g., 72)"
+                                value={vitalsData.heartRate || ''}
+                                onChange={(e) => setVitalsData({...vitalsData, heartRate: parseInt(e.target.value) || 0})}
+                                className="px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                              <input
+                                type="number"
+                                step="0.1"
+                                placeholder="Temperature (e.g., 98.6)"
+                                value={vitalsData.temperature || ''}
+                                onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
+                                className="px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                              <input
+                                type="number"
+                                placeholder="Respiratory Rate (e.g., 16)"
+                                value={vitalsData.respiratoryRate || ''}
+                                onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: parseInt(e.target.value) || 0})}
+                                className="px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                              <input
+                                type="number"
+                                placeholder="SpO2 (e.g., 98)"
+                                value={vitalsData.oxygenSaturation || ''}
+                                onChange={(e) => setVitalsData({...vitalsData, oxygenSaturation: parseInt(e.target.value) || 0})}
+                                className="px-3 py-2 border border-slate-300 rounded-lg"
+                              />
+                            </div>
+                            <button 
+                              className="btn btn-primary"
+                              onClick={() => handleUpdateVitals(selectedPatient)}
+                            >
+                              Save Vitals
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {isDoctor && (
+                      <>
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowLabOrderForm(!showLabOrderForm)}
+                        >
+                          <span className="font-medium">Order Lab Test</span>
+                          <p className="text-sm text-slate-500">Request blood work, imaging, etc.</p>
+                        </button>
+                        
+                        {showLabOrderForm && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <select 
+                              value={selectedLabTest}
+                              onChange={(e) => setSelectedLabTest(e.target.value)}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            >
+                              <option value="">Select Lab Test</option>
+                              {commonLabTests.map((test) => (
+                                <option key={test.name} value={test.name}>{test.name}</option>
+                              ))}
+                            </select>
+                            <button 
+                              className="btn btn-primary"
+                              onClick={() => {
+                                if (selectedLabTest) {
+                                  const test = commonLabTests.find(t => t.name === selectedLabTest);
+                                  if (test) {
+                                    handleOrderLab(selectedPatient, test.name, test.type);
+                                  }
+                                }
+                              }}
+                            >
+                              Submit Lab Order
+                            </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowPrescribeForm(!showPrescribeForm)}
+                        >
+                          <span className="font-medium">Write Prescription</span>
+                          <p className="text-sm text-slate-500">Prescribe medication</p>
+                        </button>
+
+                        {showPrescribeForm && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <select 
+                              value={prescriptionData.medication}
+                              onChange={(e) => setPrescriptionData({...prescriptionData, medication: e.target.value})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            >
+                              <option value="">Select Medication</option>
+                              {medications.map(med => (
+                                <option key={med.id} value={med.name}>
+                                  {med.name} ({med.stock} {med.unit} left)
+                                </option>
+                              ))}
+                            </select>
                             <input
                               type="text"
-                              placeholder="Blood Pressure (e.g., 120/80)"
-                              value={vitalsData.bloodPressure}
-                              onChange={(e) => setVitalsData({...vitalsData, bloodPressure: e.target.value})}
-                              className="px-3 py-2 border border-slate-300 rounded-lg"
+                              placeholder="Dosage (e.g., 500mg)"
+                              value={prescriptionData.dosage}
+                              onChange={(e) => setPrescriptionData({...prescriptionData, dosage: e.target.value})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             />
                             <input
-                              type="number"
-                              placeholder="Heart Rate (e.g., 72)"
-                              value={vitalsData.heartRate || ''}
-                              onChange={(e) => setVitalsData({...vitalsData, heartRate: parseInt(e.target.value) || 0})}
-                              className="px-3 py-2 border border-slate-300 rounded-lg"
+                              type="text"
+                              placeholder="Frequency (e.g., 3x daily)"
+                              value={prescriptionData.frequency}
+                              onChange={(e) => setPrescriptionData({...prescriptionData, frequency: e.target.value})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             />
                             <input
-                              type="number"
-                              step="0.1"
-                              placeholder="Temperature (e.g., 98.6)"
-                              value={vitalsData.temperature || ''}
-                              onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
-                              className="px-3 py-2 border border-slate-300 rounded-lg"
+                              type="text"
+                              placeholder="Duration (e.g., 7 days)"
+                              value={prescriptionData.duration}
+                              onChange={(e) => setPrescriptionData({...prescriptionData, duration: e.target.value})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             />
-                            <input
-                              type="number"
-                              placeholder="Respiratory Rate (e.g., 16)"
-                              value={vitalsData.respiratoryRate || ''}
-                              onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: parseInt(e.target.value) || 0})}
-                              className="px-3 py-2 border border-slate-300 rounded-lg"
-                            />
-                            <input
-                              type="number"
-                              placeholder="SpO2 (e.g., 98)"
-                              value={vitalsData.oxygenSaturation || ''}
-                              onChange={(e) => setVitalsData({...vitalsData, oxygenSaturation: parseInt(e.target.value) || 0})}
-                              className="px-3 py-2 border border-slate-300 rounded-lg"
-                            />
+                            <button 
+                              className="btn btn-primary"
+                              onClick={() => handlePrescribe(selectedPatient)}
+                            >
+                              Submit Prescription
+                            </button>
                           </div>
-                          <button 
-                            className="btn btn-primary"
-                            onClick={() => handleUpdateVitals(selectedPatient)}
-                          >
-                            Save Vitals
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                        )}
 
-                  {isDoctor && (
-                    <>
-                      <button 
-                        className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
-                        onClick={() => setShowLabOrderForm(!showLabOrderForm)}
-                      >
-                        <span className="font-medium">Order Lab Test</span>
-                        <p className="text-sm text-slate-500">Request blood work, imaging, etc.</p>
-                      </button>
-                      
-                      {showLabOrderForm && (
-                        <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                          <select 
-                            value={selectedLabTest}
-                            onChange={(e) => setSelectedLabTest(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                          >
-                            <option value="">Select Lab Test</option>
-                            {commonLabTests.map((test) => (
-                              <option key={test.name} value={test.name}>{test.name}</option>
-                            ))}
-                          </select>
-                          <button 
-                            className="btn btn-primary"
-                            onClick={() => {
-                              if (selectedLabTest) {
-                                const test = commonLabTests.find(t => t.name === selectedLabTest);
-                                if (test) {
-                                  handleOrderLab(selectedPatient, test.name, test.type);
-                                }
-                              }
-                            }}
-                          >
-                            Submit Lab Order
-                          </button>
-                        </div>
-                      )}
-
-                      <button 
-                        className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
-                        onClick={() => setShowPrescribeForm(!showPrescribeForm)}
-                      >
-                        <span className="font-medium">Write Prescription</span>
-                        <p className="text-sm text-slate-500">Prescribe medication</p>
-                      </button>
-
-                      {showPrescribeForm && (
-                        <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                          <select 
-                            value={prescriptionData.medication}
-                            onChange={(e) => setPrescriptionData({...prescriptionData, medication: e.target.value})}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                          >
-                            <option value="">Select Medication</option>
-                            {medications.map(med => (
-                              <option key={med.id} value={med.name}>
-                                {med.name} ({med.stock} {med.unit} left)
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="text"
-                            placeholder="Dosage (e.g., 500mg)"
-                            value={prescriptionData.dosage}
-                            onChange={(e) => setPrescriptionData({...prescriptionData, dosage: e.target.value})}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Frequency (e.g., 3x daily)"
-                            value={prescriptionData.frequency}
-                            onChange={(e) => setPrescriptionData({...prescriptionData, frequency: e.target.value})}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Duration (e.g., 7 days)"
-                            value={prescriptionData.duration}
-                            onChange={(e) => setPrescriptionData({...prescriptionData, duration: e.target.value})}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <button 
-                            className="btn btn-primary"
-                            onClick={() => handlePrescribe(selectedPatient)}
-                          >
-                            Submit Prescription
-                          </button>
-                        </div>
-                      )}
-
-                      <button 
-                        className="w-full p-3 bg-green-50 border border-green-200 rounded-lg text-left hover:bg-green-100"
-                        onClick={() => handleDischarge(selectedPatient)}
-                      >
-                        <span className="font-medium text-green-700">Discharge Patient</span>
-                        <p className="text-sm text-green-600">Complete treatment and discharge</p>
-                      </button>
-                    </>
-                  )}
+                        <button 
+                          className="w-full p-3 bg-green-50 border border-green-200 rounded-lg text-left hover:bg-green-100"
+                          onClick={() => handleDischarge(selectedPatient)}
+                        >
+                          <span className="font-medium text-green-700">Discharge Patient</span>
+                          <p className="text-sm text-green-600">Complete treatment and discharge</p>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex justify-end">
                 <button 

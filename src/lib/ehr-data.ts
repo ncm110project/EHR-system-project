@@ -75,7 +75,10 @@ export interface Patient {
   prescriptions?: Prescription[];
   labOrders?: LabOrder[];
   vitalSigns?: VitalSigns;
+  vitalSignsHistory?: VitalSignsEntry[];
   notes?: string;
+  notesHistory?: NotesEntry[];
+  diagnosisHistory?: DiagnosisEntry[];
   workflowStatus?: WorkflowStatus;
   nurseNotes?: string;
   nurseVitals?: VitalSigns;
@@ -117,6 +120,26 @@ export interface VitalSigns {
   temperature: number;
   respiratoryRate: number;
   oxygenSaturation: number;
+  recordedAt: string;
+  recordedBy?: string;
+}
+
+export interface VitalSignsEntry {
+  vitals: VitalSigns;
+  timestamp: string;
+  recordedBy: string;
+}
+
+export interface DiagnosisEntry {
+  diagnosis: string;
+  timestamp: string;
+  diagnosedBy: string;
+}
+
+export interface NotesEntry {
+  notes: string;
+  timestamp: string;
+  recordedBy: string;
 }
 
 export interface Medication {
@@ -194,7 +217,7 @@ export const mockPatients: Patient[] = [
     department: 'opd',
     admissionDate: '2026-03-14',
     chiefComplaint: 'Chest pain',
-    vitalSigns: { bloodPressure: '120/80', heartRate: 72, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 98 }
+    vitalSigns: { bloodPressure: '120/80', heartRate: 72, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 98, recordedAt: '2026-03-14T10:30:00' }
   },
   {
     id: 'P002',
@@ -211,7 +234,7 @@ export const mockPatients: Patient[] = [
     admissionDate: '2026-03-14',
     triagePriority: 1,
     chiefComplaint: 'Severe abdominal pain',
-    vitalSigns: { bloodPressure: '90/60', heartRate: 110, temperature: 101.2, respiratoryRate: 22, oxygenSaturation: 95 }
+    vitalSigns: { bloodPressure: '90/60', heartRate: 110, temperature: 101.2, respiratoryRate: 22, oxygenSaturation: 95, recordedAt: '2026-03-14T09:15:00' }
   },
   {
     id: 'P003',
@@ -229,7 +252,7 @@ export const mockPatients: Patient[] = [
     triagePriority: 2,
     chiefComplaint: 'Shortness of breath',
     diagnosis: 'Pneumonia',
-    vitalSigns: { bloodPressure: '140/90', heartRate: 88, temperature: 99.8, respiratoryRate: 24, oxygenSaturation: 91 }
+    vitalSigns: { bloodPressure: '140/90', heartRate: 88, temperature: 99.8, respiratoryRate: 24, oxygenSaturation: 91, recordedAt: '2026-03-13T14:20:00' }
   },
   {
     id: 'P004',
@@ -245,7 +268,7 @@ export const mockPatients: Patient[] = [
     department: 'opd',
     admissionDate: '2026-03-12',
     diagnosis: 'Appendicitis',
-    vitalSigns: { bloodPressure: '110/70', heartRate: 68, temperature: 98.4, respiratoryRate: 14, oxygenSaturation: 99 }
+    vitalSigns: { bloodPressure: '110/70', heartRate: 68, temperature: 98.4, respiratoryRate: 14, oxygenSaturation: 99, recordedAt: '2026-03-12T11:00:00' }
   },
   {
     id: 'P005',
@@ -262,7 +285,7 @@ export const mockPatients: Patient[] = [
     admissionDate: '2026-03-14',
     triagePriority: 3,
     chiefComplaint: 'Headache and dizziness',
-    vitalSigns: { bloodPressure: '160/95', heartRate: 78, temperature: 98.2, respiratoryRate: 18, oxygenSaturation: 97 }
+    vitalSigns: { bloodPressure: '160/95', heartRate: 78, temperature: 98.2, respiratoryRate: 18, oxygenSaturation: 97, recordedAt: '2026-03-14T08:45:00' }
   },
   {
     id: 'P006',
@@ -278,7 +301,7 @@ export const mockPatients: Patient[] = [
     department: 'opd',
     admissionDate: '2026-03-14',
     chiefComplaint: 'High fever',
-    vitalSigns: { bloodPressure: '100/65', heartRate: 120, temperature: 102.4, respiratoryRate: 28, oxygenSaturation: 96 }
+    vitalSigns: { bloodPressure: '100/65', heartRate: 120, temperature: 102.4, respiratoryRate: 28, oxygenSaturation: 96, recordedAt: '2026-03-14T09:30:00' }
   },
   {
     id: 'P007',
@@ -294,7 +317,7 @@ export const mockPatients: Patient[] = [
     department: 'opd',
     admissionDate: '2026-03-10',
     diagnosis: 'Upper respiratory infection',
-    vitalSigns: { bloodPressure: '118/75', heartRate: 70, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 99 }
+    vitalSigns: { bloodPressure: '118/75', heartRate: 70, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 99, recordedAt: '2026-03-10T15:00:00' }
   },
   {
     id: 'P008',
@@ -311,7 +334,7 @@ export const mockPatients: Patient[] = [
     admissionDate: '2026-03-14',
     triagePriority: 4,
     chiefComplaint: 'Minor laceration',
-    vitalSigns: { bloodPressure: '115/72', heartRate: 76, temperature: 98.4, respiratoryRate: 15, oxygenSaturation: 99 }
+    vitalSigns: { bloodPressure: '115/72', heartRate: 76, temperature: 98.4, respiratoryRate: 15, oxygenSaturation: 99, recordedAt: '2026-03-14T10:00:00' }
   }
 ];
 

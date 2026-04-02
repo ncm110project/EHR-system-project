@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, LabOrder, Prescription } from "@/lib/ehr-data";
+import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
 import { PatientRecordPrint } from "./PatientRecordPrint";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -123,6 +123,7 @@ export function OutpatientDepartment() {
   const handleAddPatient = () => {
     if (!newPatient.name || !newPatient.age) return;
     
+    const now = new Date().toISOString();
     const patient: Patient = {
       id: generateId(),
       name: newPatient.name,
@@ -135,10 +136,13 @@ export function OutpatientDepartment() {
       allergies: [],
       status: 'waiting',
       department: 'opd',
-      admissionDate: new Date().toISOString().split('T')[0],
+      admissionDate: now.split('T')[0],
       chiefComplaint: newPatient.chiefComplaint,
       workflowStatus: 'registered',
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 }
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now },
+      vitalSignsHistory: [],
+      notesHistory: [],
+      diagnosisHistory: []
     };
     
     addPatient(patient);
@@ -149,16 +153,34 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `New patient registered - ${patient.chiefComplaint || 'General visit'}`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
     setNewPatient({ name: "", age: "", gender: "Male", phone: "", chiefComplaint: "" });
   };
 
   const handleSaveNurseNotes = (patient: Patient, vitals: VitalSigns, notes: string) => {
+    const now = new Date().toISOString();
+    const nurseName = user?.name || 'Nurse';
+    
+    const vitalsEntry: VitalSignsEntry = {
+      vitals: { ...vitals, recordedAt: now },
+      timestamp: now,
+      recordedBy: nurseName
+    };
+    
+    const notesEntry: NotesEntry = {
+      notes,
+      timestamp: now,
+      recordedBy: nurseName
+    };
+    
     const updated = {
       ...patient,
       nurseVitals: vitals,
       nurseNotes: notes,
+      vitalSigns: vitals,
+      vitalSignsHistory: [...(patient.vitalSignsHistory || []), vitalsEntry],
+      notesHistory: [...(patient.notesHistory || []), notesEntry],
       workflowStatus: 'nurse-completed' as const,
       status: 'in-treatment' as const
     };
@@ -170,12 +192,13 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Nurse completed assessment - sent to doctor`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
     setSelectedPatient(null);
   };
 
   const handleSendToDoctor = (patient: Patient) => {
+    const now = new Date().toISOString();
     const updated = {
       ...patient,
       workflowStatus: 'nurse-completed' as const
@@ -188,11 +211,12 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Sent to doctor for consultation`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
   };
 
   const handleOrderLab = (patient: Patient, testName: string, testType: 'blood' | 'urine' | 'imaging' | 'pathology') => {
+    const now = new Date().toISOString();
     const order: LabOrder = {
       id: generateId(),
       patientId: patient.id,
@@ -200,7 +224,7 @@ export function OutpatientDepartment() {
       testType,
       status: 'pending',
       orderedBy: user?.name || 'Doctor',
-      date: new Date().toISOString().split('T')[0]
+      date: now.split('T')[0]
     };
     addLabOrder(order);
     addActivity({
@@ -210,11 +234,12 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Lab test ordered: ${testName}`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
   };
 
   const handlePrescribe = (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => {
+    const now = new Date().toISOString();
     const rx: Prescription = {
       id: generateId(),
       patientId: patient.id,
@@ -224,7 +249,7 @@ export function OutpatientDepartment() {
       duration,
       prescribedBy: user?.name || 'Doctor',
       status: 'pending',
-      date: new Date().toISOString().split('T')[0]
+      date: now.split('T')[0]
     };
     addPrescription(rx);
     addActivity({
@@ -234,14 +259,24 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Prescription written: ${medication}`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
   };
 
   const handleCompleteDoctorVisit = (patient: Patient, diagnosis: string) => {
+    const now = new Date().toISOString();
+    const doctorName = user?.name || 'Doctor';
+    
+    const diagnosisEntry: DiagnosisEntry = {
+      diagnosis,
+      timestamp: now,
+      diagnosedBy: doctorName
+    };
+    
     const updated = {
       ...patient,
       diagnosis,
+      diagnosisHistory: [...(patient.diagnosisHistory || []), diagnosisEntry],
       workflowStatus: 'doctor-completed' as const,
       status: 'admitted' as const
     };
@@ -249,14 +284,93 @@ export function OutpatientDepartment() {
     setSelectedPatient(null);
   };
 
+  const handleAddVitalsForCompleted = (patient: Patient, vitals: VitalSigns) => {
+    const now = new Date().toISOString();
+    const nurseName = user?.name || 'Medical Staff';
+    
+    const vitalsEntry: VitalSignsEntry = {
+      vitals: { ...vitals, recordedAt: now },
+      timestamp: now,
+      recordedBy: nurseName
+    };
+    
+    const updated = {
+      ...patient,
+      vitalSigns: { ...vitals, recordedAt: now },
+      vitalSignsHistory: [...(patient.vitalSignsHistory || []), vitalsEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'vitals' as const,
+      department: 'opd' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New vitals recorded: BP ${vitals.bloodPressure}, HR ${vitals.heartRate}`,
+      timestamp: now
+    });
+  };
+
+  const handleAddNotesForCompleted = (patient: Patient, notes: string) => {
+    const now = new Date().toISOString();
+    const staffName = user?.name || 'Medical Staff';
+    
+    const notesEntry: NotesEntry = {
+      notes,
+      timestamp: now,
+      recordedBy: staffName
+    };
+    
+    const updated = {
+      ...patient,
+      notesHistory: [...(patient.notesHistory || []), notesEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission' as const,
+      department: 'opd' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New progress note added`,
+      timestamp: now
+    });
+  };
+
+  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string) => {
+    const now = new Date().toISOString();
+    const doctorName = user?.name || 'Doctor';
+    
+    const diagnosisEntry: DiagnosisEntry = {
+      diagnosis,
+      timestamp: now,
+      diagnosedBy: doctorName
+    };
+    
+    const updated = {
+      ...patient,
+      diagnosis: diagnosis,
+      diagnosisHistory: [...(patient.diagnosisHistory || []), diagnosisEntry]
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission' as const,
+      department: 'opd' as const,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `New diagnosis added: ${diagnosis}`,
+      timestamp: now
+    });
+  };
+
   const handleReopenVisit = (patient: Patient) => {
+    const now = new Date().toISOString();
     const updated = {
       ...patient,
       workflowStatus: 'registered' as const,
       status: 'waiting' as const,
-      diagnosis: '',
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0 },
-      nurseNotes: ''
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now }
     };
     updatePatient(updated);
     addActivity({
@@ -266,7 +380,7 @@ export function OutpatientDepartment() {
       patientId: patient.id,
       patientName: patient.name,
       description: `Patient visit reopened for follow-up`,
-      timestamp: new Date().toISOString()
+      timestamp: now
     });
     setSelectedPatient(null);
   };
@@ -381,6 +495,9 @@ export function OutpatientDepartment() {
           onCompleteVisit={handleCompleteDoctorVisit}
           onPrint={(p) => setShowPrintPreview(p)}
           onReopenVisit={handleReopenVisit}
+          onAddVitals={handleAddVitalsForCompleted}
+          onAddNotes={handleAddNotesForCompleted}
+          onAddDiagnosis={handleAddDiagnosisForCompleted}
         />
       )}
 
@@ -406,27 +523,34 @@ function PatientDetailModal({
   onPrescribe,
   onCompleteVisit,
   onPrint,
-  onReopenVisit
+  onReopenVisit,
+  onAddVitals,
+  onAddNotes,
+  onAddDiagnosis
 }: { 
   patient: Patient;
   isNurse: boolean;
   isDoctor: boolean;
   medications: any[];
   onClose: () => void;
-  onSaveNurseNotes: (patient: Patient, vitals: any, notes: string) => void;
+  onSaveNurseNotes: (patient: Patient, vitals: VitalSigns, notes: string) => void;
   onSendToDoctor: (patient: Patient) => void;
   onOrderLab: (patient: Patient, testName: string, testType: any) => void;
   onPrescribe: (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => void;
   onCompleteVisit: (patient: Patient, diagnosis: string) => void;
   onPrint: (patient: Patient) => void;
   onReopenVisit: (patient: Patient) => void;
+  onAddVitals?: (patient: Patient, vitals: VitalSigns) => void;
+  onAddNotes?: (patient: Patient, notes: string) => void;
+  onAddDiagnosis?: (patient: Patient, diagnosis: string) => void;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
     bloodPressure: '',
     heartRate: 0,
     temperature: 0,
     respiratoryRate: 0,
-    oxygenSaturation: 0
+    oxygenSaturation: 0,
+    recordedAt: new Date().toISOString()
   });
   const [notes, setNotes] = useState(patient.nurseNotes || '');
   const [showLabOrder, setShowLabOrder] = useState(false);
@@ -435,6 +559,19 @@ function PatientDetailModal({
   const [labTestType, setLabTestType] = useState<'blood' | 'urine' | 'imaging' | 'pathology'>('blood');
   const [prescription, setPrescription] = useState({ medication: '', dosage: '', frequency: 'OD', route: 'Oral', duration: '', instructions: '' });
   const [diagnosis, setDiagnosis] = useState(patient.diagnosis || '');
+  const [showAddVitals, setShowAddVitals] = useState(false);
+  const [showAddNotes, setShowAddNotes] = useState(false);
+  const [showAddDiagnosis, setShowAddDiagnosis] = useState(false);
+  const [newNotes, setNewNotes] = useState('');
+  const [newDiagnosisInput, setNewDiagnosisInput] = useState('');
+
+  const isCompleted = patient.workflowStatus === 'doctor-completed';
+  const canAddNew = isCompleted && (onAddVitals || onAddNotes || onAddDiagnosis);
+
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleString();
+  };
 
   const handleSave = () => {
     if (isNurse) {
@@ -442,14 +579,48 @@ function PatientDetailModal({
     }
   };
 
+  const handleAddVitals = () => {
+    if (onAddVitals && vitals.bloodPressure && vitals.heartRate > 0) {
+      onAddVitals(patient, vitals);
+      setShowAddVitals(false);
+      setVitals({
+        bloodPressure: '',
+        heartRate: 0,
+        temperature: 0,
+        respiratoryRate: 0,
+        oxygenSaturation: 0,
+        recordedAt: new Date().toISOString()
+      });
+    }
+  };
+
+  const handleAddNotes = () => {
+    if (onAddNotes && newNotes.trim()) {
+      onAddNotes(patient, newNotes);
+      setShowAddNotes(false);
+      setNewNotes('');
+    }
+  };
+
+  const handleAddDiagnosis = () => {
+    if (onAddDiagnosis && newDiagnosisInput.trim()) {
+      onAddDiagnosis(patient, newDiagnosisInput);
+      setShowAddDiagnosis(false);
+      setNewDiagnosisInput('');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold">{patient.name}</h3>
             <p className="text-slate-500">{patient.id} • {patient.age} years • {patient.gender}</p>
           </div>
+          {isCompleted && (
+            <span className="badge badge-success">Completed - View Only</span>
+          )}
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -752,12 +923,198 @@ function PatientDetailModal({
           {patient.workflowStatus === 'doctor-completed' && (
             <div className="border-t border-slate-200 pt-4">
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="font-semibold text-green-800">Visit Completed</p>
-                {patient.diagnosis && <p className="text-sm text-green-700 mt-1">Diagnosis: {patient.diagnosis}</p>}
+                <p className="font-semibold text-green-800">Visit Completed - Chart is View Only</p>
+                <p className="text-sm text-green-600 mt-1">To add new entries, use the buttons below</p>
               </div>
+
+              {patient.diagnosis && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Current Diagnosis</h4>
+                  <div className="bg-slate-50 p-3 rounded-lg">
+                    <p>{patient.diagnosis}</p>
+                  </div>
+                </div>
+              )}
+
+              {patient.diagnosisHistory && patient.diagnosisHistory.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Diagnosis History</h4>
+                  <div className="space-y-2">
+                    {patient.diagnosisHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-sm">{entry.diagnosis}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatDateTime(entry.timestamp)} by {entry.diagnosedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(patient.vitalSignsHistory && patient.vitalSignsHistory.length > 0) && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Vital Signs History</h4>
+                  <div className="space-y-3">
+                    {patient.vitalSignsHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <div className="grid grid-cols-5 gap-2 text-sm mb-1">
+                          <div><span className="text-xs text-slate-500">BP:</span> {entry.vitals.bloodPressure}</div>
+                          <div><span className="text-xs text-slate-500">HR:</span> {entry.vitals.heartRate}</div>
+                          <div><span className="text-xs text-slate-500">Temp:</span> {entry.vitals.temperature}°F</div>
+                          <div><span className="text-xs text-slate-500">RR:</span> {entry.vitals.respiratoryRate}</div>
+                          <div><span className="text-xs text-slate-500">SpO2:</span> {entry.vitals.oxygenSaturation}%</div>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Recorded: {formatDateTime(entry.timestamp)} by {entry.recordedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {patient.notesHistory && patient.notesHistory.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Notes History</h4>
+                  <div className="space-y-2">
+                    {patient.notesHistory.map((entry, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-sm">{entry.notes}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatDateTime(entry.timestamp)} by {entry.recordedBy}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={() => setShowAddVitals(!showAddVitals)}
+                  className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                  </svg>
+                  <span className="font-medium">Add New Vital Signs</span>
+                </button>
+                {showAddVitals && (
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-500">Blood Pressure</label>
+                        <input
+                          type="text"
+                          placeholder="120/80"
+                          value={vitals.bloodPressure}
+                          onChange={(e) => setVitals({...vitals, bloodPressure: e.target.value})}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500">Heart Rate</label>
+                        <input
+                          type="number"
+                          placeholder="72"
+                          value={vitals.heartRate || ''}
+                          onChange={(e) => setVitals({...vitals, heartRate: parseInt(e.target.value) || 0})}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500">Temperature (°F)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="98.6"
+                          value={vitals.temperature || ''}
+                          onChange={(e) => setVitals({...vitals, temperature: parseFloat(e.target.value) || 0})}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500">Respiratory Rate</label>
+                        <input
+                          type="number"
+                          placeholder="16"
+                          value={vitals.respiratoryRate || ''}
+                          onChange={(e) => setVitals({...vitals, respiratoryRate: parseInt(e.target.value) || 0})}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-500">Oxygen Saturation (%)</label>
+                        <input
+                          type="number"
+                          placeholder="98"
+                          value={vitals.oxygenSaturation || ''}
+                          onChange={(e) => setVitals({...vitals, oxygenSaturation: parseInt(e.target.value) || 0})}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                    <button className="btn btn-primary" onClick={handleAddVitals}>
+                      Save New Vitals
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowAddNotes(!showAddNotes)}
+                  className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                  <span className="font-medium">Add New Progress Note</span>
+                </button>
+                {showAddNotes && (
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                    <textarea
+                      value={newNotes}
+                      onChange={(e) => setNewNotes(e.target.value)}
+                      placeholder="Enter new progress note..."
+                      className="w-full h-24"
+                    />
+                    <button className="btn btn-primary" onClick={handleAddNotes}>
+                      Save Note
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowAddDiagnosis(!showAddDiagnosis)}
+                  className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <span className="font-medium">Add New Diagnosis</span>
+                </button>
+                {showAddDiagnosis && (
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                    <textarea
+                      value={newDiagnosisInput}
+                      onChange={(e) => setNewDiagnosisInput(e.target.value)}
+                      placeholder="Enter new diagnosis..."
+                      className="w-full h-24"
+                    />
+                    <button className="btn btn-primary" onClick={handleAddDiagnosis}>
+                      Save Diagnosis
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => onPrint(patient)}
-                className="mt-3 w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                className="mt-4 w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="6 9 6 2 18 2 18 9"></polyline>
