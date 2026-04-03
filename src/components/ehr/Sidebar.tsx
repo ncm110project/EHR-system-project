@@ -67,7 +67,9 @@ export function Sidebar() {
   const getVisibleDepartments = () => {
     if (!user) return allDepartments;
     
-    switch (user.department) {
+    const userDept = 'department' in user ? user.department : 'dashboard';
+    
+    switch (userDept) {
       case 'registration':
         return allDepartments.filter(d => d.id === 'registration');
       case 'opd':
@@ -86,6 +88,14 @@ export function Sidebar() {
   };
 
   const visibleDepartments = getVisibleDepartments();
+  
+  const getUserDisplayName = () => user?.name || 'User';
+  
+  const getUserDeptName = () => {
+    if (!user) return 'Staff';
+    if ('departmentName' in user) return user.departmentName;
+    return 'Patient';
+  };
 
   return (
     <aside className="w-[280px] bg-[#1E293B] min-h-screen flex flex-col text-white">
@@ -132,8 +142,8 @@ export function Sidebar() {
             {user ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'U'}
           </div>
           <div>
-            <p className="text-sm font-medium">{user?.name || 'User'}</p>
-            <p className="text-xs text-slate-400">{user?.departmentName || 'Department'}</p>
+            <p className="text-sm font-medium">{getUserDisplayName()}</p>
+            <p className="text-xs text-slate-400">{getUserDeptName()}</p>
           </div>
         </div>
       </div>

@@ -44,8 +44,8 @@ export function EmergencyRoom() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<'patients' | 'emt' | 'orders'>('patients');
   
-  const isNurse = user?.role === 'nurse';
-  const isDoctor = user?.role === 'doctor';
+  const isNurse = !!(user && 'role' in user && user.role === 'nurse');
+  const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
 
   const erPatients = patients.filter(p => p.department === 'er');
   const sortedByPriority = [...erPatients].sort((a, b) => (a.triagePriority || 5) - (b.triagePriority || 5));

@@ -36,14 +36,24 @@ export function Header() {
     router.push("/login");
   };
 
+  const getUserRole = () => {
+    if (!user) return 'unknown';
+    if ('role' in user) return user.role;
+    return 'patient';
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'doctor': return 'bg-blue-100 text-blue-700';
       case 'nurse': return 'bg-green-100 text-green-700';
       case 'admin': return 'bg-purple-100 text-purple-700';
+      case 'clerk': return 'bg-amber-100 text-amber-700';
+      case 'patient': return 'bg-teal-100 text-teal-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
+
+  const userRole = getUserRole();
 
   return (
     <>
@@ -137,8 +147,8 @@ export function Header() {
               <div className="text-right">
                 <p className="text-sm font-medium">{user.name}</p>
                 <div className="flex items-center gap-2 justify-end">
-                  <span className={`text-xs px-2 py-0.5 rounded ${getRoleBadgeColor(user.role)}`}>
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  <span className={`text-xs px-2 py-0.5 rounded ${getRoleBadgeColor(userRole)}`}>
+                    {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                   </span>
                 </div>
               </div>

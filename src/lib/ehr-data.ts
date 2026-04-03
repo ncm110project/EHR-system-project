@@ -8,7 +8,7 @@ export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration';
 
-export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk';
+export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient';
 
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
@@ -160,6 +160,12 @@ export interface Patient {
   chartVerificationStatus?: ChartVerificationStatus;
   verifiedBy?: string;
   verifiedAt?: string;
+  hasPatientAccount?: boolean;
+  username?: string;
+  password?: string;
+  followUpDate?: string;
+  followUpTime?: string;
+  reminderEnabled?: boolean;
 }
 
 export interface Prescription {

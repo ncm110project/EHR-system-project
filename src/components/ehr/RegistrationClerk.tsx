@@ -10,19 +10,33 @@ const generateId = () => `RC${Date.now()}-${Math.random().toString(36).slice(2, 
 export function RegistrationClerk() {
   const { patients, updatePatient, addActivity } = useEHR();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'pending' | 'confirmed' | 'rejected'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'confirmed' | 'rejected' | 'accounts'>('pending');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [visitType, setVisitType] = useState<'opd' | 'er'>('opd');
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [newAccount, setNewAccount] = useState({
+    patientId: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+    followUpDate: '',
+    followUpTime: '',
+    reminderEnabled: true
+  });
+  const [accountError, setAccountError] = useState('');
+  const [accountSuccess, setAccountSuccess] = useState('');
 
   const pendingRegistrations = patients.filter(p => p.department === 'registration' && (!p.registrationStatus || p.registrationStatus === 'pending'));
   const confirmedRegistrations = patients.filter(p => p.registrationStatus === 'confirmed');
   const rejectedRegistrations = patients.filter(p => p.registrationStatus === 'rejected');
+  const patientsWithAccounts = patients.filter(p => p.hasPatientAccount);
 
   const getFilteredPatients = () => {
     switch (activeTab) {
       case 'pending': return pendingRegistrations;
       case 'confirmed': return confirmedRegistrations;
       case 'rejected': return rejectedRegistrations;
+      case 'accounts': return patientsWithAccounts;
       default: return pendingRegistrations;
     }
   };
@@ -74,6 +88,70 @@ export function RegistrationClerk() {
     };
     updatePatient(updatedPatient);
     setSelectedPatient(updatedPatient);
+  };
+
+  const handleCreatePatientAccount = () => {
+    setAccountError('');
+    setAccountSuccess('');
+    
+    if (!newAccount.patientId) {
+      setAccountError('Please select a patient');
+      return;
+    }
+    if (!newAccount.username || !newAccount.password) {
+      setAccountError('Username and password are required');
+      return;
+    }
+    if (newAccount.password !== newAccount.confirmPassword) {
+      setAccountError('Passwords do not match');
+      return;
+    }
+    
+    const patient = patients.find(p => p.id === newAccount.patientId);
+    if (!patient) {
+      setAccountError('Patient not found');
+      return;
+    }
+    
+    const existingWithUsername = patients.find(p => p.username === newAccount.username && p.id !== newAccount.patientId);
+    if (existingWithUsername) {
+      setAccountError('Username already exists');
+      return;
+    }
+    
+    const updatedPatient: Patient = {
+      ...patient,
+      hasPatientAccount: true,
+      username: newAccount.username,
+      password: newAccount.password,
+      followUpDate: newAccount.followUpDate || undefined,
+      followUpTime: newAccount.followUpTime || undefined,
+      reminderEnabled: newAccount.reminderEnabled
+    };
+    
+    updatePatient(updatedPatient);
+    addActivity({
+      id: generateId(),
+      type: 'admission',
+      department: 'registration',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Patient account created - Username: ${newAccount.username}`,
+      timestamp: new Date().toISOString()
+    });
+    
+    setAccountSuccess('Patient account created successfully!');
+    setNewAccount({
+      patientId: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      followUpDate: '',
+      followUpTime: '',
+      reminderEnabled: true
+    });
+    setShowCreateAccount(false);
+    setTimeout(() => setAccountSuccess(''), 3000);
   };
 
   const filteredPatients = getFilteredPatients();
@@ -157,6 +235,14 @@ export function RegistrationClerk() {
           }`}
         >
           Rejected ({rejectedRegistrations.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('accounts')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'accounts' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Patient Accounts ({patientsWithAccounts.length})
         </button>
       </div>
 
@@ -388,10 +474,156 @@ export function RegistrationClerk() {
                   </span>
                 )}
               </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {activeTab === 'accounts' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Patient Accounts</h3>
+              <button
+                onClick={() => setShowCreateAccount(!showCreateAccount)}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              >
+                + Create Account
+              </button>
+            </div>
+
+            {showCreateAccount && (
+              <div className="card p-6 space-y-4">
+                <h4 className="font-medium">Create Patient Account</h4>
+                
+                {accountError && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{accountError}</div>
+                )}
+                {accountSuccess && (
+                  <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{accountSuccess}</div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Patient</label>
+                    <select
+                      value={newAccount.patientId}
+                      onChange={(e) => setNewAccount({...newAccount, patientId: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    >
+                      <option value="">Select a patient</option>
+                      {patients.filter(p => !p.hasPatientAccount && p.registrationStatus === 'confirmed').map((p) => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.id})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input
+                      type="text"
+                      value={newAccount.username}
+                      onChange={(e) => setNewAccount({...newAccount, username: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="Enter username"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={newAccount.password}
+                      onChange={(e) => setNewAccount({...newAccount, password: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="Enter password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
+                    <input
+                      type="password"
+                      value={newAccount.confirmPassword}
+                      onChange={(e) => setNewAccount({...newAccount, confirmPassword: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="Confirm password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Follow-up Date (Optional)</label>
+                    <input
+                      type="date"
+                      value={newAccount.followUpDate}
+                      onChange={(e) => setNewAccount({...newAccount, followUpDate: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Follow-up Time (Optional)</label>
+                    <input
+                      type="time"
+                      value={newAccount.followUpTime}
+                      onChange={(e) => setNewAccount({...newAccount, followUpTime: e.target.value})}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="reminderEnabled"
+                    checked={newAccount.reminderEnabled}
+                    onChange={(e) => setNewAccount({...newAccount, reminderEnabled: e.target.checked})}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="reminderEnabled" className="text-sm">Enable follow-up reminders</label>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCreatePatientAccount}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  >
+                    Create Account
+                  </button>
+                  <button
+                    onClick={() => setShowCreateAccount(false)}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="card">
+              <div className="p-4 border-b border-slate-200">
+                <h4 className="font-semibold">Patients with Accounts</h4>
+              </div>
+              <div className="divide-y divide-slate-200">
+                {patientsWithAccounts.map((patient) => (
+                  <div key={patient.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{patient.name}</p>
+                        <p className="text-sm text-slate-500">{patient.id} - Username: {patient.username}</p>
+                      </div>
+                      <div className="text-right">
+                        {patient.followUpDate && (
+                          <p className="text-sm text-slate-600">
+                            Follow-up: {patient.followUpDate} {patient.followUpTime || ''}
+                          </p>
+                        )}
+                        <span className="badge badge-success">Active Account</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {patientsWithAccounts.length === 0 && (
+                  <div className="p-8 text-center text-slate-500">No patient accounts created yet</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   );
 }

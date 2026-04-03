@@ -39,8 +39,8 @@ export function OutpatientDepartment() {
   const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
   const [showPrintPreview, setShowPrintPreview] = useState<Patient | null>(null);
 
-  const isNurse = user?.role === 'nurse';
-  const isDoctor = user?.role === 'doctor';
+  const isNurse = !!(user && 'role' in user && user.role === 'nurse');
+  const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
 
   const opdPatients = patients.filter(p => p.department === 'opd' && p.registrationStatus === 'confirmed');
   
