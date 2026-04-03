@@ -278,7 +278,8 @@ export function OutpatientDepartment() {
       diagnosis,
       diagnosisHistory: [...(patient.diagnosisHistory || []), diagnosisEntry],
       workflowStatus: 'doctor-completed' as const,
-      status: 'admitted' as const
+      status: 'admitted' as const,
+      chartVerificationStatus: 'pending' as const
     };
     updatePatient(updated);
     setSelectedPatient(null);

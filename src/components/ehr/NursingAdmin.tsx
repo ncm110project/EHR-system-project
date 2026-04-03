@@ -33,7 +33,7 @@ const getWeeksInMonth = (year: number, month: number) => {
 };
 
 export function NursingAdmin() {
-  const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders } = useEHR();
+  const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders, updatePatient } = useEHR();
   const { user } = useAuth();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
   const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics'>('roster');
@@ -42,6 +42,66 @@ export function NursingAdmin() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedWeek, setSelectedWeek] = useState<number>(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+
+  const pendingVerificationCharts = patients.filter(p => 
+    p.workflowStatus === 'doctor-completed' && p.chartVerificationStatus === 'pending'
+  );
+
+  const verifiedCharts = patients.filter(p => 
+    p.chartVerificationStatus === 'verified'
+  );
+
+  const getFilteredPatients = () => {
+    if (!searchTerm) return pendingVerificationCharts;
+    return pendingVerificationCharts.filter(p => 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const handleVerifyChart = (patient: any) => {
+    const now = new Date().toISOString();
+    const updated = {
+      ...patient,
+      chartVerificationStatus: 'verified' as const,
+      verifiedBy: user?.name || 'Nursing Admin',
+      verifiedAt: now
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission',
+      department: 'nursing',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Chart verified by Nursing Admin`,
+      timestamp: now
+    });
+    setSelectedPatient(null);
+  };
+
+  const handleRejectChart = (patient: any, reason: string) => {
+    const now = new Date().toISOString();
+    const updated = {
+      ...patient,
+      chartVerificationStatus: 'rejected' as const,
+      verifiedBy: user?.name || 'Nursing Admin',
+      verifiedAt: now
+    };
+    updatePatient(updated);
+    addActivity({
+      id: generateId(),
+      type: 'admission',
+      department: 'nursing',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Chart rejected: ${reason}`,
+      timestamp: now
+    });
+    setSelectedPatient(null);
+  };
 
   const availableYears = useMemo(() => {
     const years = new Set<number>();

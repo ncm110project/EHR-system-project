@@ -4,6 +4,8 @@ export type WorkflowStatus = 'registered' | 'nurse-pending' | 'nurse-completed' 
 
 export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected';
 
+export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
+
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration';
 
 export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk';
@@ -155,6 +157,9 @@ export interface Patient {
   email?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
+  chartVerificationStatus?: ChartVerificationStatus;
+  verifiedBy?: string;
+  verifiedAt?: string;
 }
 
 export interface Prescription {
