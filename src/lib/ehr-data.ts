@@ -104,6 +104,38 @@ export type StaffRole =
   | 'registration-clerk'
   | 'other';
 
+export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+export interface TransferRecord {
+  id: string;
+  patientId: string;
+  patientName: string;
+  fromDepartment: Department;
+  toDepartment: Department;
+  reason: string;
+  transferredBy: string;
+  transferredAt: string;
+  status: TransferStatus;
+  notes?: string;
+}
+
+export type FollowUpStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show';
+
+export interface FollowUp {
+  id: string;
+  patientId: string;
+  patientName: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  department: Department;
+  doctorId?: string;
+  doctorName?: string;
+  reason: string;
+  status: FollowUpStatus;
+  completedAt?: string;
+  notes?: string;
+}
+
 export type ContributingFactor = 
   | 'human-error'
   | 'equipment-malfunction'
@@ -210,6 +242,8 @@ export interface Patient {
   reminderEnabled?: boolean;
   appointmentHistory?: Appointment[];
   billingHistory?: BillingRecord[];
+  transferHistory?: TransferRecord[];
+  followUps?: FollowUp[];
 }
 
 export interface BillingRecord {

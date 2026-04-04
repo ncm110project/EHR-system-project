@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
 import { useAuth } from "@/lib/auth-context";
+import { FollowUpManager } from "./FollowUpManager";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -36,7 +37,7 @@ export function NursingAdmin() {
   const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders, updatePatient } = useEHR();
   const { user } = useAuth();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics' | 'patients'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics' | 'patients' | 'followups'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -510,6 +511,12 @@ export function NursingAdmin() {
           <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
             {patients.length}
           </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('followups')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'followups' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          Follow-ups
         </button>
       </div>
 
@@ -1442,9 +1449,13 @@ export function NursingAdmin() {
                   </div>
                 </div>
               </div>
-            )}
+              )}
           </div>
         )}
+
+        {activeTab === 'followups' && (
+          <FollowUpManager />
+        )}
       </div>
-  );
-}
+    );
+  }

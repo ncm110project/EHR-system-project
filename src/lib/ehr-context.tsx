@@ -14,6 +14,8 @@ import {
   Appointment,
   AuditLog,
   BillingRecord,
+  TransferRecord,
+  FollowUp,
   mockPatients,
   mockMedications,
   mockPrescriptions,
@@ -51,6 +53,9 @@ interface EHRContextType {
   addAppointment: (appointment: Appointment) => void;
   updateAppointment: (appointment: Appointment) => void;
   addAuditLog: (log: AuditLog) => void;
+  transferPatient: (patient: Patient, toDepartment: Department, reason: string, transferredBy: string) => void;
+  addFollowUp: (followUp: FollowUp) => void;
+  updateFollowUp: (followUp: FollowUp) => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -232,6 +237,61 @@ export function EHRProvider({ children }: EHRProviderProps) {
     localStorage.setItem('auditLogs', JSON.stringify([log, ...existing]));
   }, []);
 
+  const transferPatient = useCallback((patient: Patient, toDepartment: Department, reason: string, transferredBy: string) => {
+    const transferRecord: TransferRecord = {
+      id: `TRF-${Date.now()}`,
+      patientId: patient.id,
+      patientName: patient.name,
+      fromDepartment: patient.department,
+      toDepartment,
+      reason,
+      transferredBy,
+      transferredAt: new Date().toISOString(),
+      status: 'completed'
+    };
+    
+    const updatedPatient: Patient = {
+      ...patient,
+      department: toDepartment,
+      transferHistory: [...(patient.transferHistory || []), transferRecord]
+    };
+    
+    setPatients(prev => prev.map(p => p.id === patient.id ? updatedPatient : p));
+    
+    addActivity({
+      id: `ACT-${Date.now()}`,
+      type: 'transfer',
+      department: toDepartment,
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Transferred from ${patient.department} to ${toDepartment}: ${reason}`,
+      timestamp: new Date().toISOString()
+    });
+  }, []);
+
+  const addFollowUp = useCallback((followUp: FollowUp) => {
+    const patient = patients.find(p => p.id === followUp.patientId);
+    if (patient) {
+      const updatedPatient: Patient = {
+        ...patient,
+        followUps: [...(patient.followUps || []), followUp]
+      };
+      setPatients(prev => prev.map(p => p.id === followUp.patientId ? updatedPatient : p));
+    }
+  }, [patients]);
+
+  const updateFollowUp = useCallback((followUp: FollowUp) => {
+    const patient = patients.find(p => p.id === followUp.patientId);
+    if (patient && patient.followUps) {
+      const updatedFollowUps = patient.followUps.map(f => f.id === followUp.id ? followUp : f);
+      const updatedPatient: Patient = {
+        ...patient,
+        followUps: updatedFollowUps
+      };
+      setPatients(prev => prev.map(p => p.id === followUp.patientId ? updatedPatient : p));
+    }
+  }, [patients]);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -261,7 +321,10 @@ export function EHRProvider({ children }: EHRProviderProps) {
       sendMessage,
       addAppointment,
       updateAppointment,
-      addAuditLog
+      addAuditLog,
+      transferPatient,
+      addFollowUp,
+      updateFollowUp
     }}>
       {children}
     </EHRContext.Provider>

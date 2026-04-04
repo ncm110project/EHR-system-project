@@ -5,6 +5,7 @@ import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
 import { PatientRecordPrint } from "./PatientRecordPrint";
+import { DepartmentTransfer } from "./DepartmentTransfer";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -38,6 +39,7 @@ export function OutpatientDepartment() {
   const [renderTime] = useState(() => new Date('2026-03-14T10:30:00').getTime());
   const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
   const [showPrintPreview, setShowPrintPreview] = useState<Patient | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState<Patient | null>(null);
 
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
@@ -492,12 +494,22 @@ export function OutpatientDepartment() {
                 <td className="text-slate-600">{patient.chiefComplaint || '-'}</td>
                 <td className="text-slate-500">~{getWaitTime(patient.admissionDate)} min</td>
                 <td>
-                  <button 
-                    className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                    onClick={() => setSelectedPatient(patient)}
-                  >
-                    {isNurse ? 'Open Chart' : 'Examine'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      onClick={() => setSelectedPatient(patient)}
+                    >
+                      {isNurse ? 'Open Chart' : 'Examine'}
+                    </button>
+                    {(isDoctor || isNurse) && (
+                      <button 
+                        className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                        onClick={() => setShowTransferModal(patient)}
+                      >
+                        Transfer
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -535,6 +547,13 @@ export function OutpatientDepartment() {
         <PatientRecordPrint 
           patient={showPrintPreview} 
           onClose={() => setShowPrintPreview(null)} 
+        />
+      )}
+
+      {showTransferModal && (
+        <DepartmentTransfer 
+          patient={showTransferModal} 
+          onClose={() => setShowTransferModal(null)} 
         />
       )}
     </div>
