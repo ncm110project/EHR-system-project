@@ -56,10 +56,10 @@ export function OutpatientDepartment() {
 
   const getOngoingPatients = () => {
     if (isNurse) {
-      return opdPatients.filter(p => p.workflowStatus === 'nurse-pending');
+      return opdPatients.filter(p => p.workflowStatus === 'nurse-pending' || p.workflowStatus === 'nurse-completed');
     }
     if (isDoctor) {
-      return opdPatients.filter(p => p.workflowStatus === 'doctor-pending');
+      return opdPatients.filter(p => p.workflowStatus === 'doctor-pending' || p.workflowStatus === 'nurse-completed');
     }
     return [];
   };
