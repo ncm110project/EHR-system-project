@@ -12,26 +12,40 @@ import { Pharmacy } from "@/components/ehr/Pharmacy";
 import { Laboratory } from "@/components/ehr/Laboratory";
 import { NursingAdmin } from "@/components/ehr/NursingAdmin";
 import { RegistrationClerk } from "@/components/ehr/RegistrationClerk";
+import { PatientDashboard } from "@/components/ehr/PatientDashboard";
 
 export default function Dashboard() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isPatient } = useAuth();
   const { setCurrentDepartment } = useEHR();
   const router = useRouter();
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
-    } else if (user) {
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (user && !isPatient && 'department' in user) {
       setCurrentDepartment(user.department);
     }
-  }, [isAuthenticated, user, router, setCurrentDepartment]);
+  }, [user, isPatient, setCurrentDepartment]);
 
   if (!isAuthenticated || !user) {
     return null;
   }
 
+  if (isPatient) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <PatientDashboard />
+      </div>
+    );
+  }
+
   const renderDepartment = () => {
-    switch (user.department) {
+    const userDept = 'department' in user ? user.department : 'opd';
+    switch (userDept) {
       case 'registration':
         return <RegistrationClerk />;
       case 'opd':
