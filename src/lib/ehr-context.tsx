@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useSyncExternalStore, useEffect, ReactNode } from 'react';
 import { 
   Patient, 
   Department, 
@@ -56,28 +56,49 @@ interface EHRProviderProps {
   children: ReactNode;
 }
 
-export function EHRProvider({ children }: EHRProviderProps) {
-  const [patients, setPatients] = useState<Patient[]>(() => {
-    if (typeof window !== 'undefined') {
-      const savedPatients = localStorage.getItem('pendingPatients');
-      const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
-      return [...mockPatients, ...localPatients];
-    }
-    return mockPatients;
+const subscribe = (callback: () => void) => {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+};
+
+const getServerSnapshot = () => null;
+
+function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
+  const store = useSyncExternalStore(subscribe, getServerSnapshot, getServerSnapshot);
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initialValue;
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : initialValue;
   });
+
+  const setStoredValue = useCallback((newValue: T) => {
+    setValue(newValue);
+    localStorage.setItem(key, JSON.stringify(newValue));
+  }, [key]);
+
+  return [value, setStoredValue];
+}
+
+export function EHRProvider({ children }: EHRProviderProps) {
+  const [localPatients, setLocalPatients] = useLocalStorage<Patient[]>('pendingPatients', []);
+  const [localIncidents, setLocalIncidents] = useLocalStorage<IncidentReport[]>('incidentReports', []);
+  
+  const [patients, setPatients] = useState<Patient[]>([...mockPatients, ...localPatients]);
   const [medications, setMedications] = useState<Medication[]>(mockMedications);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(mockPrescriptions);
   const [labOrders, setLabOrders] = useState<LabOrder[]>(mockLabOrders);
   const [nurses, setNurses] = useState<Nurse[]>(mockNurses);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
-  const [incidentReports, setIncidentReports] = useState<IncidentReport[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('incidentReports');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [incidentReports, setIncidentReports] = useState<IncidentReport[]>(localIncidents);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
+
+  useEffect(() => {
+    setPatients([...mockPatients, ...localPatients]);
+  }, [localPatients]);
+
+  useEffect(() => {
+    setIncidentReports(localIncidents);
+  }, [localIncidents]);
 
   const loadPendingPatients = useCallback(() => {
     const savedPatients = localStorage.getItem('pendingPatients');
