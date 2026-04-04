@@ -9,6 +9,8 @@ const generateId = () => `P${String(Date.now()).slice(-6)}`;
 export default function LandingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [patientId, setPatientId] = useState("");
+  const [showConditionsOther, setShowConditionsOther] = useState(false);
+  const [showAllergiesOther, setShowAllergiesOther] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -36,6 +38,7 @@ export default function LandingPage() {
     thyroidDisorder: false,
     epilepsy: false,
     chronicLungDisease: false,
+    conditionsOther: "",
     allergyPeanuts: false,
     allergyTreeNuts: false,
     allergyShellfish: false,
@@ -96,6 +99,7 @@ export default function LandingPage() {
     if (formData.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
     if (formData.epilepsy) medicalConditions.push("Epilepsy / Seizure Disorder");
     if (formData.chronicLungDisease) medicalConditions.push("Chronic Lung Disease (COPD)");
+    if (formData.conditionsOther) medicalConditions.push(formData.conditionsOther);
 
     const allergiesList: string[] = [];
     if (formData.allergyPeanuts) allergiesList.push("Peanuts");
@@ -187,6 +191,7 @@ export default function LandingPage() {
                 thyroidDisorder: false,
                 epilepsy: false,
                 chronicLungDisease: false,
+                conditionsOther: "",
                 allergyPeanuts: false,
                 allergyTreeNuts: false,
                 allergyShellfish: false,
@@ -399,7 +404,16 @@ export default function LandingPage() {
                     <input type="checkbox" checked={formData.chronicLungDisease} onChange={(e) => setFormData({...formData, chronicLungDisease: e.target.checked})} className="w-4 h-4 text-teal-600" />
                     <span className="text-sm">Chronic Lung Disease (COPD)</span>
                   </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={showConditionsOther} onChange={(e) => setShowConditionsOther(e.target.checked)} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium">Others</span>
+                  </label>
                 </div>
+                {showConditionsOther && (
+                  <div className="mt-2 ml-6">
+                    <input type="text" value={formData.conditionsOther} onChange={(e) => setFormData({...formData, conditionsOther: e.target.value})} className={inputClass} placeholder="Please specify other conditions" />
+                  </div>
+                )}
               </div>
 
               <div className="mb-4">
@@ -449,14 +463,20 @@ export default function LandingPage() {
                     <input type="checkbox" checked={formData.allergyDustMites} onChange={(e) => setFormData({...formData, allergyDustMites: e.target.checked})} className="w-4 h-4 text-teal-600" />
                     <span className="text-sm">Dust Mites</span>
                   </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={showAllergiesOther} onChange={(e) => setShowAllergiesOther(e.target.checked)} className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium">Others</span>
+                  </label>
                 </div>
+                {showAllergiesOther && (
+                  <div className="mt-2">
+                    <label className={labelClass}>Please specify other allergies</label>
+                    <input type="text" value={formData.allergiesOther} onChange={(e) => setFormData({...formData, allergiesOther: e.target.value})} className={inputClass} placeholder="List any other allergies" />
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4">
-                <div>
-                  <label className={labelClass}>Other Allergies</label>
-                  <input type="text" value={formData.allergiesOther} onChange={(e) => setFormData({...formData, allergiesOther: e.target.value})} className={inputClass} placeholder="List any other allergies not mentioned above" />
-                </div>
                 <div>
                   <label className={labelClass}>Current Medications</label>
                   <input type="text" value={formData.currentMedications} onChange={(e) => setFormData({...formData, currentMedications: e.target.value})} className={inputClass} placeholder="List current medications" />
