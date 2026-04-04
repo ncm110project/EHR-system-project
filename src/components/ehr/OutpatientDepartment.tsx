@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
+import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, Appointment } from "@/lib/ehr-data";
 import { PatientRecordPrint } from "./PatientRecordPrint";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 
@@ -29,7 +29,7 @@ const commonLabTests = [
 
 export function OutpatientDepartment() {
   const { user } = useAuth();
-  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient } = useEHR();
+  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, addAppointment } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -398,6 +398,33 @@ export function OutpatientDepartment() {
     setSelectedPatient(null);
   };
 
+  const handleScheduleAppointment = (patient: Patient, date: string, time: string, notes: string) => {
+    const now = new Date().toISOString();
+    const appointment: Appointment = {
+      id: generateId(),
+      patientId: patient.id,
+      patientName: patient.name,
+      department: 'opd',
+      doctorId: user?.id,
+      doctorName: user?.name,
+      date,
+      time,
+      status: 'scheduled',
+      notes,
+      createdAt: now
+    };
+    addAppointment(appointment);
+    addActivity({
+      id: generateId(),
+      type: 'admission',
+      department: 'opd',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Follow-up appointment scheduled for ${date} at ${time}`,
+      timestamp: now
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -540,6 +567,7 @@ export function OutpatientDepartment() {
           onAddVitals={handleAddVitalsForCompleted}
           onAddNotes={handleAddNotesForCompleted}
           onAddDiagnosis={handleAddDiagnosisForCompleted}
+          onScheduleAppointment={handleScheduleAppointment}
         />
       )}
 
@@ -575,7 +603,8 @@ function PatientDetailModal({
   onReopenVisit,
   onAddVitals,
   onAddNotes,
-  onAddDiagnosis
+  onAddDiagnosis,
+  onScheduleAppointment
 }: { 
   patient: Patient;
   isNurse: boolean;
@@ -592,6 +621,7 @@ function PatientDetailModal({
   onAddVitals?: (patient: Patient, vitals: VitalSigns) => void;
   onAddNotes?: (patient: Patient, notes: string) => void;
   onAddDiagnosis?: (patient: Patient, diagnosis: string) => void;
+  onScheduleAppointment?: (patient: Patient, date: string, time: string, notes: string) => void;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
     bloodPressure: '',
@@ -611,8 +641,12 @@ function PatientDetailModal({
   const [showAddVitals, setShowAddVitals] = useState(false);
   const [showAddNotes, setShowAddNotes] = useState(false);
   const [showAddDiagnosis, setShowAddDiagnosis] = useState(false);
+  const [showScheduleAppointment, setShowScheduleAppointment] = useState(false);
   const [newNotes, setNewNotes] = useState('');
   const [newDiagnosisInput, setNewDiagnosisInput] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentTime, setAppointmentTime] = useState('09:00');
+  const [appointmentNotes, setAppointmentNotes] = useState('');
 
   const isCompleted = patient.workflowStatus === 'doctor-completed';
   const canAddNew = isCompleted && (onAddVitals || onAddNotes || onAddDiagnosis);
@@ -967,6 +1001,85 @@ function PatientDetailModal({
                 </button>
               </div>
             </>
+          )}
+
+          {isDoctor && patient.workflowStatus === 'nurse-completed' && onScheduleAppointment && (
+            <div className="border-t border-slate-200 pt-4">
+              <button 
+                className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
+                onClick={() => setShowScheduleAppointment(!showScheduleAppointment)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span className="font-medium">Schedule Follow-up Appointment</span>
+              </button>
+              
+              {showScheduleAppointment && (
+                <div className="p-4 bg-slate-50 rounded-lg space-y-3 mt-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-500">Date</label>
+                      <input
+                        type="date"
+                        value={appointmentDate}
+                        onChange={(e) => setAppointmentDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Time</label>
+                      <select
+                        value={appointmentTime}
+                        onChange={(e) => setAppointmentTime(e.target.value)}
+                        className="w-full"
+                      >
+                        <option value="09:00">9:00 AM</option>
+                        <option value="09:30">9:30 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="10:30">10:30 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="11:30">11:30 AM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="13:30">1:30 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="14:30">2:30 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="15:30">3:30 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500">Notes (optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Reason for follow-up..."
+                      value={appointmentNotes}
+                      onChange={(e) => setAppointmentNotes(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-primary"
+                    disabled={!appointmentDate}
+                    onClick={() => {
+                      onScheduleAppointment(patient, appointmentDate, appointmentTime, appointmentNotes);
+                      setShowScheduleAppointment(false);
+                      setAppointmentDate('');
+                      setAppointmentTime('09:00');
+                      setAppointmentNotes('');
+                    }}
+                  >
+                    Schedule Appointment
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {patient.workflowStatus === 'doctor-completed' && (
