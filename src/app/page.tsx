@@ -24,7 +24,6 @@ export default function LandingPage() {
     emergencyName: "",
     emergencyRelationship: "",
     emergencyPhone: "",
-    chiefComplaint: "",
     hypertension: false,
     diabetes: false,
     asthma: false,
@@ -126,7 +125,6 @@ export default function LandingPage() {
       department: 'registration',
       registrationStatus: 'pending',
       admissionDate: new Date().toISOString().split('T')[0],
-      chiefComplaint: formData.chiefComplaint,
       email: formData.email,
       emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
       emergencyPhone: formData.emergencyPhone,
@@ -177,7 +175,6 @@ export default function LandingPage() {
                 emergencyName: "",
                 emergencyRelationship: "",
                 emergencyPhone: "",
-                chiefComplaint: "",
                 hypertension: false,
                 diabetes: false,
                 asthma: false,
@@ -348,16 +345,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* SECTION 4 - VISIT INFORMATION */}
-            <div className={sectionClass}>
-              <h2 className={sectionTitleClass}>VISIT INFORMATION</h2>
-              <div>
-                <label className={labelClass}>Chief Complaint *</label>
-                <textarea required value={formData.chiefComplaint} onChange={(e) => setFormData({...formData, chiefComplaint: e.target.value})} className={`${inputClass} h-32`} placeholder="Describe the main reason for your visit today..." />
-              </div>
-            </div>
-
-            {/* SECTION 5 - MEDICAL BACKGROUND */}
+            {/* SECTION 4 - MEDICAL BACKGROUND */}
             <div className={sectionClass}>
               <h2 className={sectionTitleClass}>MEDICAL BACKGROUND</h2>
               <div className="mb-4">
