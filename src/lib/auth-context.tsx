@@ -9,6 +9,8 @@ interface AuthContextType {
   isPatient: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
+  changePassword: (currentPassword: string, newPassword: string) => boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -20,6 +22,14 @@ export function useAuth() {
   }
   return context;
 }
+
+const rolePermissions: Record<string, string[]> = {
+  doctor: ['view_patients', 'edit_patients', 'prescribe', 'order_lab', 'view_own_department'],
+  nurse: ['view_patients', 'edit_patients', 'record_vitals', 'view_own_department'],
+  admin: ['view_all', 'edit_all', 'manage_staff', 'view_reports', 'manage_incidents'],
+  clerk: ['register_patients', 'view_patients', 'edit_registration'],
+  patient: ['view_own_records', 'book_appointment', 'view_prescriptions', 'view_lab_results']
+};
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -35,7 +45,8 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
     );
     
     if (foundUser) {
-      setUser(foundUser);
+      const permissions = rolePermissions[foundUser.role] || [];
+      setUser({ ...foundUser, permissions });
       return true;
     }
 
@@ -45,7 +56,8 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
       );
       
       if (patientWithAccount) {
-        setUser(patientWithAccount as unknown as User);
+        const permissions = rolePermissions['patient'] || [];
+        setUser({ ...patientWithAccount, permissions } as unknown as User);
         return true;
       }
     }
@@ -57,6 +69,36 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
     setUser(null);
   }, []);
 
+  const changePassword = useCallback((currentPassword: string, newPassword: string): boolean => {
+    if (!user || !('username' in user)) return false;
+    
+    if (user.password !== currentPassword) return false;
+
+    if ('role' in user) {
+      const updatedUser = { ...user, password: newPassword };
+      setUser(updatedUser);
+      
+      const userIndex = mockUsers.findIndex(u => u.id === user.id);
+      if (userIndex >= 0) {
+        mockUsers[userIndex] = { ...mockUsers[userIndex], password: newPassword };
+      }
+      return true;
+    }
+    
+    return false;
+  }, [user]);
+
+  const hasPermission = useCallback((permission: string): boolean => {
+    if (!user) return false;
+    if ('permissions' in user && user.permissions) {
+      return user.permissions.includes(permission);
+    }
+    if ('role' in user && user.role) {
+      return rolePermissions[user.role]?.includes(permission) || false;
+    }
+    return false;
+  }, [user]);
+
   const isPatient = !!(user && ('role' in user ? user.role === 'patient' : 'hasPatientAccount' in user && (user as any).hasPatientAccount === true));
 
   return (
@@ -65,7 +107,9 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
       isAuthenticated: !!user,
       isPatient,
       login,
-      logout
+      logout,
+      changePassword,
+      hasPermission
     }}>
       {children}
     </AuthContext.Provider>

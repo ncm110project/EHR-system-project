@@ -6,12 +6,16 @@ import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { departments } from "@/lib/ehr-data";
 import { IncidentReportForm } from "./IncidentReportForm";
+import { StaffMessaging } from "./StaffMessaging";
+import { PasswordChangeModal } from "./PasswordChangeModal";
 
 export function Header() {
   const router = useRouter();
   const { currentDepartment, patients, labOrders, prescriptions } = useEHR();
   const { user, logout } = useAuth();
   const [showIncidentForm, setShowIncidentForm] = useState(false);
+  const [showMessaging, setShowMessaging] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const currentDept = departments.find(d => d.id === currentDepartment);
   
@@ -128,6 +132,26 @@ export function Header() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
 
+        <button 
+          onClick={() => setShowMessaging(true)}
+          className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+          title="Messages"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </button>
+
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+          title="Change Password"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+        </button>
+
         <button
           onClick={() => setShowIncidentForm(true)}
           className="p-2 hover:bg-amber-100 rounded-lg text-amber-600"
@@ -190,6 +214,18 @@ export function Header() {
           <IncidentReportForm />
         </div>
       </div>
+    )}
+
+    {showMessaging && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh]">
+          <StaffMessaging />
+        </div>
+      </div>
+    )}
+
+    {showPasswordModal && (
+      <PasswordChangeModal onClose={() => setShowPasswordModal(false)} />
     )}
     </>
   );

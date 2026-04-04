@@ -10,6 +10,10 @@ import {
   Nurse, 
   Activity,
   IncidentReport,
+  Message,
+  Appointment,
+  AuditLog,
+  BillingRecord,
   mockPatients,
   mockMedications,
   mockPrescriptions,
@@ -26,6 +30,9 @@ interface EHRContextType {
   nurses: Nurse[];
   activities: Activity[];
   incidentReports: IncidentReport[];
+  messages: Message[];
+  appointments: Appointment[];
+  auditLogs: AuditLog[];
   currentDepartment: Department;
   setCurrentDepartment: (dept: Department) => void;
   updatePatient: (patient: Patient) => void;
@@ -40,6 +47,10 @@ interface EHRContextType {
   loadPendingPatients: () => void;
   addIncidentReport: (report: IncidentReport) => void;
   updateIncidentReport: (report: IncidentReport) => void;
+  sendMessage: (message: Message) => void;
+  addAppointment: (appointment: Appointment) => void;
+  updateAppointment: (appointment: Appointment) => void;
+  addAuditLog: (log: AuditLog) => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -82,6 +93,9 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => voi
 export function EHRProvider({ children }: EHRProviderProps) {
   const [localPatients, setLocalPatients] = useLocalStorage<Patient[]>('pendingPatients', []);
   const [localIncidents, setLocalIncidents] = useLocalStorage<IncidentReport[]>('incidentReports', []);
+  const [localMessages, setLocalMessages] = useLocalStorage<Message[]>('messages', []);
+  const [localAppointments, setLocalAppointments] = useLocalStorage<Appointment[]>('appointments', []);
+  const [localAuditLogs, setLocalAuditLogs] = useLocalStorage<AuditLog[]>('auditLogs', []);
   
   const [patients, setPatients] = useState<Patient[]>([...mockPatients, ...localPatients]);
   const [medications, setMedications] = useState<Medication[]>(mockMedications);
@@ -90,6 +104,9 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const [nurses, setNurses] = useState<Nurse[]>(mockNurses);
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
   const [incidentReports, setIncidentReports] = useState<IncidentReport[]>(localIncidents);
+  const [messages, setMessages] = useState<Message[]>(localMessages);
+  const [appointments, setAppointments] = useState<Appointment[]>(localAppointments);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(localAuditLogs);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
 
   useEffect(() => {
@@ -99,6 +116,18 @@ export function EHRProvider({ children }: EHRProviderProps) {
   useEffect(() => {
     setIncidentReports(localIncidents);
   }, [localIncidents]);
+
+  useEffect(() => {
+    setMessages(localMessages);
+  }, [localMessages]);
+
+  useEffect(() => {
+    setAppointments(localAppointments);
+  }, [localAppointments]);
+
+  useEffect(() => {
+    setAuditLogs(localAuditLogs);
+  }, [localAuditLogs]);
 
   const loadPendingPatients = useCallback(() => {
     const savedPatients = localStorage.getItem('pendingPatients');
@@ -172,6 +201,37 @@ export function EHRProvider({ children }: EHRProviderProps) {
     }
   }, []);
 
+  const sendMessage = useCallback((message: Message) => {
+    setMessages(prev => [...prev, message]);
+    const saved = localStorage.getItem('messages');
+    const existing: Message[] = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('messages', JSON.stringify([...existing, message]));
+  }, []);
+
+  const addAppointment = useCallback((appointment: Appointment) => {
+    setAppointments(prev => [...prev, appointment]);
+    const saved = localStorage.getItem('appointments');
+    const existing: Appointment[] = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('appointments', JSON.stringify([...existing, appointment]));
+  }, []);
+
+  const updateAppointment = useCallback((appointment: Appointment) => {
+    setAppointments(prev => prev.map(a => a.id === appointment.id ? appointment : a));
+    const saved = localStorage.getItem('appointments');
+    if (saved) {
+      const existing: Appointment[] = JSON.parse(saved);
+      const updated = existing.map((a: Appointment) => a.id === appointment.id ? appointment : a);
+      localStorage.setItem('appointments', JSON.stringify(updated));
+    }
+  }, []);
+
+  const addAuditLog = useCallback((log: AuditLog) => {
+    setAuditLogs(prev => [log, ...prev]);
+    const saved = localStorage.getItem('auditLogs');
+    const existing: AuditLog[] = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('auditLogs', JSON.stringify([log, ...existing]));
+  }, []);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -181,6 +241,9 @@ export function EHRProvider({ children }: EHRProviderProps) {
       nurses,
       activities,
       incidentReports,
+      messages,
+      appointments,
+      auditLogs,
       currentDepartment,
       setCurrentDepartment,
       updatePatient,
@@ -194,7 +257,11 @@ export function EHRProvider({ children }: EHRProviderProps) {
       updateMedication,
       loadPendingPatients,
       addIncidentReport,
-      updateIncidentReport
+      updateIncidentReport,
+      sendMessage,
+      addAppointment,
+      updateAppointment,
+      addAuditLog
     }}>
       {children}
     </EHRContext.Provider>

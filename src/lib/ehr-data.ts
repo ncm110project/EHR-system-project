@@ -18,6 +18,46 @@ export type ShiftType = 'morning' | 'afternoon' | 'night';
 
 export type IncidentStatus = 'pending' | 'reviewed' | 'resolved';
 
+export type MessageStatus = 'unread' | 'read';
+
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  recipientId: string;
+  recipientName: string;
+  subject: string;
+  content: string;
+  timestamp: string;
+  status: MessageStatus;
+  relatedPatientId?: string;
+}
+
+export interface Appointment {
+  id: string;
+  patientId: string;
+  patientName: string;
+  department: Department;
+  doctorId?: string;
+  doctorName?: string;
+  date: string;
+  time: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
+  notes?: string;
+  createdAt: string;
+}
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  details: string;
+  timestamp: string;
+  ipAddress?: string;
+}
+
 export type IncidentType = 
   | 'medication-error'
   | 'patient-fall'
@@ -114,6 +154,8 @@ export interface User {
   role: UserRole;
   department: Department;
   departmentName: string;
+  phone?: string;
+  permissions?: string[];
 }
 
 export const mockUsers: User[] = [
@@ -166,6 +208,18 @@ export interface Patient {
   followUpDate?: string;
   followUpTime?: string;
   reminderEnabled?: boolean;
+  appointmentHistory?: Appointment[];
+  billingHistory?: BillingRecord[];
+}
+
+export interface BillingRecord {
+  id: string;
+  patientId: string;
+  date: string;
+  description: string;
+  amount: number;
+  status: 'pending' | 'paid' | 'overdue';
+  paymentMethod?: string;
 }
 
 export interface Prescription {
