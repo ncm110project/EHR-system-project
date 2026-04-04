@@ -118,12 +118,12 @@ export function OutpatientDepartment() {
 
   const getWorkflowColor = (workflowStatus?: string) => {
     switch (workflowStatus) {
-      case 'registered': return 'text-amber-600';
-      case 'nurse-pending': return 'text-amber-600';
-      case 'nurse-completed': return 'text-blue-600';
-      case 'doctor-pending': return 'text-blue-600';
-      case 'doctor-completed': return 'text-green-600';
-      default: return 'text-amber-600';
+      case 'registered': return 'bg-amber-100 text-amber-700';
+      case 'nurse-pending': return 'bg-amber-100 text-amber-700';
+      case 'nurse-completed': return 'bg-blue-100 text-blue-700';
+      case 'doctor-pending': return 'bg-blue-100 text-blue-700';
+      case 'doctor-completed': return 'bg-green-100 text-green-700';
+      default: return 'bg-amber-100 text-amber-700';
     }
   };
 
@@ -469,10 +469,9 @@ export function OutpatientDepartment() {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Patient Name</th>
+              <th>Patient</th>
               <th>Age/Gender</th>
               <th>Chief Complaint</th>
-              <th>Status</th>
               <th>Wait Time</th>
               <th>Actions</th>
             </tr>
@@ -484,8 +483,8 @@ export function OutpatientDepartment() {
                 <td>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{patient.name}</span>
-                    <span className={`text-xs font-medium ${getWorkflowColor(patient.workflowStatus)}`}>
-                      ({getWorkflowLabel(patient.workflowStatus)})
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getWorkflowColor(patient.workflowStatus)}`}>
+                      {getWorkflowLabel(patient.workflowStatus)}
                     </span>
                   </div>
                 </td>
