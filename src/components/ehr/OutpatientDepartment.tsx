@@ -73,6 +73,13 @@ export function OutpatientDepartment() {
   const completedPatients = getCompletedPatients();
   
   const getFilteredPatients = () => {
+    if (isNurse) {
+      const allNursePatients = [...queuePatients, ...ongoingPatients];
+      return allNursePatients.filter(p => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        p.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
     let patientsToFilter: Patient[] = [];
     switch (activeTab) {
       case 'queue':
@@ -98,25 +105,25 @@ export function OutpatientDepartment() {
     return Math.floor(diff / 60000);
   };
 
-  const getStatusBadge = (workflowStatus?: string) => {
+  const getWorkflowLabel = (workflowStatus?: string) => {
     switch (workflowStatus) {
-      case 'registered': return 'badge-warning';
-      case 'nurse-pending': return 'badge-info';
-      case 'nurse-completed': return 'badge-info';
-      case 'doctor-pending': return 'badge-warning';
-      case 'doctor-completed': return 'badge-success';
-      default: return 'badge-warning';
+      case 'registered': return 'Pending';
+      case 'nurse-pending': return 'Pending';
+      case 'nurse-completed': return 'Ongoing';
+      case 'doctor-pending': return 'Ongoing';
+      case 'doctor-completed': return 'Completed';
+      default: return 'Pending';
     }
   };
 
-  const getWorkflowLabel = (workflowStatus?: string) => {
+  const getWorkflowColor = (workflowStatus?: string) => {
     switch (workflowStatus) {
-      case 'registered': return 'New';
-      case 'nurse-pending': return 'In Triage';
-      case 'nurse-completed': return 'Pending Doctor';
-      case 'doctor-pending': return 'In Consultation';
-      case 'doctor-completed': return 'Completed';
-      default: return 'Registered';
+      case 'registered': return 'text-amber-600';
+      case 'nurse-pending': return 'text-amber-600';
+      case 'nurse-completed': return 'text-blue-600';
+      case 'doctor-pending': return 'text-blue-600';
+      case 'doctor-completed': return 'text-green-600';
+      default: return 'text-amber-600';
     }
   };
 
@@ -402,6 +409,7 @@ export function OutpatientDepartment() {
         </div>
       </div>
 
+      {!isNurse && (
       <div className="flex gap-4">
         <button
           onClick={() => setActiveTab('queue')}
@@ -422,6 +430,7 @@ export function OutpatientDepartment() {
           Completed ({completedPatients.length})
         </button>
       </div>
+      )}
 
       <div className="card">
         <div className="p-4 border-b border-slate-200">
@@ -472,14 +481,16 @@ export function OutpatientDepartment() {
             {filteredPatients.map((patient) => (
               <tr key={patient.id}>
                 <td className="font-mono text-sm">{patient.id}</td>
-                <td className="font-medium">{patient.name}</td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{patient.name}</span>
+                    <span className={`text-xs font-medium ${getWorkflowColor(patient.workflowStatus)}`}>
+                      ({getWorkflowLabel(patient.workflowStatus)})
+                    </span>
+                  </div>
+                </td>
                 <td>{patient.age}/{patient.gender[0]}</td>
                 <td className="text-slate-600">{patient.chiefComplaint || '-'}</td>
-                <td>
-                  <span className={`badge ${getStatusBadge(patient.workflowStatus)}`}>
-                    {getWorkflowLabel(patient.workflowStatus)}
-                  </span>
-                </td>
                 <td className="text-slate-500">~{getWaitTime(patient.admissionDate)} min</td>
                 <td>
                   <button 
