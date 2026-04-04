@@ -7,7 +7,11 @@ import { User, Message } from "@/lib/ehr-data";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function StaffMessaging() {
+interface StaffMessagingProps {
+  onClose: () => void;
+}
+
+export function StaffMessaging({ onClose }: StaffMessagingProps) {
   const { user } = useAuth();
   const { messages, sendMessage, patients } = useEHR();
   const [showCompose, setShowCompose] = useState(false);
@@ -73,6 +77,16 @@ export function StaffMessaging() {
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-[500px] flex flex-col">
       <div className="p-4 border-b border-slate-200 flex justify-between items-center">
         <h3 className="font-semibold text-slate-800">Internal Messages</h3>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-slate-100 rounded"
+        >
+          <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="p-4 border-b border-slate-200">
         <button
           onClick={() => setShowCompose(true)}
           className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-1"
