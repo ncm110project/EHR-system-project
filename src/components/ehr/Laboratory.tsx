@@ -7,7 +7,7 @@ import { LabOrder, LabTestStatus } from "@/lib/ehr-data";
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function Laboratory() {
-  const { labOrders, patients, updateLabOrder, addActivity, setCurrentDepartment } = useEHR();
+  const { labOrders, patients, updateLabOrder, addActivity, setCurrentDepartment, addNotification } = useEHR();
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
   const [resultsText, setResultsText] = useState("");
@@ -119,6 +119,33 @@ export function Laboratory() {
     setSelectedOrder(null);
     setResultsText("");
     setAttachments([]);
+  };
+
+  const handleVerifyResults = () => {
+    if (!selectedOrder) return;
+    updateLabOrder({
+      ...selectedOrder,
+      verified: true,
+      verifiedAt: new Date().toISOString()
+    });
+  };
+
+  const handleSendToPatient = () => {
+    if (!selectedOrder || !selectedOrder.verified) return;
+    updateLabOrder({
+      ...selectedOrder,
+      notificationSent: true
+    });
+    addNotification({
+      id: `NOTIF-${Date.now()}`,
+      patientId: selectedOrder.patientId,
+      type: 'lab_result',
+      title: 'Lab Results Ready',
+      message: `Your ${selectedOrder.testName} results are now available. Please check your patient portal.`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      relatedId: selectedOrder.id
+    });
   };
 
   const stats = {
@@ -289,9 +316,19 @@ export function Laboratory() {
               </div>
 
               {selectedOrder.status === 'completed' && selectedOrder.results && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="font-semibold text-green-700 mb-2">Results</p>
-                  <p className="text-green-800">{selectedOrder.results}</p>
+                <div className={`p-4 border rounded-lg ${selectedOrder.verified ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className={`font-semibold ${selectedOrder.verified ? 'text-green-700' : 'text-amber-700'}`}>Results</p>
+                    {selectedOrder.verified && (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-800">{selectedOrder.results}</p>
                   {selectedOrder.referenceRange && (
                     <p className="text-sm text-green-600 mt-2">Reference: {selectedOrder.referenceRange}</p>
                   )}
@@ -372,6 +409,20 @@ export function Laboratory() {
               <button className="btn btn-secondary" onClick={() => { setSelectedOrder(null); setAttachments([]); }}>Cancel</button>
               {selectedOrder.status === 'in-progress' && (
                 <button className="btn btn-primary" onClick={handleSaveResults}>Save Results</button>
+              )}
+              {selectedOrder.status === 'completed' && !selectedOrder.verified && (
+                <button className="btn btn-secondary" onClick={handleVerifyResults}>Verify Results</button>
+              )}
+              {selectedOrder.status === 'completed' && selectedOrder.verified && !selectedOrder.notificationSent && (
+                <button className="btn btn-primary" onClick={handleSendToPatient}>Send to Patient</button>
+              )}
+              {selectedOrder.status === 'completed' && selectedOrder.verified && selectedOrder.notificationSent && (
+                <span className="text-green-600 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Sent to Patient
+                </span>
               )}
             </div>
           </div>

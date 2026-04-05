@@ -295,6 +295,10 @@ export interface LabOrder {
   results?: string;
   referenceRange?: string;
   attachments?: string[];
+  verified?: boolean;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  notificationSent?: boolean;
 }
 
 export interface VitalSigns {

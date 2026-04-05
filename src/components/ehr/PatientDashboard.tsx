@@ -479,7 +479,7 @@ export function PatientDashboard() {
 
   const renderLabResults = () => (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      <div className="p-4 border-b border-slate-200">
+      <div className="p-4 border-b border-slate-200 flex justify-between items-center">
         <h2 className="font-semibold text-slate-800">My Lab Results</h2>
       </div>
       <div className="p-4">
@@ -498,14 +498,26 @@ export function PatientDashboard() {
                     {lab.status}
                   </span>
                 </div>
+                
                 {lab.results && (
-                  <div className="p-3 bg-white rounded border border-slate-200 mb-3">
-                    <p className="text-sm"><span className="font-medium">Result:</span> {lab.results}</p>
+                  <div className={`p-3 rounded border mb-3 ${lab.verified ? 'bg-white border-slate-200' : 'bg-amber-50 border-amber-200'}`}>
+                    {!lab.verified && (
+                      <p className="text-amber-700 text-sm mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Results pending verification
+                      </p>
+                    )}
+                    <p className={`text-sm ${lab.referenceRange && lab.results ? 'font-medium' : ''} ${lab.referenceRange && !lab.results?.includes('Normal') ? 'text-red-700' : 'text-slate-800'}`}>
+                      <span className="font-medium">Result:</span> {lab.results}
+                    </p>
                     {lab.referenceRange && (
                       <p className="text-sm text-slate-500"><span className="font-medium">Reference:</span> {lab.referenceRange}</p>
                     )}
                   </div>
                 )}
+                
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-slate-500">Ordered by</p>
@@ -516,6 +528,18 @@ export function PatientDashboard() {
                     <p className="text-slate-800">{lab.date}</p>
                   </div>
                 </div>
+                
+                {lab.verified && lab.results && (
+                  <button
+                    onClick={() => window.print()}
+                    className="mt-3 text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print Lab Report
+                  </button>
+                )}
               </div>
             ))}
           </div>
