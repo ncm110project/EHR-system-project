@@ -10,11 +10,13 @@ const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)
 
 export function PatientDashboard() {
   const { user } = useAuth();
-  const { prescriptions, labOrders, patients, appointments, updatePatient, sendMessage, addAppointment } = useEHR();
+  const { prescriptions, labOrders, patients, appointments, updatePatient, sendMessage, addAppointment, notifications, markNotificationRead, updateAppointment } = useEHR();
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showPastAppointments, setShowPastAppointments] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'appointments' | 'prescriptions' | 'lab' | 'billing' | 'messages'>('overview');
   const [appointmentForm, setAppointmentForm] = useState({
     date: "",
@@ -46,6 +48,17 @@ export function PatientDashboard() {
     e.preventDefault();
     if (!appointmentForm.date || !appointmentForm.time) return;
 
+    const conflict = patientAppointments.find(apt => 
+      apt.date === appointmentForm.date && 
+      apt.time === appointmentForm.time && 
+      (apt.status === 'scheduled' || apt.status === 'pending')
+    );
+    
+    if (conflict) {
+      alert('You already have an appointment scheduled at this date and time. Please choose a different time.');
+      return;
+    }
+
     const newAppointment: Appointment = {
       id: generateId(),
       patientId: user.id as string,
@@ -53,7 +66,7 @@ export function PatientDashboard() {
       department: appointmentForm.department as any,
       date: appointmentForm.date,
       time: appointmentForm.time,
-      status: 'scheduled',
+      status: 'pending',
       notes: appointmentForm.notes,
       createdAt: new Date().toISOString()
     };
@@ -118,6 +131,23 @@ export function PatientDashboard() {
     }
   };
 
+  const getUpcomingAppointment = () => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    return patientAppointments.find(apt => {
+      const aptDate = new Date(apt.date);
+      return (apt.status === 'scheduled' || apt.status === 'pending') && aptDate >= now && aptDate <= tomorrow;
+    });
+  };
+
+  const upcomingAppointment = getUpcomingAppointment();
+  const hasOverdueAppointment = patientAppointments.some(apt => apt.status === 'scheduled' && new Date(apt.date) < new Date());
+  const pendingAppointment = patientAppointments.find(apt => apt.status === 'pending');
+  const pastAppointments = patientAppointments.filter(apt => apt.status === 'completed' || apt.status === 'cancelled' || apt.status === 'no-show' || (apt.status === 'scheduled' && new Date(apt.date) < new Date()));
+  const futureAppointments = patientAppointments.filter(apt => apt.status === 'scheduled' && new Date(apt.date) >= new Date());
+
   const renderOverview = () => (
     <>
       <div className="grid md:grid-cols-3 gap-6">
@@ -169,14 +199,26 @@ export function PatientDashboard() {
         </div>
       </div>
 
-      {patient.followUpDate && new Date(patient.followUpDate) < new Date() && (
+      {hasOverdueAppointment && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 mt-6">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div>
             <p className="font-medium text-red-800">Appointment Reminder</p>
-            <p className="text-sm text-red-600">Your appointment on {formatDate(patient.followUpDate)} has passed. Please schedule a new appointment.</p>
+            <p className="text-sm text-red-600">Your appointment has passed. Please schedule a new appointment.</p>
+          </div>
+        </div>
+      )}
+
+      {upcomingAppointment && !hasOverdueAppointment && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 mt-6">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div>
+            <p className="font-medium text-blue-800">Upcoming Appointment</p>
+            <p className="text-sm text-blue-600">Your appointment is scheduled for {formatDate(upcomingAppointment.date)} at {upcomingAppointment.time}</p>
           </div>
         </div>
       )}
@@ -287,7 +329,7 @@ export function PatientDashboard() {
   const renderAppointments = () => (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
       <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-        <h2 className="font-semibold text-slate-800">Appointment History</h2>
+        <h2 className="font-semibold text-slate-800">My Appointments</h2>
         <button
           onClick={() => setShowAppointmentModal(true)}
           className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
@@ -298,27 +340,95 @@ export function PatientDashboard() {
           Book Appointment
         </button>
       </div>
-      <div className="p-4">
-        {patientAppointments.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No appointments found</p>
-        ) : (
-          <div className="space-y-3">
-            {patientAppointments.map((apt: Appointment) => (
-              <div key={apt.id} className="p-4 bg-slate-50 rounded-lg">
+      <div className="p-4 space-y-6">
+        {futureAppointments.length > 0 && (
+          <div>
+            <h3 className="font-medium text-slate-700 mb-3">Upcoming Appointments</h3>
+            <div className="space-y-3">
+              {futureAppointments.map((apt: Appointment) => (
+                <div key={apt.id} className="p-4 bg-slate-50 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-slate-800">{formatDate(apt.date)}</p>
+                      <p className="text-sm text-slate-600">Time: {apt.time}</p>
+                      <p className="text-sm text-slate-600">Department: {apt.department}</p>
+                      {apt.notes && <p className="text-sm text-slate-500 mt-1">Notes: {apt.notes}</p>}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(apt.status)}`}>
+                        {apt.status}
+                      </span>
+                      <button
+                        onClick={() => {
+                          updateAppointment({ ...apt, status: 'cancelled' });
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {pendingAppointment && (
+          <div>
+            <h3 className="font-medium text-amber-700 mb-3">Pending Confirmation</h3>
+            <div className="space-y-3">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-slate-800">{formatDate(apt.date)}</p>
-                    <p className="text-sm text-slate-600">Time: {apt.time}</p>
-                    <p className="text-sm text-slate-600">Department: {apt.department}</p>
-                    {apt.notes && <p className="text-sm text-slate-500 mt-1">Notes: {apt.notes}</p>}
+                    <p className="font-medium text-slate-800">{formatDate(pendingAppointment.date)}</p>
+                    <p className="text-sm text-slate-600">Time: {pendingAppointment.time}</p>
+                    <p className="text-sm text-slate-600">Department: {pendingAppointment.department}</p>
+                    {pendingAppointment.notes && <p className="text-sm text-slate-500 mt-1">Notes: {pendingAppointment.notes}</p>}
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(apt.status)}`}>
-                    {apt.status}
+                  <span className="px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
+                    Pending
                   </span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
+        )}
+
+        {pastAppointments.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowPastAppointments(!showPastAppointments)}
+              className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 mb-3"
+            >
+              <svg className={`w-4 h-4 transition-transform ${showPastAppointments ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Past Appointments ({pastAppointments.length})
+            </button>
+            {showPastAppointments && (
+              <div className="space-y-3 mt-2">
+                {pastAppointments.map((apt: Appointment) => (
+                  <div key={apt.id} className="p-4 bg-slate-100 rounded-lg opacity-75">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-slate-800">{formatDate(apt.date)}</p>
+                        <p className="text-sm text-slate-600">Time: {apt.time}</p>
+                        <p className="text-sm text-slate-600">Department: {apt.department}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(apt.status)}`}>
+                        {apt.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {patientAppointments.length === 0 && (
+          <p className="text-slate-500 text-center py-8">No appointments found. Book an appointment to get started.</p>
         )}
       </div>
     </div>
@@ -478,6 +588,20 @@ export function PatientDashboard() {
             <p className="text-teal-100">Patient ID: {patient.id}</p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative px-4 py-2 bg-teal-500 bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              Notifications
+              {notifications.filter(n => n.patientId === user.id && !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {notifications.filter(n => n.patientId === user.id && !n.read).length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setShowPasswordModal(true)}
               className="px-4 py-2 bg-teal-500 bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors flex items-center gap-2"
@@ -646,6 +770,38 @@ export function PatientDashboard() {
 
       {showPasswordModal && (
         <PasswordChangeModal onClose={() => setShowPasswordModal(false)} />
+      )}
+
+      {showNotifications && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-slate-800">Notifications</h3>
+              <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3">
+              {notifications.filter(n => n.patientId === user.id).length === 0 ? (
+                <p className="text-slate-500 text-center py-4">No notifications</p>
+              ) : (
+                notifications.filter(n => n.patientId === user.id).map(notif => (
+                  <div 
+                    key={notif.id} 
+                    className={`p-3 rounded-lg border ${notif.read ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-200'}`}
+                    onClick={() => markNotificationRead(notif.id)}
+                  >
+                    <p className="font-medium text-slate-800">{notif.title}</p>
+                    <p className="text-sm text-slate-600 mt-1">{notif.message}</p>
+                    <p className="text-xs text-slate-400 mt-2">{new Date(notif.timestamp).toLocaleString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {showPrintModal && (

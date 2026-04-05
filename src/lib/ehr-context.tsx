@@ -16,6 +16,7 @@ import {
   BillingRecord,
   TransferRecord,
   FollowUp,
+  Notification,
   mockPatients,
   mockMedications,
   mockPrescriptions,
@@ -34,6 +35,7 @@ interface EHRContextType {
   incidentReports: IncidentReport[];
   messages: Message[];
   appointments: Appointment[];
+  notifications: Notification[];
   auditLogs: AuditLog[];
   currentDepartment: Department;
   setCurrentDepartment: (dept: Department) => void;
@@ -56,6 +58,8 @@ interface EHRContextType {
   transferPatient: (patient: Patient, toDepartment: Department, reason: string, transferredBy: string) => void;
   addFollowUp: (followUp: FollowUp) => void;
   updateFollowUp: (followUp: FollowUp) => void;
+  addNotification: (notification: Notification) => void;
+  markNotificationRead: (id: string) => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -101,6 +105,7 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const [localMessages, setLocalMessages] = useLocalStorage<Message[]>('messages', []);
   const [localAppointments, setLocalAppointments] = useLocalStorage<Appointment[]>('appointments', []);
   const [localAuditLogs, setLocalAuditLogs] = useLocalStorage<AuditLog[]>('auditLogs', []);
+  const [localNotifications, setLocalNotifications] = useLocalStorage<Notification[]>('notifications', []);
   
   const [patients, setPatients] = useState<Patient[]>([...mockPatients, ...localPatients]);
   const [medications, setMedications] = useState<Medication[]>(mockMedications);
@@ -112,6 +117,7 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const [messages, setMessages] = useState<Message[]>(localMessages);
   const [appointments, setAppointments] = useState<Appointment[]>(localAppointments);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(localAuditLogs);
+  const [notifications, setNotifications] = useState<Notification[]>(localNotifications);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
 
   useEffect(() => {
@@ -133,6 +139,10 @@ export function EHRProvider({ children }: EHRProviderProps) {
   useEffect(() => {
     setAuditLogs(localAuditLogs);
   }, [localAuditLogs]);
+
+  useEffect(() => {
+    setNotifications(localNotifications);
+  }, [localNotifications]);
 
   const loadPendingPatients = useCallback(() => {
     const savedPatients = localStorage.getItem('pendingPatients');
@@ -292,6 +302,23 @@ export function EHRProvider({ children }: EHRProviderProps) {
     }
   }, [patients]);
 
+  const addNotification = useCallback((notification: Notification) => {
+    setNotifications(prev => [notification, ...prev]);
+    const saved = localStorage.getItem('notifications');
+    const existing: Notification[] = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('notifications', JSON.stringify([notification, ...existing]));
+  }, []);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const saved = localStorage.getItem('notifications');
+    if (saved) {
+      const existing: Notification[] = JSON.parse(saved);
+      const updated = existing.map((n: Notification) => n.id === id ? { ...n, read: true } : n);
+      localStorage.setItem('notifications', JSON.stringify(updated));
+    }
+  }, []);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -303,6 +330,7 @@ export function EHRProvider({ children }: EHRProviderProps) {
       incidentReports,
       messages,
       appointments,
+      notifications,
       auditLogs,
       currentDepartment,
       setCurrentDepartment,
@@ -324,7 +352,9 @@ export function EHRProvider({ children }: EHRProviderProps) {
       addAuditLog,
       transferPatient,
       addFollowUp,
-      updateFollowUp
+      updateFollowUp,
+      addNotification,
+      markNotificationRead
     }}>
       {children}
     </EHRContext.Provider>

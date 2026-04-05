@@ -34,10 +34,10 @@ const getWeeksInMonth = (year: number, month: number) => {
 };
 
 export function NursingAdmin() {
-  const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders, updatePatient } = useEHR();
+  const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders, updatePatient, appointments, updateAppointment, addNotification } = useEHR();
   const { user } = useAuth();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics' | 'patients' | 'followups'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics' | 'patients' | 'followups' | 'appointments'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -45,6 +45,8 @@ export function NursingAdmin() {
   const [selectedWeek, setSelectedWeek] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+
+  const pendingAppointments = appointments.filter(a => a.status === 'pending');
 
   const pendingVerificationCharts = patients.filter(p => 
     p.workflowStatus === 'doctor-completed' && p.chartVerificationStatus === 'pending'
@@ -517,6 +519,14 @@ export function NursingAdmin() {
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'followups' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
           Follow-ups
+        </button>
+        <button
+          onClick={() => setActiveTab('appointments')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'appointments' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+        >
+          Appointments {pendingAppointments.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{pendingAppointments.length}</span>
+          )}
         </button>
       </div>
 
@@ -1455,6 +1465,75 @@ export function NursingAdmin() {
 
         {activeTab === 'followups' && (
           <FollowUpManager />
+        )}
+
+        {activeTab === 'appointments' && (
+          <div className="card">
+            <div className="p-4 border-b border-slate-200">
+              <h2 className="font-semibold text-slate-800">Appointment Management</h2>
+              <p className="text-sm text-slate-500">Review and confirm patient appointments</p>
+            </div>
+            <div className="p-4">
+              {pendingAppointments.length === 0 ? (
+                <p className="text-slate-500 text-center py-8">No pending appointments to review</p>
+              ) : (
+                <div className="space-y-4">
+                  {pendingAppointments.map(apt => (
+                    <div key={apt.id} className="p-4 border border-slate-200 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-slate-800">{apt.patientName}</p>
+                          <p className="text-sm text-slate-600">Date: {apt.date} at {apt.time}</p>
+                          <p className="text-sm text-slate-600">Department: {apt.department}</p>
+                          {apt.notes && <p className="text-sm text-slate-500 mt-1">Notes: {apt.notes}</p>}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const confirmed = { ...apt, status: 'scheduled' as const };
+                              updateAppointment(confirmed);
+                              addNotification({
+                                id: `NOTIF-${Date.now()}`,
+                                patientId: apt.patientId,
+                                type: 'appointment_confirmed',
+                                title: 'Appointment Confirmed',
+                                message: `Your appointment on ${apt.date} at ${apt.time} has been confirmed.`,
+                                timestamp: new Date().toISOString(),
+                                read: false,
+                                relatedId: apt.id
+                              });
+                            }}
+                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => {
+                              const cancelled = { ...apt, status: 'cancelled' as const };
+                              updateAppointment(cancelled);
+                              addNotification({
+                                id: `NOTIF-${Date.now()}`,
+                                patientId: apt.patientId,
+                                type: 'appointment_cancelled',
+                                title: 'Appointment Cancelled',
+                                message: `Your appointment on ${apt.date} at ${apt.time} has been cancelled.`,
+                                timestamp: new Date().toISOString(),
+                                read: false,
+                                relatedId: apt.id
+                              });
+                            }}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );

@@ -34,6 +34,19 @@ export interface Message {
   relatedPatientId?: string;
 }
 
+export type NotificationType = 'appointment_reminder' | 'appointment_confirmed' | 'appointment_cancelled' | 'lab_result' | 'prescription';
+
+export interface Notification {
+  id: string;
+  patientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  relatedId?: string;
+}
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -43,9 +56,10 @@ export interface Appointment {
   doctorName?: string;
   date: string;
   time: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'no-show';
   notes?: string;
   createdAt: string;
+  reminderSent?: boolean;
 }
 
 export interface AuditLog {
