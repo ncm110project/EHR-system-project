@@ -7,23 +7,141 @@ import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSigns
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-const commonLabTests = [
-  { name: 'Complete Blood Count (CBC)', type: 'blood' as const },
-  { name: 'Basic Metabolic Panel (BMP)', type: 'blood' as const },
-  { name: 'Comprehensive Metabolic Panel (CMP)', type: 'blood' as const },
-  { name: 'Lipid Panel', type: 'blood' as const },
-  { name: 'Liver Function Tests (LFT)', type: 'blood' as const },
-  { name: 'Thyroid Panel (TSH/T3/T4)', type: 'blood' as const },
-  { name: 'Hemoglobin A1C', type: 'blood' as const },
-  { name: 'Urinalysis', type: 'urine' as const },
-  { name: 'Urine Culture', type: 'urine' as const },
-  { name: 'Chest X-Ray', type: 'imaging' as const },
-  { name: 'CT Scan Head', type: 'imaging' as const },
-  { name: 'CT Scan Abdomen', type: 'imaging' as const },
-  { name: 'MRI Brain', type: 'imaging' as const },
-  { name: 'ECG/EKG', type: 'imaging' as const },
-  { name: 'Blood Culture', type: 'pathology' as const },
+interface LabTestCategory {
+  category: string;
+  tests: { name: string; type: 'blood' | 'urine' | 'stool' | 'microbiology' | 'serology' | 'special' }[];
+}
+
+const labTestsByCategory: LabTestCategory[] = [
+  {
+    category: 'Hematology',
+    tests: [
+      { name: 'Complete Blood Count (CBC)', type: 'blood' },
+      { name: 'Hemoglobin & Hematocrit', type: 'blood' },
+      { name: 'Platelet Count', type: 'blood' },
+      { name: 'Erythrocyte Sedimentation Rate (ESR)', type: 'blood' },
+      { name: 'Peripheral Blood Smear', type: 'blood' },
+      { name: 'Reticulocyte Count', type: 'blood' },
+      { name: 'Prothrombin Time (PT)', type: 'blood' },
+      { name: 'Activated Partial Thromboplastin Time (aPTT)', type: 'blood' },
+      { name: 'INR', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Clinical Chemistry',
+    tests: [
+      { name: 'Blood Glucose (Fasting)', type: 'blood' },
+      { name: 'Blood Glucose (Random)', type: 'blood' },
+      { name: 'HbA1c', type: 'blood' },
+      { name: 'Blood Urea Nitrogen (BUN)', type: 'blood' },
+      { name: 'Creatinine', type: 'blood' },
+      { name: 'Uric Acid', type: 'blood' },
+      { name: 'Total Cholesterol', type: 'blood' },
+      { name: 'HDL', type: 'blood' },
+      { name: 'LDL', type: 'blood' },
+      { name: 'Triglycerides', type: 'blood' },
+      { name: 'Sodium', type: 'blood' },
+      { name: 'Potassium', type: 'blood' },
+      { name: 'Chloride', type: 'blood' },
+      { name: 'Calcium', type: 'blood' },
+      { name: 'AST (SGOT)', type: 'blood' },
+      { name: 'ALT (SGPT)', type: 'blood' },
+      { name: 'Alkaline Phosphatase', type: 'blood' },
+      { name: 'Bilirubin', type: 'blood' },
+      { name: 'Total Protein', type: 'blood' },
+      { name: 'Albumin', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Urinalysis',
+    tests: [
+      { name: 'Routine Urinalysis', type: 'urine' },
+      { name: 'Urine Microscopy', type: 'urine' },
+    ]
+  },
+  {
+    category: 'Stool Examination',
+    tests: [
+      { name: 'Fecalysis', type: 'stool' },
+      { name: 'Occult Blood Test', type: 'stool' },
+      { name: 'Stool Culture', type: 'stool' },
+    ]
+  },
+  {
+    category: 'Microbiology',
+    tests: [
+      { name: 'Blood Culture', type: 'blood' },
+      { name: 'Urine Culture', type: 'urine' },
+      { name: 'Sputum Culture', type: 'special' },
+      { name: 'Wound Culture', type: 'special' },
+      { name: 'Culture & Sensitivity Testing', type: 'special' },
+    ]
+  },
+  {
+    category: 'Serology / Immunology',
+    tests: [
+      { name: 'Pregnancy Test (hCG)', type: 'special' },
+      { name: 'Dengue NS1', type: 'serology' },
+      { name: 'Dengue IgG', type: 'serology' },
+      { name: 'Dengue IgM', type: 'serology' },
+      { name: 'COVID-19 Test', type: 'serology' },
+      { name: 'HIV Test', type: 'serology' },
+      { name: 'Hepatitis A', type: 'serology' },
+      { name: 'Hepatitis B', type: 'serology' },
+      { name: 'Hepatitis C', type: 'serology' },
+      { name: 'C-Reactive Protein (CRP)', type: 'blood' },
+      { name: 'Rheumatoid Factor (RF)', type: 'serology' },
+      { name: 'Antinuclear Antibody (ANA)', type: 'serology' },
+    ]
+  },
+  {
+    category: 'Endocrinology',
+    tests: [
+      { name: 'TSH', type: 'blood' },
+      { name: 'T3', type: 'blood' },
+      { name: 'T4', type: 'blood' },
+      { name: 'Insulin Levels', type: 'blood' },
+      { name: 'Cortisol', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Blood Bank / Transfusion',
+    tests: [
+      { name: 'Blood Typing (ABO/Rh)', type: 'blood' },
+      { name: 'Crossmatching', type: 'blood' },
+      { name: 'Antibody Screening', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Toxicology',
+    tests: [
+      { name: 'Drug Screening Test', type: 'special' },
+      { name: 'Alcohol Level', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Arterial Blood Gas (ABG)',
+    tests: [
+      { name: 'ABG - pH', type: 'blood' },
+      { name: 'ABG - pCO2', type: 'blood' },
+      { name: 'ABG - pO2', type: 'blood' },
+      { name: 'ABG - HCO3', type: 'blood' },
+      { name: 'Oxygen Saturation', type: 'blood' },
+    ]
+  },
+  {
+    category: 'Special Tests',
+    tests: [
+      { name: 'PSA', type: 'special' },
+      { name: 'AFP', type: 'special' },
+      { name: 'CA-125', type: 'special' },
+      { name: 'Vitamin D', type: 'blood' },
+      { name: 'Vitamin B12', type: 'blood' },
+    ]
+  },
 ];
+
+const allLabTests = labTestsByCategory.flatMap(cat => cat.tests);
 
 interface EMTNotification {
   id: string;
@@ -1047,7 +1165,7 @@ export function EmergencyRoom() {
                               className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                             >
                               <option value="">Select Lab Test</option>
-                              {commonLabTests.map((test) => (
+                              {allLabTests.map((test: { name: string; type: string }) => (
                                 <option key={test.name} value={test.name}>{test.name}</option>
                               ))}
                             </select>
@@ -1055,9 +1173,9 @@ export function EmergencyRoom() {
                               className="btn btn-primary"
                               onClick={() => {
                                 if (selectedLabTest) {
-                                  const test = commonLabTests.find(t => t.name === selectedLabTest);
+                                  const test = allLabTests.find((t: { name: string; type: string }) => t.name === selectedLabTest);
                                   if (test) {
-                                    handleOrderLab(selectedPatient, test.name, test.type);
+                                    handleOrderLab(selectedPatient, test.name, test.type as any);
                                   }
                                 }
                               }}
