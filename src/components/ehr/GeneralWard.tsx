@@ -344,16 +344,27 @@ export function GeneralWard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">General Ward</h2>
-          <p className="text-slate-500">Bedside nursing & patient management</p>
+          <h2 className="text-2xl font-bold text-slate-800">
+            {isChargeNurse ? 'General Ward - Charge Nurse' : isStaffNurse ? 'General Ward - Staff Nurse' : isDoctor ? 'General Ward - Doctor' : 'General Ward'}
+          </h2>
+          <p className="text-slate-500">
+            {isChargeNurse ? 'Patient flow & bed management' : isStaffNurse ? 'Patient care & documentation' : isDoctor ? 'Patient treatment & orders' : 'Bedside nursing & patient management'}
+          </p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setShowHandoverModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-            Shift Handover
-          </button>
           {isChargeNurse && (
-            <button onClick={() => setShowAdmitModal(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-              Admit Patient
+            <>
+              <button onClick={() => setShowHandoverModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                Shift Handover
+              </button>
+              <button onClick={() => setShowAdmitModal(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                Admit Patient
+              </button>
+            </>
+          )}
+          {isStaffNurse && (
+            <button onClick={() => setShowHandoverModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              Shift Handover
             </button>
           )}
         </div>
@@ -379,7 +390,25 @@ export function GeneralWard() {
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
-        {[
+        {(isChargeNurse ? [
+          { id: 'beds', label: 'Bed Grid' },
+          { id: 'patients', label: 'All Patients' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'equipment', label: 'Equipment' },
+          { id: 'handover', label: 'Handover Log' },
+        ] : isStaffNurse ? [
+          { id: 'patients', label: 'My Patients' },
+          { id: 'medications', label: 'Medication Rounds' },
+          { id: 'iv', label: 'IV Fluids' },
+          { id: 'pain', label: 'Pain Assessment' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'handover', label: 'Handover Log' },
+        ] : isDoctor ? [
+          { id: 'patients', label: 'Patients' },
+          { id: 'rounds', label: 'Daily Rounds' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'handover', label: 'Handover Log' },
+        ] : [
           { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
           { id: 'pain', label: 'Pain Assessment' },
@@ -389,7 +418,7 @@ export function GeneralWard() {
           { id: 'incidents', label: 'Incidents' },
           { id: 'equipment', label: 'Equipment' },
           { id: 'handover', label: 'Handover Log' },
-        ].map(tab => (
+        ]).map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
