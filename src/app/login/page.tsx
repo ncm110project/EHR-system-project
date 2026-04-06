@@ -217,6 +217,26 @@ export default function LoginPage() {
                     Quick Login
                   </button>
                 </div>
+                <div className="p-3 bg-amber-50 rounded-lg">
+                  <p className="font-medium text-amber-800">Triage - Nurse</p>
+                  <p className="text-sm text-amber-600">Username: nurse_triage | Password: triage123</p>
+                  <button
+                    onClick={() => handleQuickLogin("nurse_triage", "triage123")}
+                    className="mt-2 text-xs text-amber-700 underline"
+                  >
+                    Quick Login
+                  </button>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg">
+                  <p className="font-medium text-amber-800">Triage - Nurse 2</p>
+                  <p className="text-sm text-amber-600">Username: nurse_triage2 | Password: triage123</p>
+                  <button
+                    onClick={() => handleQuickLogin("nurse_triage2", "triage123")}
+                    className="mt-2 text-xs text-amber-700 underline"
+                  >
+                    Quick Login
+                  </button>
+                </div>
                 <div className="p-3 bg-indigo-50 rounded-lg">
                   <p className="font-medium text-indigo-800">General Ward - Staff Nurse 1</p>
                   <p className="text-sm text-indigo-600">Username: staff_nurse_1 | Password: staff123</p>

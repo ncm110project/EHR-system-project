@@ -14,6 +14,7 @@ import { NursingAdmin } from "@/components/ehr/NursingAdmin";
 import { RegistrationClerk } from "@/components/ehr/RegistrationClerk";
 import { PatientDashboard } from "@/components/ehr/PatientDashboard";
 import { GeneralWard } from "@/components/ehr/GeneralWard";
+import { TriageDepartment } from "@/components/ehr/TriageDepartment";
 
 export default function Dashboard() {
   const { isAuthenticated, user, isPatient } = useAuth();
@@ -59,6 +60,8 @@ export default function Dashboard() {
         return <Laboratory />;
       case 'nursing':
         return <NursingAdmin />;
+      case 'triage':
+        return <TriageDepartment />;
       case 'general-ward':
         return <GeneralWard />;
       default:

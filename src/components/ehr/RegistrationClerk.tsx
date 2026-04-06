@@ -45,7 +45,8 @@ export function RegistrationClerk() {
     const updatedPatient: Patient = {
       ...patient,
       registrationStatus: 'confirmed',
-      department: visitType,
+      department: 'registration',
+      triageStatus: 'pending',
       status: 'waiting',
       workflowStatus: 'registered',
       admissionDate: new Date().toISOString()
@@ -54,10 +55,10 @@ export function RegistrationClerk() {
     addActivity({
       id: generateId(),
       type: 'admission',
-      department: visitType,
+      department: 'triage',
       patientId: patient.id,
       patientName: patient.name,
-      description: `Registration confirmed - assigned to ${visitType.toUpperCase()} queue`,
+      description: `Registration confirmed - sent to Triage queue for assessment`,
       timestamp: new Date().toISOString()
     });
     setSelectedPatient(null);
@@ -418,30 +419,11 @@ export function RegistrationClerk() {
 
               {(!selectedPatient.registrationStatus || selectedPatient.registrationStatus === 'pending') && (
                 <div className="border-t border-slate-200 pt-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Assign to Department</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="visitType"
-                        value="opd"
-                        checked={visitType === 'opd'}
-                        onChange={() => setVisitType('opd')}
-                        className="w-4 h-4 text-teal-600"
-                      />
-                      <span className="text-sm">Outpatient (OPD)</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="visitType"
-                        value="er"
-                        checked={visitType === 'er'}
-                        onChange={() => setVisitType('er')}
-                        className="w-4 h-4 text-teal-600"
-                      />
-                      <span className="text-sm">Emergency Room (ER)</span>
-                    </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Send to Triage for Assessment</label>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      Patient will be added to the Triage queue where a Triage Nurse will assess and assign priority before routing to the appropriate department.
+                    </p>
                   </div>
                 </div>
               )}

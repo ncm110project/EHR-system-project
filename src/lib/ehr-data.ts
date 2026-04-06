@@ -6,7 +6,7 @@ export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected';
 
 export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
-export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration' | 'general-ward';
+export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration' | 'general-ward' | 'triage';
 
 export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient' | 'charge-nurse' | 'staff-nurse';
 
@@ -219,6 +219,8 @@ export const mockUsers: User[] = [
   { id: 'U012', username: 'staff_nurse_2', password: 'staff123', name: 'Nurse Sarah Chen', email: 'schen@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U013', username: 'charge_nurse_er', password: 'charge123', name: 'Nurse Linda Martinez', email: 'lmartinez@hospital.org', role: 'charge-nurse', department: 'er', departmentName: 'Emergency Room' },
   { id: 'U014', username: 'doctor_er2', password: 'doctor123', name: 'Dr. Sarah Kim', email: 'skim@hospital.org', role: 'doctor', department: 'er', departmentName: 'Emergency Room' },
+  { id: 'U015', username: 'nurse_triage', password: 'triage123', name: 'Nurse Anna Torres', email: 'atorres@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
+  { id: 'U016', username: 'nurse_triage2', password: 'triage123', name: 'Nurse Brian Chen', email: 'bchen@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
 ];
 
 export interface Patient {
@@ -236,6 +238,8 @@ export interface Patient {
   admissionDate: string;
   registrationStatus?: RegistrationStatus;
   triagePriority?: TriagePriority;
+  triageStatus?: 'pending' | 'triaged';
+  arrivalMode?: 'walk-in' | 'ambulance' | 'referral';
   chiefComplaint?: string;
   diagnosis?: string;
   prescriptions?: Prescription[];
