@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
+import { DepartmentTransfer } from "./DepartmentTransfer";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -160,6 +161,7 @@ export function EmergencyRoom() {
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, setCurrentDepartment, medications, addLabOrder, addPrescription, labOrders, prescriptions } = useEHR();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [activeTab, setActiveTab] = useState<'patients' | 'emt' | 'orders'>('patients');
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -1244,10 +1246,25 @@ export function EmergencyRoom() {
                           <span className="font-medium text-green-700">Discharge Patient</span>
                           <p className="text-sm text-green-600">Complete treatment and discharge</p>
                         </button>
+
+                        <button 
+                          className="w-full p-3 bg-teal-50 border border-teal-200 rounded-lg text-left hover:bg-teal-100"
+                          onClick={() => setShowTransfer(true)}
+                        >
+                          <span className="font-medium text-teal-700">Transfer Patient</span>
+                          <p className="text-sm text-teal-600">Transfer to another department</p>
+                        </button>
                       </>
                     )}
                   </div>
                 </div>
+              )}
+
+              {showTransfer && selectedPatient && (
+                <DepartmentTransfer 
+                  patient={selectedPatient} 
+                  onClose={() => setShowTransfer(false)} 
+                />
               )}
 
               <div className="flex justify-end">

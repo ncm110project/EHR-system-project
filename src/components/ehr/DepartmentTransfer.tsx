@@ -13,6 +13,7 @@ interface DepartmentTransferProps {
 const departments: { id: Department; name: string; color: string }[] = [
   { id: 'opd', name: 'Outpatient Department', color: '#3B82F6' },
   { id: 'er', name: 'Emergency Room', color: '#EF4444' },
+  { id: 'general-ward', name: 'General Ward', color: '#14B8A6' },
   { id: 'pharmacy', name: 'Pharmacy', color: '#8B5CF6' },
   { id: 'lab', name: 'Laboratory', color: '#F59E0B' },
   { id: 'nursing', name: 'Nursing Admin', color: '#10B981' }
