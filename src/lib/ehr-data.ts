@@ -8,7 +8,7 @@ export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration' | 'general-ward';
 
-export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient';
+export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient' | 'charge-nurse' | 'staff-nurse';
 
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
@@ -213,8 +213,9 @@ export const mockUsers: User[] = [
   { id: 'U006', username: 'nursing_admin', password: 'admin123', name: 'Admin Nurse Manager', email: 'admin@hospital.org', role: 'admin', department: 'nursing', departmentName: 'Nursing Administration' },
   { id: 'U007', username: 'lab', password: 'lab123', name: 'Lab Technician David Lee', email: 'dlee@hospital.org', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
   { id: 'U008', username: 'clerk', password: 'clerk123', name: 'Registration Clerk Maria Santos', email: 'msantos@hospital.org', role: 'clerk', department: 'registration', departmentName: 'Patient Registration' },
-  { id: 'U009', username: 'nurse_ward', password: 'nurse123', name: 'Nurse Linda Martinez', email: 'lmartinez@hospital.org', role: 'nurse', department: 'general-ward', departmentName: 'General Ward' },
-  { id: 'U010', username: 'doctor_ward', password: 'doctor123', name: 'Dr. James Wilson', email: 'jwilson@hospital.org', role: 'doctor', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U009', username: 'charge_nurse', password: 'charge123', name: 'Nurse Karen Thompson', email: 'kthompson@hospital.org', role: 'charge-nurse', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U010', username: 'staff_nurse', password: 'staff123', name: 'Nurse Mark Rivera', email: 'mrivera@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U011', username: 'doctor_ward', password: 'doctor123', name: 'Dr. James Wilson', email: 'jwilson@hospital.org', role: 'doctor', department: 'general-ward', departmentName: 'General Ward' },
 ];
 
 export interface Patient {

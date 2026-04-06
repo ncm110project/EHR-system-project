@@ -74,6 +74,8 @@ export function GeneralWard() {
 
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
+  const isChargeNurse = !!(user && 'role' in user && user.role === 'charge-nurse');
+  const isStaffNurse = !!(user && 'role' in user && user.role === 'staff-nurse');
 
   const wardPatients = patients.filter(p => p.department === 'general-ward' && p.registrationStatus === 'confirmed');
 
@@ -349,9 +351,11 @@ export function GeneralWard() {
           <button onClick={() => setShowHandoverModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
             Shift Handover
           </button>
-          <button onClick={() => setShowAdmitModal(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-            Admit Patient
-          </button>
+          {isChargeNurse && (
+            <button onClick={() => setShowAdmitModal(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+              Admit Patient
+            </button>
+          )}
         </div>
       </div>
 
@@ -661,6 +665,10 @@ export function GeneralWard() {
                 {isNurse && (
                   <>
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
+                  </>
+                )}
+                {(isChargeNurse || isNurse) && (
+                  <>
                     <button onClick={handleTransfer} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Transfer Out</button>
                     <button onClick={handleDischarge} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Discharge</button>
                   </>
