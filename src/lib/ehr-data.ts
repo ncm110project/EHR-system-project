@@ -272,7 +272,7 @@ export interface Patient {
   bedNumber?: string;
   admittingPhysician?: string;
   admissionDiagnosis?: string;
-  wardStatus?: 'admitted' | 'discharged' | 'transferred-out' | 'transferred-in';
+  wardStatus?: 'admitted' | 'discharged' | 'transferred-out' | 'transferred-in' | 'active';
   wardWorkflowStatus?: 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
   bedAssignedAt?: string;
   admittedAt?: string;
@@ -568,6 +568,7 @@ export interface Activity {
 }
 
 export const mockPatients: Patient[] = [
+  // OPD Patients
   {
     id: 'P001',
     name: 'John Smith',
@@ -584,6 +585,7 @@ export const mockPatients: Patient[] = [
     chiefComplaint: 'Chest pain',
     vitalSigns: { bloodPressure: '120/80', heartRate: 72, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 98, recordedAt: '2026-03-14T10:30:00' }
   },
+  // ER Patients
   {
     id: 'P002',
     name: 'Maria Garcia',
@@ -619,6 +621,150 @@ export const mockPatients: Patient[] = [
     diagnosis: 'Pneumonia',
     vitalSigns: { bloodPressure: '140/90', heartRate: 88, temperature: 99.8, respiratoryRate: 24, oxygenSaturation: 91, recordedAt: '2026-03-13T14:20:00' }
   },
+  // General Ward Patients - for testing nurse assignment, tasks, medication orders
+  {
+    id: 'P010',
+    name: 'James Wilson',
+    age: 55,
+    gender: 'Male',
+    dob: '1971-06-15',
+    phone: '555-0201',
+    address: '111 Hospital Road',
+    bloodType: 'A+',
+    allergies: [],
+    status: 'admitted',
+    department: 'general-ward',
+    admissionDate: '2026-04-05',
+    roomNumber: '101',
+    bedNumber: 'A',
+    admittingPhysician: 'Dr. James Wilson',
+    admissionDiagnosis: 'Post-operative recovery - Appendectomy',
+    wardStatus: 'admitted',
+    wardWorkflowStatus: 'admitted',
+    admittedAt: '2026-04-05T10:00:00',
+    vitalSigns: { bloodPressure: '130/85', heartRate: 80, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 98, recordedAt: '2026-04-06T08:00:00' },
+    assignedNurse: 'Nurse Mark Rivera'
+  },
+  {
+    id: 'P011',
+    name: 'Patricia Brown',
+    age: 42,
+    gender: 'Female',
+    dob: '1984-02-20',
+    phone: '555-0202',
+    address: '222 Health Street',
+    bloodType: 'B+',
+    allergies: ['Penicillin', 'Sulfa'],
+    status: 'in-treatment',
+    department: 'general-ward',
+    admissionDate: '2026-04-04',
+    roomNumber: '102',
+    bedNumber: 'A',
+    admittingPhysician: 'Dr. James Wilson',
+    admissionDiagnosis: 'Pneumonia - IV antibiotics',
+    wardStatus: 'active',
+    wardWorkflowStatus: 'active',
+    admittedAt: '2026-04-04T14:00:00',
+    activatedAt: '2026-04-05T08:00:00',
+    vitalSigns: { bloodPressure: '110/70', heartRate: 95, temperature: 99.5, respiratoryRate: 20, oxygenSaturation: 94, recordedAt: '2026-04-06T08:30:00' },
+    assignedNurse: 'Nurse Sarah Chen',
+    ivFluid: 'Normal Saline',
+    ivRate: 100,
+    ivStartedAt: '2026-04-04T15:00:00'
+  },
+  {
+    id: 'P012',
+    name: 'Thomas Anderson',
+    age: 68,
+    gender: 'Male',
+    dob: '1958-09-10',
+    phone: '555-0203',
+    address: '333 Medical Ave',
+    bloodType: 'O+',
+    allergies: [],
+    status: 'admitted',
+    department: 'general-ward',
+    admissionDate: '2026-04-03',
+    roomNumber: '103',
+    bedNumber: 'B',
+    admittingPhysician: 'Dr. James Wilson',
+    admissionDiagnosis: 'Heart failure - monitoring',
+    wardStatus: 'admitted',
+    wardWorkflowStatus: 'admitted',
+    admittedAt: '2026-04-03T09:00:00',
+    vitalSigns: { bloodPressure: '150/95', heartRate: 55, temperature: 98.2, respiratoryRate: 18, oxygenSaturation: 96, recordedAt: '2026-04-06T07:00:00' },
+    assignedNurse: 'Nurse Mark Rivera'
+  },
+  // Patients for Triage - in registration department with pending triage status
+  {
+    id: 'P020',
+    name: 'Alice Johnson',
+    age: 28,
+    gender: 'Female',
+    dob: '1998-04-12',
+    phone: '555-0301',
+    address: '444 Patient Lane',
+    bloodType: 'AB+',
+    allergies: [],
+    status: 'waiting',
+    department: 'registration',
+    admissionDate: '2026-04-06T09:00:00',
+    triageStatus: 'pending',
+    chiefComplaint: 'Severe headache and fever',
+    vitalSigns: { bloodPressure: '100/65', heartRate: 100, temperature: 103.5, respiratoryRate: 20, oxygenSaturation: 98, recordedAt: '2026-04-06T09:00:00' }
+  },
+  {
+    id: 'P021',
+    name: 'Bob Miller',
+    age: 35,
+    gender: 'Male',
+    dob: '1991-11-25',
+    phone: '555-0302',
+    address: '555 Health Blvd',
+    bloodType: 'A-',
+    allergies: [],
+    status: 'waiting',
+    department: 'registration',
+    admissionDate: '2026-04-06T09:30:00',
+    triageStatus: 'pending',
+    chiefComplaint: 'Chest discomfort',
+    vitalSigns: { bloodPressure: '140/90', heartRate: 85, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 97, recordedAt: '2026-04-06T09:30:00' }
+  },
+  {
+    id: 'P022',
+    name: 'Carol Davis',
+    age: 45,
+    gender: 'Female',
+    dob: '1981-07-08',
+    phone: '555-0303',
+    address: '666 Care Street',
+    bloodType: 'O+',
+    allergies: ['Aspirin'],
+    status: 'waiting',
+    department: 'registration',
+    admissionDate: '2026-04-06T10:00:00',
+    triageStatus: 'pending',
+    chiefComplaint: 'Back pain after lifting',
+    vitalSigns: { bloodPressure: '125/80', heartRate: 70, temperature: 98.4, respiratoryRate: 14, oxygenSaturation: 99, recordedAt: '2026-04-06T10:00:00' }
+  },
+  {
+    id: 'P023',
+    name: 'Daniel Martinez',
+    age: 22,
+    gender: 'Male',
+    dob: '2004-01-15',
+    phone: '555-0304',
+    address: '777 Wellness Ave',
+    bloodType: 'B+',
+    allergies: [],
+    status: 'waiting',
+    department: 'registration',
+    admissionDate: '2026-04-06T10:15:00',
+    triageStatus: 'pending',
+    chiefComplaint: 'Cut on hand - bleeding',
+    vitalSigns: { bloodPressure: '118/75', heartRate: 90, temperature: 98.8, respiratoryRate: 16, oxygenSaturation: 99, recordedAt: '2026-04-06T10:15:00' }
+  },
+  // Additional OPD patient
   {
     id: 'P004',
     name: 'Sarah Johnson',
@@ -635,6 +781,7 @@ export const mockPatients: Patient[] = [
     diagnosis: 'Appendicitis',
     vitalSigns: { bloodPressure: '110/70', heartRate: 68, temperature: 98.4, respiratoryRate: 14, oxygenSaturation: 99, recordedAt: '2026-03-12T11:00:00' }
   },
+  // Additional ER patient
   {
     id: 'P005',
     name: 'Michael Brown',
@@ -652,6 +799,7 @@ export const mockPatients: Patient[] = [
     chiefComplaint: 'Headache and dizziness',
     vitalSigns: { bloodPressure: '160/95', heartRate: 78, temperature: 98.2, respiratoryRate: 18, oxygenSaturation: 97, recordedAt: '2026-03-14T08:45:00' }
   },
+  // Pediatric patient
   {
     id: 'P006',
     name: 'Emily Wilson',
@@ -668,6 +816,7 @@ export const mockPatients: Patient[] = [
     chiefComplaint: 'High fever',
     vitalSigns: { bloodPressure: '100/65', heartRate: 120, temperature: 102.4, respiratoryRate: 28, oxygenSaturation: 96, recordedAt: '2026-03-14T09:30:00' }
   },
+  // Discharged patient
   {
     id: 'P007',
     name: 'David Lee',
@@ -684,6 +833,7 @@ export const mockPatients: Patient[] = [
     diagnosis: 'Upper respiratory infection',
     vitalSigns: { bloodPressure: '118/75', heartRate: 70, temperature: 98.6, respiratoryRate: 16, oxygenSaturation: 99, recordedAt: '2026-03-10T15:00:00' }
   },
+  // Another ER patient
   {
     id: 'P008',
     name: 'Lisa Anderson',
