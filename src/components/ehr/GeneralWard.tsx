@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment } from "@/lib/ehr-data";
+import { VitalSignsChart } from "./VitalSignsChart";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -711,7 +712,16 @@ export function GeneralWard() {
                 </div>
               )}
 
-              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && (
+              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 1 && (
+                <div className="p-4 border border-slate-200 rounded-lg">
+                  <h4 className="font-semibold mb-3">Vital Signs Trends</h4>
+                  <div className="h-40">
+                    <VitalSignsChart history={selectedPatient.vitalSignsHistory} />
+                  </div>
+                </div>
+              )}
+
+              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && selectedPatient.vitalSignsHistory.length <= 1 && (
                 <div className="p-4 border border-slate-200 rounded-lg">
                   <h4 className="font-semibold mb-3">Vital Signs History</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
