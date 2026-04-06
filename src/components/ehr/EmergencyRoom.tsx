@@ -527,14 +527,14 @@ export function EmergencyRoom() {
         >
           Patient Queue ({erPatients.length})
         </button>
-        {isNurse && (
+        {isNurse || isChargeNurse ? (
           <button
             onClick={() => setActiveTab('emt')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'emt' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             EMT Notifications ({emtNotifications.filter(n => n.status === 'pending').length})
           </button>
-        )}
+        ) : null}
         <button
           onClick={() => setActiveTab('orders')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'orders' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
