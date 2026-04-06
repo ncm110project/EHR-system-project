@@ -61,9 +61,9 @@ function VitalCard({
   const values = data.map((d, i) => ({ x: i, y: getValue(d), entry: d })).filter(d => d.y > 0);
   const range = yMax - yMin;
   
-  const width = 200;
-  const height = 100;
-  const padding = { top: 10, right: 10, bottom: 25, left: 35 };
+  const width = 240;
+  const height = 140;
+  const padding = { top: 15, right: 15, bottom: 35, left: 45 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
   
@@ -89,16 +89,16 @@ function VitalCard({
   const yAxisLabels = [yMax, (yMax + yMin) / 2, yMin];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <span className="text-base">{icon}</span>
-          <span className="text-xs font-semibold text-slate-700">{label}</span>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 min-w-0">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <span className="text-sm font-semibold text-slate-700">{label}</span>
         </div>
-        <span className="text-[10px] text-slate-400">{normalRange}</span>
+        <span className="text-xs text-slate-400">{normalRange}</span>
       </div>
       
-      <div className="relative h-24" onMouseLeave={() => setHoveredPoint(null)}>
+      <div className="relative h-32" onMouseLeave={() => setHoveredPoint(null)}>
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
           <defs>
             <linearGradient id={`gradient-${label.replace(/\s/g, '')}`} x1="0" y1="0" x2="0" y2="1">
@@ -116,12 +116,12 @@ function VitalCard({
                 y2={getY(val)} 
                 stroke="#E2E8F0" 
                 strokeWidth="0.5" 
-                strokeDasharray="2,2" 
+                strokeDasharray="3,3" 
               />
               <text 
-                x={padding.left - 3} 
-                y={getY(val) + 3} 
-                fontSize="7" 
+                x={padding.left - 5} 
+                y={getY(val) + 4} 
+                fontSize="9" 
                 fill="#94A3B8" 
                 textAnchor="end"
               >
@@ -133,13 +133,13 @@ function VitalCard({
           {points.length > 1 && (
             <>
               <polygon points={areaPath} fill={`url(#gradient-${label.replace(/\s/g, '')})`} />
-              <polyline fill="none" stroke={color} strokeWidth="1.5" points={linePath} strokeLinecap="round" strokeLinejoin="round" />
+              <polyline fill="none" stroke={color} strokeWidth="2" points={linePath} strokeLinecap="round" strokeLinejoin="round" />
             </>
           )}
           
           {points.map((p, i) => (
             <g key={i} className="cursor-pointer" onMouseEnter={() => setHoveredPoint(p)}>
-              <circle cx={p.x} cy={p.y} r="3" fill={color} stroke="white" strokeWidth="1" />
+              <circle cx={p.x} cy={p.y} r="4" fill={color} stroke="white" strokeWidth="1.5" />
             </g>
           ))}
           
@@ -147,8 +147,8 @@ function VitalCard({
             <text 
               key={`label-${i}`}
               x={p.x} 
-              y={height - 3} 
-              fontSize="6" 
+              y={height - 5} 
+              fontSize="8" 
               fill="#94A3B8" 
               textAnchor="middle"
             >
@@ -158,22 +158,22 @@ function VitalCard({
         </svg>
         
         {hoveredPoint && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded shadow-lg z-10">
+          <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1.5 rounded shadow-lg z-10">
             <p className="font-semibold">{hoveredPoint.val}{unit}</p>
             <p className="text-slate-300 text-[10px]">{hoveredPoint.time}</p>
           </div>
         )}
       </div>
       
-      <div className="flex items-end justify-between mt-0.5">
+      <div className="flex items-end justify-between mt-2 pt-2 border-t border-slate-100">
         <div>
-          <p className={`text-lg font-bold ${isAbnormal ? 'text-red-600' : ''}`} style={{ color: isAbnormal ? undefined : color }}>
+          <p className={`text-xl font-bold ${isAbnormal ? 'text-red-600' : ''}`} style={{ color: isAbnormal ? undefined : color }}>
             {latestValue !== null ? `${latestValue}` : '-'}
           </p>
-          <p className="text-[9px] text-slate-400">{unit}</p>
+          <p className="text-xs text-slate-400">{unit}</p>
         </div>
         {values.length > 0 && (
-          <p className="text-[9px] text-slate-400">{formatTime(values[values.length - 1].entry.timestamp)}</p>
+          <p className="text-xs text-slate-400">{formatTime(values[values.length - 1].entry.timestamp)}</p>
         )}
       </div>
     </div>
@@ -191,7 +191,7 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
   const maxDia = Math.max(...bpDiastolic, 90);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
       <VitalCard 
         data={data} 
         label="Heart Rate" 
