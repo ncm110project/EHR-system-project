@@ -712,31 +712,11 @@ export function GeneralWard() {
                 </div>
               )}
 
-              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 1 && (
+              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && (
                 <div className="p-4 border border-slate-200 rounded-lg">
                   <h4 className="font-semibold mb-3">Vital Signs Trends</h4>
                   <div className="h-40">
                     <VitalSignsChart history={selectedPatient.vitalSignsHistory} />
-                  </div>
-                </div>
-              )}
-
-              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && selectedPatient.vitalSignsHistory.length <= 1 && (
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="font-semibold mb-3">Vital Signs History</h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {selectedPatient.vitalSignsHistory.slice(-5).reverse().map((entry, idx) => (
-                      <div key={idx} className="p-2 bg-slate-50 rounded text-sm flex justify-between items-center">
-                        <div className="flex gap-3">
-                          <span className={isAbnormalBP(entry.vitals.bloodPressure) ? 'text-red-600' : ''}>BP: {entry.vitals.bloodPressure || '-'}</span>
-                          <span className={isAbnormalHR(entry.vitals.heartRate) ? 'text-red-600' : ''}>HR: {entry.vitals.heartRate || '-'}</span>
-                          <span className={isAbnormalTemp(entry.vitals.temperature) ? 'text-red-600' : ''}>Temp: {entry.vitals.temperature || '-'}</span>
-                          <span className={isAbnormalRR(entry.vitals.respiratoryRate) ? 'text-red-600' : ''}>RR: {entry.vitals.respiratoryRate || '-'}</span>
-                          <span className={isAbnormalSpO2(entry.vitals.oxygenSaturation) ? 'text-red-600' : ''}>SpO2: {entry.vitals.oxygenSaturation || '-'}</span>
-                        </div>
-                        <span className="text-xs text-slate-500">{formatVitalTime(entry.timestamp)}</span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}

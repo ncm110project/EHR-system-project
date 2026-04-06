@@ -13,7 +13,7 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
   const [view, setView] = useState<ChartView>('cardio');
   const data = [...history].reverse();
   
-  if (data.length < 2) return null;
+  if (data.length < 1) return null;
 
   const getSystolic = (bp: string | undefined): number => {
     if (!bp) return 0;
@@ -48,7 +48,7 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
       <line x1="40" y1="90" x2="380" y2="90" stroke="#E2E8F0" strokeWidth="1" />
 
       {labels.map((label, i) => {
-        const x = 40 + (i / (data.length - 1)) * 340;
+        const x = 40 + (i / (data.length - 1 || 1)) * 340;
         return (
           <g key={i}>
             <line x1={x} y1="90" x2={x} y2="95" stroke="#E2E8F0" strokeWidth="1" />
@@ -57,30 +57,34 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
         );
       })}
 
-      {getHRData().length > 1 && (
+      {getHRData().length >= 1 && (
         <g>
-          <polyline
-            fill="none"
-            stroke="#EF4444"
-            strokeWidth="2"
-            points={getHRData().map(d => `${40 + (d.x / (data.length - 1)) * 340},${getY(d.y, maxHR * 1.2, 80)}`).join(' ')}
-          />
+          {getHRData().length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#EF4444"
+              strokeWidth="2"
+              points={getHRData().map(d => `${40 + (d.x / (data.length - 1 || 1)) * 340},${getY(d.y, maxHR * 1.2, 80)}`).join(' ')}
+            />
+          )}
           {getHRData().map((d, i) => (
-            <circle key={i} cx={40 + (d.x / (data.length - 1)) * 340} cy={getY(d.y, maxHR * 1.2, 80)} r="2.5" fill="#EF4444" />
+            <circle key={i} cx={40 + (d.x / (data.length - 1 || 1)) * 340} cy={getY(d.y, maxHR * 1.2, 80)} r="3" fill="#EF4444" />
           ))}
         </g>
       )}
 
-      {getBPData().length > 1 && (
+      {getBPData().length >= 1 && (
         <g>
-          <polyline
-            fill="none"
-            stroke="#8B5CF6"
-            strokeWidth="2"
-            points={getBPData().map(d => `${40 + (d.x / (data.length - 1)) * 340},${getY(d.y, maxBP * 1.2, 80)}`).join(' ')}
-          />
+          {getBPData().length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#8B5CF6"
+              strokeWidth="2"
+              points={getBPData().map(d => `${40 + (d.x / (data.length - 1 || 1)) * 340},${getY(d.y, maxBP * 1.2, 80)}`).join(' ')}
+            />
+          )}
           {getBPData().map((d, i) => (
-            <circle key={i} cx={40 + (d.x / (data.length - 1)) * 340} cy={getY(d.y, maxBP * 1.2, 80)} r="2.5" fill="#8B5CF6" />
+            <circle key={i} cx={40 + (d.x / (data.length - 1 || 1)) * 340} cy={getY(d.y, maxBP * 1.2, 80)} r="3" fill="#8B5CF6" />
           ))}
         </g>
       )}
@@ -96,7 +100,7 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
       <line x1="40" y1="90" x2="380" y2="90" stroke="#E2E8F0" strokeWidth="1" />
 
       {labels.map((label, i) => {
-        const x = 40 + (i / (data.length - 1)) * 340;
+        const x = 40 + (i / (data.length - 1 || 1)) * 340;
         return (
           <g key={i}>
             <line x1={x} y1="90" x2={x} y2="95" stroke="#E2E8F0" strokeWidth="1" />
@@ -105,44 +109,50 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
         );
       })}
 
-      {getTempData().length > 1 && (
+      {getTempData().length >= 1 && (
         <g>
-          <polyline
-            fill="none"
-            stroke="#F59E0B"
-            strokeWidth="2"
-            points={getTempData().map(d => `${40 + (d.x / (data.length - 1)) * 340},${getY(d.y, maxTemp * 1.1, 80)}`).join(' ')}
-          />
+          {getTempData().length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#F59E0B"
+              strokeWidth="2"
+              points={getTempData().map(d => `${40 + (d.x / (data.length - 1 || 1)) * 340},${getY(d.y, maxTemp * 1.1, 80)}`).join(' ')}
+            />
+          )}
           {getTempData().map((d, i) => (
-            <circle key={i} cx={40 + (d.x / (data.length - 1)) * 340} cy={getY(d.y, maxTemp * 1.1, 80)} r="2.5" fill="#F59E0B" />
+            <circle key={i} cx={40 + (d.x / (data.length - 1 || 1)) * 340} cy={getY(d.y, maxTemp * 1.1, 80)} r="3" fill="#F59E0B" />
           ))}
         </g>
       )}
 
-      {getRRData().length > 1 && (
+      {getRRData().length >= 1 && (
         <g>
-          <polyline
-            fill="none"
-            stroke="#10B981"
-            strokeWidth="2"
-            points={getRRData().map(d => `${40 + (d.x / (data.length - 1)) * 340},${getY(d.y, maxRR * 1.3, 80)}`).join(' ')}
-          />
+          {getRRData().length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+              points={getRRData().map(d => `${40 + (d.x / (data.length - 1 || 1)) * 340},${getY(d.y, maxRR * 1.3, 80)}`).join(' ')}
+            />
+          )}
           {getRRData().map((d, i) => (
-            <circle key={i} cx={40 + (d.x / (data.length - 1)) * 340} cy={getY(d.y, maxRR * 1.3, 80)} r="2.5" fill="#10B981" />
+            <circle key={i} cx={40 + (d.x / (data.length - 1 || 1)) * 340} cy={getY(d.y, maxRR * 1.3, 80)} r="3" fill="#10B981" />
           ))}
         </g>
       )}
 
-      {getSpO2Data().length > 1 && (
+      {getSpO2Data().length >= 1 && (
         <g>
-          <polyline
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="2"
-            points={getSpO2Data().map(d => `${40 + (d.x / (data.length - 1)) * 340},${getY(d.y, 105, 80)}`).join(' ')}
-          />
+          {getSpO2Data().length > 1 && (
+            <polyline
+              fill="none"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              points={getSpO2Data().map(d => `${40 + (d.x / (data.length - 1 || 1)) * 340},${getY(d.y, 105, 80)}`).join(' ')}
+            />
+          )}
           {getSpO2Data().map((d, i) => (
-            <circle key={i} cx={40 + (d.x / (data.length - 1)) * 340} cy={getY(d.y, 105, 80)} r="2.5" fill="#3B82F6" />
+            <circle key={i} cx={40 + (d.x / (data.length - 1 || 1)) * 340} cy={getY(d.y, 105, 80)} r="3" fill="#3B82F6" />
           ))}
         </g>
       )}
