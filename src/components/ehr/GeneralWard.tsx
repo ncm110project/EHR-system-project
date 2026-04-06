@@ -7,6 +7,35 @@ import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
+const isAbnormalBP = (bp: string | undefined): boolean => {
+  if (!bp) return false;
+  const parts = bp.split('/');
+  if (parts.length !== 2) return false;
+  const systolic = parseInt(parts[0]);
+  return systolic < 90 || systolic > 140;
+};
+
+const isAbnormalHR = (hr: number | undefined): boolean => {
+  return hr !== undefined && (hr < 60 || hr > 100);
+};
+
+const isAbnormalTemp = (temp: number | undefined): boolean => {
+  return temp !== undefined && (temp < 36.1 || temp > 37.2);
+};
+
+const isAbnormalRR = (rr: number | undefined): boolean => {
+  return rr !== undefined && (rr < 12 || rr > 20);
+};
+
+const isAbnormalSpO2 = (spo2: number | undefined): boolean => {
+  return spo2 !== undefined && spo2 < 95;
+};
+
+const formatVitalTime = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
 const initialBeds: WardBed[] = [
   { id: 'B001', roomNumber: '101', bedNumber: 'A', status: 'available' },
   { id: 'B002', roomNumber: '101', bedNumber: 'B', status: 'available' },
@@ -670,11 +699,34 @@ export function GeneralWard() {
                 <div className="p-4 border border-slate-200 rounded-lg">
                   <h4 className="font-semibold mb-2">Current Vitals</h4>
                   <div className="grid grid-cols-5 gap-2 text-center text-sm">
-                    <div><p className="text-slate-500">BP</p><p className="font-medium">{selectedPatient.vitalSigns.bloodPressure || '-'}</p></div>
-                    <div><p className="text-slate-500">HR</p><p className="font-medium">{selectedPatient.vitalSigns.heartRate || '-'}</p></div>
-                    <div><p className="text-slate-500">Temp</p><p className="font-medium">{selectedPatient.vitalSigns.temperature || '-'}</p></div>
-                    <div><p className="text-slate-500">RR</p><p className="font-medium">{selectedPatient.vitalSigns.respiratoryRate || '-'}</p></div>
-                    <div><p className="text-slate-500">SpO2</p><p className="font-medium">{selectedPatient.vitalSigns.oxygenSaturation || '-'}</p></div>
+                    <div><p className="text-slate-500">BP</p><p className={`font-medium ${isAbnormalBP(selectedPatient.vitalSigns.bloodPressure) ? 'text-red-600 font-bold' : ''}`}>{selectedPatient.vitalSigns.bloodPressure || '-'}</p></div>
+                    <div><p className="text-slate-500">HR</p><p className={`font-medium ${isAbnormalHR(selectedPatient.vitalSigns.heartRate) ? 'text-red-600 font-bold' : ''}`}>{selectedPatient.vitalSigns.heartRate || '-'}</p></div>
+                    <div><p className="text-slate-500">Temp</p><p className={`font-medium ${isAbnormalTemp(selectedPatient.vitalSigns.temperature) ? 'text-red-600 font-bold' : ''}`}>{selectedPatient.vitalSigns.temperature || '-'}</p></div>
+                    <div><p className="text-slate-500">RR</p><p className={`font-medium ${isAbnormalRR(selectedPatient.vitalSigns.respiratoryRate) ? 'text-red-600 font-bold' : ''}`}>{selectedPatient.vitalSigns.respiratoryRate || '-'}</p></div>
+                    <div><p className="text-slate-500">SpO2</p><p className={`font-medium ${isAbnormalSpO2(selectedPatient.vitalSigns.oxygenSaturation) ? 'text-red-600 font-bold' : ''}`}>{selectedPatient.vitalSigns.oxygenSaturation || '-'}</p></div>
+                  </div>
+                  {selectedPatient.vitalSigns.recordedAt && (
+                    <p className="text-xs text-slate-400 mt-2">Recorded: {formatVitalTime(selectedPatient.vitalSigns.recordedAt)}</p>
+                  )}
+                </div>
+              )}
+
+              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && (
+                <div className="p-4 border border-slate-200 rounded-lg">
+                  <h4 className="font-semibold mb-3">Vital Signs History</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {selectedPatient.vitalSignsHistory.slice(-5).reverse().map((entry, idx) => (
+                      <div key={idx} className="p-2 bg-slate-50 rounded text-sm flex justify-between items-center">
+                        <div className="flex gap-3">
+                          <span className={isAbnormalBP(entry.vitals.bloodPressure) ? 'text-red-600' : ''}>BP: {entry.vitals.bloodPressure || '-'}</span>
+                          <span className={isAbnormalHR(entry.vitals.heartRate) ? 'text-red-600' : ''}>HR: {entry.vitals.heartRate || '-'}</span>
+                          <span className={isAbnormalTemp(entry.vitals.temperature) ? 'text-red-600' : ''}>Temp: {entry.vitals.temperature || '-'}</span>
+                          <span className={isAbnormalRR(entry.vitals.respiratoryRate) ? 'text-red-600' : ''}>RR: {entry.vitals.respiratoryRate || '-'}</span>
+                          <span className={isAbnormalSpO2(entry.vitals.oxygenSaturation) ? 'text-red-600' : ''}>SpO2: {entry.vitals.oxygenSaturation || '-'}</span>
+                        </div>
+                        <span className="text-xs text-slate-500">{formatVitalTime(entry.timestamp)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -710,21 +762,120 @@ export function GeneralWard() {
 
       {showVitalsModal && selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Record Vitals - {selectedPatient.name}</h3>
-            <div className="space-y-3">
-              <input type="text" placeholder="Blood Pressure (120/80)" value={newVitals.bloodPressure} onChange={(e) => setNewVitals({...newVitals, bloodPressure: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Heart Rate" value={newVitals.heartRate || ''} onChange={(e) => setNewVitals({...newVitals, heartRate: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
-                <input type="number" step="0.1" placeholder="Temperature" value={newVitals.temperature || ''} onChange={(e) => setNewVitals({...newVitals, temperature: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
+            
+            {selectedPatient.vitalSigns && (() => {
+              const prev = selectedPatient.vitalSigns;
+              return prev.bloodPressure ? (
+                <button 
+                  onClick={() => setNewVitals({
+                    bloodPressure: prev.bloodPressure || '',
+                    heartRate: prev.heartRate || 0,
+                    temperature: prev.temperature || 0,
+                    respiratoryRate: prev.respiratoryRate || 0,
+                    oxygenSaturation: prev.oxygenSaturation || 0,
+                    recordedAt: new Date().toISOString()
+                  })}
+                  className="text-xs text-blue-600 underline mb-3 hover:text-blue-800"
+                >
+                  Copy from previous vitals
+                </button>
+              ) : null;
+            })()}
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-sm font-medium text-slate-700">Blood Pressure (Systolic/Diastolic)</label>
+                  <span className="text-xs text-slate-400">Normal: 90-140/60-90</span>
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="e.g., 120/80" 
+                  value={newVitals.bloodPressure} 
+                  onChange={(e) => setNewVitals({...newVitals, bloodPressure: e.target.value})} 
+                  className={`w-full px-3 py-2 border rounded-lg ${isAbnormalBP(newVitals.bloodPressure) ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
+                />
+                {isAbnormalBP(newVitals.bloodPressure) && (
+                  <p className="text-xs text-red-600 mt-1">Warning: Outside normal range (90-140/60-90)</p>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Resp. Rate" value={newVitals.respiratoryRate || ''} onChange={(e) => setNewVitals({...newVitals, respiratoryRate: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
-                <input type="number" placeholder="SpO2" value={newVitals.oxygenSaturation || ''} onChange={(e) => setNewVitals({...newVitals, oxygenSaturation: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-sm font-medium text-slate-700">Heart Rate (bpm)</label>
+                    <span className="text-xs text-slate-400">Normal: 60-100</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder="e.g., 72" 
+                    value={newVitals.heartRate || ''} 
+                    onChange={(e) => setNewVitals({...newVitals, heartRate: parseInt(e.target.value) || 0})} 
+                    className={`w-full px-3 py-2 border rounded-lg ${isAbnormalHR(newVitals.heartRate) ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
+                  />
+                  {isAbnormalHR(newVitals.heartRate) && (
+                    <p className="text-xs text-red-600 mt-1">Warning: Outside normal range (60-100 bpm)</p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-sm font-medium text-slate-700">Temperature (°C)</label>
+                    <span className="text-xs text-slate-400">Normal: 36.1-37.2</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    step="0.1" 
+                    placeholder="e.g., 36.5" 
+                    value={newVitals.temperature || ''} 
+                    onChange={(e) => setNewVitals({...newVitals, temperature: parseFloat(e.target.value) || 0})} 
+                    className={`w-full px-3 py-2 border rounded-lg ${isAbnormalTemp(newVitals.temperature) ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
+                  />
+                  {isAbnormalTemp(newVitals.temperature) && (
+                    <p className="text-xs text-red-600 mt-1">Warning: Outside normal range (36.1-37.2°C)</p>
+                  )}
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-sm font-medium text-slate-700">Respiratory Rate (/min)</label>
+                    <span className="text-xs text-slate-400">Normal: 12-20</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder="e.g., 16" 
+                    value={newVitals.respiratoryRate || ''} 
+                    onChange={(e) => setNewVitals({...newVitals, respiratoryRate: parseInt(e.target.value) || 0})} 
+                    className={`w-full px-3 py-2 border rounded-lg ${isAbnormalRR(newVitals.respiratoryRate) ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
+                  />
+                  {isAbnormalRR(newVitals.respiratoryRate) && (
+                    <p className="text-xs text-red-600 mt-1">Warning: Outside normal range (12-20/min)</p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-sm font-medium text-slate-700">SpO2 (%)</label>
+                    <span className="text-xs text-slate-400">Normal: 95-100</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder="e.g., 98" 
+                    value={newVitals.oxygenSaturation || ''} 
+                    onChange={(e) => setNewVitals({...newVitals, oxygenSaturation: parseInt(e.target.value) || 0})} 
+                    className={`w-full px-3 py-2 border rounded-lg ${isAbnormalSpO2(newVitals.oxygenSaturation) ? 'border-red-500 bg-red-50' : 'border-slate-300'}`} 
+                  />
+                  {isAbnormalSpO2(newVitals.oxygenSaturation) && (
+                    <p className="text-xs text-red-600 mt-1">Warning: Below normal range (95-100%)</p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setShowVitalsModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
-                <button onClick={handleSaveVitals} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
+                <button onClick={handleSaveVitals} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Vitals</button>
               </div>
             </div>
           </div>
