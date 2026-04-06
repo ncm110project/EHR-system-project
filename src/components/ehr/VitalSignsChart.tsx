@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { VitalSignsEntry } from "@/lib/ehr-data";
 
 interface VitalSignsChartProps {
@@ -18,6 +19,15 @@ const getDiastolic = (bp: string | undefined): number => {
   return parseInt(parts[1]) || 0;
 };
 
+const formatTime = (timestamp: string) => {
+  return new Date(timestamp).toLocaleString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
 function MiniChart({ data, label, color, maxVal, unit, getValue }: {
   data: VitalSignsEntry[];
   label: string;
@@ -26,15 +36,20 @@ function MiniChart({ data, label, color, maxVal, unit, getValue }: {
   unit: string;
   getValue: (v: VitalSignsEntry) => number;
 }) {
-  const values = data.map((d, i) => ({ x: i, y: getValue(d) })).filter(d => d.y > 0);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
+  const values = data.map((d, i) => ({ x: i, y: getValue(d), entry: d })).filter(d => d.y > 0);
   const max = Math.max(...values.map(d => d.y), maxVal * 0.8);
   
   const getY = (val: number) => 50 - (val / (max * 1.2)) * 45;
   
   return (
-    <div className="flex-1 min-w-0">
+    <div className="flex-1 min-w-0 relative">
       <p className="text-xs font-medium text-slate-600 mb-1 text-center">{label}</p>
-      <div className="h-14 bg-slate-50 rounded relative">
+      <div 
+        className="h-14 bg-slate-50 rounded relative cursor-pointer"
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
         <svg viewBox="0 0 100 50" className="w-full h-full">
           <line x1="5" y1="5" x2="5" y2="45" stroke="#E2E8F0" strokeWidth="0.5" />
           <line x1="5" y1="45" x2="95" y2="45" stroke="#E2E8F0" strokeWidth="0.5" />
@@ -47,9 +62,24 @@ function MiniChart({ data, label, color, maxVal, unit, getValue }: {
             />
           )}
           {values.map((d, i) => (
-            <circle key={i} cx={5 + (d.x / (data.length - 1 || 1)) * 90} cy={getY(d.y)} r="2" fill={color} />
+            <circle 
+              key={i} 
+              cx={5 + (d.x / (data.length - 1 || 1)) * 90} 
+              cy={getY(d.y)} 
+              r="2.5" 
+              fill={color}
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredIndex(i)}
+            />
           ))}
         </svg>
+        
+        {hoveredIndex !== null && values[hoveredIndex] && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+            <p className="font-medium">{values[hoveredIndex].y}{unit}</p>
+            <p className="text-slate-300 text-xs">{formatTime(values[hoveredIndex].entry.timestamp)}</p>
+          </div>
+        )}
       </div>
       <p className="text-xs text-slate-500 text-center mt-1">
         {values.length > 0 ? `${values[values.length - 1].y}${unit}` : '-'}
