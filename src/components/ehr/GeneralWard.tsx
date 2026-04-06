@@ -683,6 +683,26 @@ export function GeneralWard() {
                 <h3 className="text-xl font-bold text-slate-800">{selectedPatient.name}</h3>
                 <p className="text-slate-500">{selectedPatient.id} • {selectedPatient.age}y {selectedPatient.gender}</p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {isDoctor && (
+                  <>
+                    <button onClick={() => setShowPrescribeModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Prescribe</button>
+                    <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
+                    <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
+                  </>
+                )}
+                {isNurse && (
+                  <>
+                    <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
+                  </>
+                )}
+                {(isChargeNurse || isNurse) && (
+                  <>
+                    <button onClick={handleTransfer} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Transfer Out</button>
+                    <button onClick={handleDischarge} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Discharge</button>
+                  </>
+                )}
+              </div>
               <button onClick={() => setSelectedPatient(null)} className="text-slate-400 hover:text-slate-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -694,6 +714,13 @@ export function GeneralWard() {
                 <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Diagnosis</p><p className="font-medium">{selectedPatient.admissionDiagnosis || 'N/A'}</p></div>
                 <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Diet</p><p className="font-medium capitalize">{selectedPatient.dietType || 'regular'}</p></div>
                 <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Admitting Dr.</p><p className="font-medium">{selectedPatient.admittingPhysician || 'N/A'}</p></div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <button onClick={() => setShowVitalsModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
+                <button onClick={() => setShowProgressModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
+                <button onClick={() => setShowPainModal(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
+                <button onClick={() => setShowVisitorModal(true)} className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
               </div>
 
               {selectedPatient.vitalSigns && (
@@ -720,31 +747,6 @@ export function GeneralWard() {
                   </div>
                 </div>
               )}
-
-              <div className="flex flex-wrap gap-2">
-                <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
-                <button onClick={() => setShowProgressModal(true)} className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
-                <button onClick={() => setShowPainModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
-                <button onClick={() => setShowVisitorModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
-                {isDoctor && (
-                  <>
-                    <button onClick={() => setShowPrescribeModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Prescribe</button>
-                    <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
-                    <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
-                  </>
-                )}
-                {isNurse && (
-                  <>
-                    <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
-                  </>
-                )}
-                {(isChargeNurse || isNurse) && (
-                  <>
-                    <button onClick={handleTransfer} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Transfer Out</button>
-                    <button onClick={handleDischarge} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Discharge</button>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         </div>
