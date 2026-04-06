@@ -3,21 +3,53 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription } from "@/lib/ehr-data";
+import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord } from "@/lib/ehr-data";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const initialBeds: WardBed[] = [
+  { id: 'B001', roomNumber: '101', bedNumber: 'A', status: 'available' },
+  { id: 'B002', roomNumber: '101', bedNumber: 'B', status: 'available' },
+  { id: 'B003', roomNumber: '102', bedNumber: 'A', status: 'available' },
+  { id: 'B004', roomNumber: '102', bedNumber: 'B', status: 'available' },
+  { id: 'B005', roomNumber: '103', bedNumber: 'A', status: 'available' },
+  { id: 'B006', roomNumber: '103', bedNumber: 'B', status: 'available' },
+  { id: 'B007', roomNumber: '104', bedNumber: 'A', status: 'available' },
+  { id: 'B008', roomNumber: '104', bedNumber: 'B', status: 'available' },
+  { id: 'B009', roomNumber: '105', bedNumber: 'A', status: 'available' },
+  { id: 'B010', roomNumber: '105', bedNumber: 'B', status: 'available' },
+];
+
+const mockEquipment: Equipment[] = [
+  { id: 'E001', name: 'Cardiac Monitor #1', type: 'monitor', status: 'available' },
+  { id: 'E002', name: 'Cardiac Monitor #2', type: 'monitor', status: 'available' },
+  { id: 'E003', name: 'IV Pump #1', type: 'pump', status: 'available' },
+  { id: 'E004', name: 'IV Pump #2', type: 'pump', status: 'available' },
+  { id: 'E005', name: 'Ventilator #1', type: 'ventilator', status: 'available' },
+];
 
 export function GeneralWard() {
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications } = useEHR();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<'admitted' | 'discharged' | 'transferred'>('admitted');
+  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [beds, setBeds] = useState<WardBed[]>(initialBeds);
+  const [medicationRounds, setMedicationRounds] = useState<MedicationRound[]>([]);
+  const [ivFluids, setIvFluids] = useState<IVFluidRecord[]>([]);
+  const [dailyRoundings, setDailyRoundings] = useState<DailyRounding[]>([]);
+  const [incidents, setIncidents] = useState<WardIncident[]>([]);
+  const [equipment] = useState<Equipment[]>(mockEquipment);
+  const [handovers, setHandovers] = useState<ShiftHandover[]>([]);
+  
   const [showVitalsModal, setShowVitalsModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showPrescribeModal, setShowPrescribeModal] = useState(false);
   const [showLabOrderModal, setShowLabOrderModal] = useState(false);
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
+  const [showRoundingModal, setShowRoundingModal] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showVisitorModal, setShowVisitorModal] = useState(false);
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
     bloodPressure: "",
@@ -31,29 +63,27 @@ export function GeneralWard() {
   const [progressNote, setProgressNote] = useState("");
   const [prescription, setPrescription] = useState({ medication: "", dosage: "", frequency: "OD", duration: "", instructions: "" });
   const [labTestName, setLabTestName] = useState("");
-  const [newAdmit, setNewAdmit] = useState({
-    roomNumber: "",
-    bedNumber: "",
-    admittingPhysician: "",
-    admissionDiagnosis: ""
-  });
+  const [newAdmit, setNewAdmit] = useState({ roomNumber: "", bedNumber: "", admittingPhysician: "", admissionDiagnosis: "" });
+  const [handover, setHandover] = useState({ patientSummary: "", criticalNotes: "" });
+  const [rounding, setRounding] = useState({ assessment: "", plan: "", complications: "" });
+  const [incident, setIncident] = useState({ type: 'fall' as const, description: "", severity: 'low' as const });
+  const [visitor, setVisitor] = useState({ visitorName: "", relation: "" });
+  const [ivFluid, setIvFluid] = useState({ fluidName: "", volume: 1000, rate: 100 });
 
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
 
   const wardPatients = patients.filter(p => p.department === 'general-ward' && p.registrationStatus === 'confirmed');
-  
-  const getFilteredPatients = () => {
-    if (!searchTerm) return wardPatients;
-    return wardPatients.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  };
 
   const handleAdmitPatient = () => {
     if (!selectedPatient || !newAdmit.roomNumber || !newAdmit.bedNumber) return;
+    
+    const bedIndex = beds.findIndex(b => b.roomNumber === newAdmit.roomNumber && b.bedNumber === newAdmit.bedNumber);
+    if (bedIndex >= 0) {
+      const newBeds = [...beds];
+      newBeds[bedIndex] = { ...newBeds[bedIndex], status: 'occupied', patientId: selectedPatient.id, patientName: selectedPatient.name };
+      setBeds(newBeds);
+    }
     
     const updatedPatient: Patient = {
       ...selectedPatient,
@@ -70,7 +100,7 @@ export function GeneralWard() {
     updatePatient(updatedPatient);
     addActivity({
       id: generateId(),
-      type: 'admission',
+      type: 'ward-admit',
       department: 'general-ward',
       patientId: selectedPatient.id,
       patientName: selectedPatient.name,
@@ -85,75 +115,40 @@ export function GeneralWard() {
 
   const handleSaveVitals = () => {
     if (!selectedPatient) return;
-    
     const vitalsEntry: VitalSignsEntry = {
       vitals: newVitals,
       recordedBy: user?.name || 'Unknown',
       timestamp: new Date().toISOString()
     };
-    
     const updatedPatient: Patient = {
       ...selectedPatient,
       vitalSigns: newVitals,
       vitalSignsHistory: [...(selectedPatient.vitalSignsHistory || []), vitalsEntry]
     };
-    
     updatePatient(updatedPatient);
-    addActivity({
-      id: generateId(),
-      type: 'vitals',
-      department: 'general-ward',
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      description: `Vital signs recorded`,
-      timestamp: new Date().toISOString()
-    });
-    
     setShowVitalsModal(false);
-    setNewVitals({
-      bloodPressure: "",
-      heartRate: 0,
-      temperature: 0,
-      respiratoryRate: 0,
-      oxygenSaturation: 0,
-      recordedAt: new Date().toISOString()
-    });
+    setNewVitals({ bloodPressure: "", heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() });
   };
 
   const handleSaveProgress = () => {
     if (!selectedPatient || !progressNote) return;
-    
     const noteEntry: NotesEntry = {
-      id: generateId(),
       content: progressNote,
       recordedBy: user?.name || 'Unknown',
       recordedAt: new Date().toISOString()
     };
-    
     const updatedPatient: Patient = {
       ...selectedPatient,
       nursingNotes: progressNote,
       nursingNotesHistory: [...(selectedPatient.nursingNotesHistory || []), noteEntry]
     };
-    
     updatePatient(updatedPatient);
-    addActivity({
-      id: generateId(),
-      type: 'notes',
-      department: 'general-ward',
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      description: `Progress note added`,
-      timestamp: new Date().toISOString()
-    });
-    
     setShowProgressModal(false);
     setProgressNote("");
   };
 
   const handleOrderLab = () => {
     if (!selectedPatient || !labTestName) return;
-    
     addLabOrder({
       id: generateId(),
       patientId: selectedPatient.id,
@@ -163,24 +158,12 @@ export function GeneralWard() {
       orderedBy: user?.name || 'Unknown',
       date: new Date().toISOString().split('T')[0]
     });
-    
-    addActivity({
-      id: generateId(),
-      type: 'lab-order',
-      department: 'general-ward',
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      description: `Lab order: ${labTestName}`,
-      timestamp: new Date().toISOString()
-    });
-    
     setShowLabOrderModal(false);
     setLabTestName("");
   };
 
   const handlePrescribe = () => {
     if (!selectedPatient || !prescription.medication) return;
-    
     addPrescription({
       id: generateId(),
       patientId: selectedPatient.id,
@@ -193,48 +176,143 @@ export function GeneralWard() {
       status: 'active',
       prescribedAt: new Date().toISOString()
     });
-    
-    addActivity({
+    const newRound: MedicationRound = {
       id: generateId(),
-      type: 'prescription',
-      department: 'general-ward',
       patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      description: `Prescribed: ${prescription.medication}`,
-      timestamp: new Date().toISOString()
-    });
-    
+      medication: prescription.medication,
+      dosage: prescription.dosage,
+      scheduledTime: new Date().toISOString(),
+      status: 'pending'
+    };
+    setMedicationRounds([...medicationRounds, newRound]);
     setShowPrescribeModal(false);
     setPrescription({ medication: "", dosage: "", frequency: "OD", duration: "", instructions: "" });
   };
 
   const handleDischarge = () => {
     if (!selectedPatient) return;
-    
-    const updatedPatient: Patient = {
-      ...selectedPatient,
-      status: 'discharged',
-      wardStatus: 'discharged',
-      department: 'opd'
-    };
-    
+    const bedIndex = beds.findIndex(b => b.patientId === selectedPatient.id);
+    if (bedIndex >= 0) {
+      const newBeds = [...beds];
+      newBeds[bedIndex] = { ...newBeds[bedIndex], status: 'cleaning', patientId: undefined, patientName: undefined };
+      setBeds(newBeds);
+    }
+    const updatedPatient: Patient = { ...selectedPatient, status: 'discharged', wardStatus: 'discharged', department: 'opd' };
     updatePatient(updatedPatient);
-    addActivity({
-      id: generateId(),
-      type: 'discharge',
-      department: 'general-ward',
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      description: `Discharged from General Ward`,
-      timestamp: new Date().toISOString()
-    });
-    
     setSelectedPatient(null);
   };
 
+  const handleTransfer = () => {
+    if (!selectedPatient) return;
+    const bedIndex = beds.findIndex(b => b.patientId === selectedPatient.id);
+    if (bedIndex >= 0) {
+      const newBeds = [...beds];
+      newBeds[bedIndex] = { ...newBeds[bedIndex], status: 'cleaning', patientId: undefined, patientName: undefined };
+      setBeds(newBeds);
+    }
+    const updatedPatient: Patient = { ...selectedPatient, status: 'in-treatment', wardStatus: 'transferred-out', department: 'opd' };
+    updatePatient(updatedPatient);
+    addActivity({
+      id: generateId(),
+      type: 'transfer',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Transferred out of General Ward`,
+      timestamp: new Date().toISOString()
+    });
+    setSelectedPatient(null);
+  };
+
+  const handleSaveHandover = () => {
+    if (!handover.patientSummary) return;
+    const newHandover: ShiftHandover = {
+      id: generateId(),
+      date: new Date().toISOString().split('T')[0],
+      shiftType: 'morning',
+      nurseOutgoing: user?.name || 'Unknown',
+      nurseIncoming: '',
+      patientSummary: handover.patientSummary,
+      criticalNotes: handover.criticalNotes,
+      timestamp: new Date().toISOString()
+    };
+    setHandovers([...handovers, newHandover]);
+    setShowHandoverModal(false);
+    setHandover({ patientSummary: "", criticalNotes: "" });
+  };
+
+  const handleSaveRounding = () => {
+    if (!selectedPatient || !rounding.assessment) return;
+    const newRounding: DailyRounding = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      date: new Date().toISOString().split('T')[0],
+      doctorName: user?.name || 'Unknown',
+      assessment: rounding.assessment,
+      plan: rounding.plan,
+      complications: rounding.complications,
+      timestamp: new Date().toISOString()
+    };
+    setDailyRoundings([...dailyRoundings, newRounding]);
+    setShowRoundingModal(false);
+    setRounding({ assessment: "", plan: "", complications: "" });
+  };
+
+  const handleReportIncident = () => {
+    if (!selectedPatient || !incident.description) return;
+    const newIncident: WardIncident = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      type: incident.type,
+      description: incident.description,
+      severity: incident.severity,
+      reportedBy: user?.name || 'Unknown',
+      timestamp: new Date().toISOString(),
+      status: 'pending'
+    };
+    setIncidents([...incidents, newIncident]);
+    setShowIncidentModal(false);
+    setIncident({ type: 'fall', description: "", severity: 'low' });
+  };
+
+  const handleAddIV = () => {
+    if (!selectedPatient || !ivFluid.fluidName) return;
+    const newIV: IVFluidRecord = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      fluidName: ivFluid.fluidName,
+      volume: ivFluid.volume,
+      startTime: new Date().toISOString(),
+      rate: ivFluid.rate,
+      remaining: ivFluid.volume,
+      status: 'running'
+    };
+    setIvFluids([...ivFluids, newIV]);
+    setIvFluid({ fluidName: "", volume: 1000, rate: 100 });
+  };
+
+  const handleAddVisitor = () => {
+    if (!selectedPatient || !visitor.visitorName) return;
+    const newVisitor: VisitorRecord = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      visitorName: visitor.visitorName,
+      relation: visitor.relation,
+      checkIn: new Date().toISOString()
+    };
+    const updatedPatient: Patient = {
+      ...selectedPatient,
+      visitorLog: [...(selectedPatient.visitorLog || []), newVisitor]
+    };
+    updatePatient(updatedPatient);
+    setShowVisitorModal(false);
+    setVisitor({ visitorName: "", relation: "" });
+  };
+
   const stats = {
-    admitted: wardPatients.filter(p => p.wardStatus === 'admitted').length,
-    discharged: wardPatients.filter(p => p.wardStatus === 'discharged').length,
+    totalBeds: beds.length,
+    occupied: beds.filter(b => b.status === 'occupied').length,
+    available: beds.filter(b => b.status === 'available').length,
     critical: wardPatients.filter(p => p.status === 'critical').length
   };
 
@@ -245,222 +323,296 @@ export function GeneralWard() {
           <h2 className="text-2xl font-bold text-slate-800">General Ward</h2>
           <p className="text-slate-500">Bedside nursing & patient management</p>
         </div>
-        <div className="flex gap-4">
-          <div className="px-4 py-2 bg-blue-100 rounded-lg">
-            <p className="text-sm text-blue-600">Admitted</p>
-            <p className="text-xl font-bold text-blue-800">{stats.admitted}</p>
-          </div>
-          <div className="px-4 py-2 bg-green-100 rounded-lg">
-            <p className="text-sm text-green-600">Discharged</p>
-            <p className="text-xl font-bold text-green-800">{stats.discharged}</p>
-          </div>
-          <div className="px-4 py-2 bg-red-100 rounded-lg">
-            <p className="text-sm text-red-600">Critical</p>
-            <p className="text-xl font-bold text-red-800">{stats.critical}</p>
-          </div>
+        <div className="flex gap-3">
+          <button onClick={() => setShowHandoverModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            Shift Handover
+          </button>
+          <button onClick={() => setShowAdmitModal(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+            Admit Patient
+          </button>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Search by patient name, room number, or ID..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-4 py-2 border border-slate-300 rounded-lg"
-        />
+      <div className="grid grid-cols-4 gap-4">
+        <div className="px-4 py-3 bg-blue-100 rounded-lg">
+          <p className="text-sm text-blue-600">Total Beds</p>
+          <p className="text-2xl font-bold text-blue-800">{stats.totalBeds}</p>
+        </div>
+        <div className="px-4 py-3 bg-green-100 rounded-lg">
+          <p className="text-sm text-green-600">Available</p>
+          <p className="text-2xl font-bold text-green-800">{stats.available}</p>
+        </div>
+        <div className="px-4 py-3 bg-amber-100 rounded-lg">
+          <p className="text-sm text-amber-600">Occupied</p>
+          <p className="text-2xl font-bold text-amber-800">{stats.occupied}</p>
+        </div>
+        <div className="px-4 py-3 bg-red-100 rounded-lg">
+          <p className="text-sm text-red-600">Critical</p>
+          <p className="text-2xl font-bold text-red-800">{stats.critical}</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Patient</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Room/Bed</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Diagnosis</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Admitting Dr.</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Vitals</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {getFilteredPatients().map((patient) => (
-              <tr key={patient.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3">
-                  <div>
-                    <p className="font-medium text-slate-800">{patient.name}</p>
-                    <p className="text-sm text-slate-500">{patient.id} • {patient.age}y {patient.gender[0]}</p>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="px-2 py-1 bg-slate-100 rounded text-sm">
-                    {patient.roomNumber || 'N/A'}-{patient.bedNumber || 'N/A'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-600">
-                  {patient.admissionDiagnosis || patient.diagnosis || patient.chiefComplaint || 'N/A'}
-                </td>
-                <td className="px-4 py-3 text-sm text-slate-600">
-                  {patient.admittingPhysician || 'N/A'}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    patient.status === 'critical' ? 'bg-red-100 text-red-700' :
-                    patient.wardStatus === 'admitted' ? 'bg-blue-100 text-blue-700' :
-                    'bg-green-100 text-green-700'
-                  }`}>
-                    {patient.status === 'critical' ? 'Critical' : patient.wardStatus || 'Admitted'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {patient.vitalSigns ? (
-                    <div className="text-xs text-slate-600">
-                      <p>BP: {patient.vitalSigns.bloodPressure || '-'}</p>
-                      <p>HR: {patient.vitalSigns.heartRate || '-'}</p>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400">No vitals</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => setSelectedPatient(patient)}
-                    className="text-teal-600 hover:text-teal-700 text-sm font-medium"
-                  >
-                    View
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {getFilteredPatients().length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                  No patients in General Ward
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="flex gap-2 border-b border-slate-200">
+        {[
+          { id: 'beds', label: 'Bed Grid' },
+          { id: 'patients', label: 'Patients' },
+          { id: 'medications', label: 'Medication Rounds' },
+          { id: 'iv', label: 'IV Fluids' },
+          { id: 'rounds', label: 'Daily Rounds' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'equipment', label: 'Equipment' },
+          { id: 'handover', label: 'Handover Log' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === tab.id ? 'text-teal-600 border-b-2 border-teal-600' : 'text-slate-600 hover:text-slate-800'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'beds' && (
+        <div className="grid grid-cols-5 gap-4">
+          {beds.map(bed => (
+            <div key={bed.id} className={`p-4 rounded-lg border-2 ${bed.status === 'occupied' ? 'bg-amber-50 border-amber-300' : bed.status === 'available' ? 'bg-green-50 border-green-300' : bed.status === 'cleaning' ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+              <p className="font-semibold text-slate-800">Room {bed.roomNumber}</p>
+              <p className="text-sm text-slate-600">Bed {bed.bedNumber}</p>
+              <p className={`text-xs mt-2 capitalize ${bed.status === 'occupied' ? 'text-amber-600' : 'text-green-600'}`}>{bed.status}</p>
+              {bed.patientName && <p className="text-sm font-medium text-slate-700 mt-1 truncate">{bed.patientName}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'patients' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Patient</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Room/Bed</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Diagnosis</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Diet</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {wardPatients.map(patient => (
+                <tr key={patient.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-slate-800">{patient.name}</p>
+                    <p className="text-sm text-slate-500">{patient.age}y {patient.gender[0]}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-1 bg-slate-100 rounded text-sm">{patient.roomNumber || 'N/A'}-{patient.bedNumber || 'N/A'}</span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">{patient.admissionDiagnosis || patient.diagnosis || 'N/A'}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs capitalize">{patient.dietType || 'regular'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs ${patient.status === 'critical' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      {patient.status === 'critical' ? 'Critical' : 'Stable'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                  </td>
+                </tr>
+              ))}
+              {wardPatients.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No patients in General Ward</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'medications' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Medication Rounds</h3>
+          {medicationRounds.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">No medications scheduled</p>
+          ) : (
+            <div className="space-y-3">
+              {medicationRounds.map((round, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 rounded-lg flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{round.medication} - {round.dosage}</p>
+                    <p className="text-sm text-slate-500">Patient: {patients.find(p => p.id === round.patientId)?.name || 'Unknown'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {round.status === 'pending' && (
+                      <>
+                        <button onClick={() => {
+                          const updated = [...medicationRounds];
+                          updated[idx].status = 'given';
+                          updated[idx].administeredTime = new Date().toISOString();
+                          updated[idx].administeredBy = user?.name;
+                          setMedicationRounds(updated);
+                        }} className="px-3 py-1 bg-green-600 text-white text-sm rounded">Given</button>
+                        <button onClick={() => {
+                          const updated = [...medicationRounds];
+                          updated[idx].status = 'missed';
+                          setMedicationRounds(updated);
+                        }} className="px-3 py-1 bg-red-600 text-white text-sm rounded">Missed</button>
+                      </>
+                    )}
+                    <span className={`px-2 py-1 rounded text-xs ${round.status === 'given' ? 'bg-green-100 text-green-700' : round.status === 'missed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {round.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'iv' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">IV Fluid Monitoring</h3>
+          <div className="space-y-3">
+            {ivFluids.map((iv, idx) => (
+              <div key={idx} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium">{iv.fluidName}</p>
+                    <p className="text-sm text-blue-600">Rate: {iv.rate} ml/hr | Remaining: {iv.remaining} ml</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs ${iv.status === 'running' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{iv.status}</span>
+                </div>
+              </div>
+            ))}
+            {ivFluids.length === 0 && <p className="text-slate-500 text-center py-8">No IV fluids running</p>}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'rounds' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Daily Doctor Rounding</h3>
+          <div className="space-y-3">
+            {dailyRoundings.map((round, idx) => (
+              <div key={idx} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="font-medium">{round.doctorName} - {round.date}</p>
+                <p className="text-sm text-slate-600 mt-1">Assessment: {round.assessment}</p>
+                <p className="text-sm text-slate-600">Plan: {round.plan}</p>
+              </div>
+            ))}
+            {dailyRoundings.length === 0 && <p className="text-slate-500 text-center py-8">No rounding notes yet</p>}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'incidents' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Incident Reports</h3>
+          <div className="space-y-3">
+            {incidents.map((inc, idx) => (
+              <div key={idx} className={`p-4 border rounded-lg ${inc.severity === 'high' ? 'bg-red-50 border-red-200' : inc.severity === 'medium' ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex justify-between">
+                  <div>
+                    <p className="font-medium capitalize">{inc.type.replace('-', ' ')}</p>
+                    <p className="text-sm text-slate-600">{inc.description}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs ${inc.severity === 'high' ? 'bg-red-200 text-red-700' : inc.severity === 'medium' ? 'bg-amber-200 text-amber-700' : 'bg-slate-200 text-slate-700'}`}>{inc.severity}</span>
+                </div>
+              </div>
+            ))}
+            {incidents.length === 0 && <p className="text-slate-500 text-center py-8">No incidents reported</p>}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'equipment' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Ward Equipment</h3>
+          <div className="grid grid-cols-3 gap-4">
+            {equipment.map(eq => (
+              <div key={eq.id} className={`p-4 border rounded-lg ${eq.status === 'available' ? 'bg-green-50 border-green-200' : eq.status === 'in-use' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}>
+                <p className="font-medium">{eq.name}</p>
+                <p className="text-sm text-slate-500 capitalize">{eq.type}</p>
+                <span className={`text-xs capitalize ${eq.status === 'available' ? 'text-green-600' : eq.status === 'in-use' ? 'text-amber-600' : 'text-gray-600'}`}>{eq.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'handover' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Shift Handover Log</h3>
+          <div className="space-y-3">
+            {handovers.map((handover, idx) => (
+              <div key={idx} className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p className="font-medium">{handover.date} - {handover.shiftType} shift</p>
+                <p className="text-sm text-slate-600">From: {handover.nurseOutgoing}</p>
+                <p className="text-sm text-slate-600 mt-2">{handover.patientSummary}</p>
+                {handover.criticalNotes && <p className="text-sm text-red-600 mt-1">Critical: {handover.criticalNotes}</p>}
+              </div>
+            ))}
+            {handovers.length === 0 && <p className="text-slate-500 text-center py-8">No handover records</p>}
+          </div>
+        </div>
+      )}
 
       {selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedPatient(null)}>
           <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-slate-200">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-800">{selectedPatient.name}</h3>
-                  <p className="text-slate-500">{selectedPatient.id} • {selectedPatient.age}y {selectedPatient.gender}</p>
-                </div>
-                <button onClick={() => setSelectedPatient(null)} className="text-slate-400 hover:text-slate-600">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+            <div className="p-6 border-b border-slate-200 flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">{selectedPatient.name}</h3>
+                <p className="text-slate-500">{selectedPatient.id} • {selectedPatient.age}y {selectedPatient.gender}</p>
               </div>
+              <button onClick={() => setSelectedPatient(null)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
             
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-500">Room/Bed</p>
-                  <p className="font-medium">{selectedPatient.roomNumber || 'N/A'}/{selectedPatient.bedNumber || 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-500">Admitting Physician</p>
-                  <p className="font-medium">{selectedPatient.admittingPhysician || 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-500">Admission Diagnosis</p>
-                  <p className="font-medium">{selectedPatient.admissionDiagnosis || 'N/A'}</p>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <p className="text-sm text-slate-500">Ward Status</p>
-                  <p className="font-medium capitalize">{selectedPatient.wardStatus || 'admitted'}</p>
-                </div>
+                <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Room/Bed</p><p className="font-medium">{selectedPatient.roomNumber}/{selectedPatient.bedNumber}</p></div>
+                <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Diagnosis</p><p className="font-medium">{selectedPatient.admissionDiagnosis || 'N/A'}</p></div>
+                <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Diet</p><p className="font-medium capitalize">{selectedPatient.dietType || 'regular'}</p></div>
+                <div className="p-3 bg-slate-50 rounded-lg"><p className="text-sm text-slate-500">Admitting Dr.</p><p className="font-medium">{selectedPatient.admittingPhysician || 'N/A'}</p></div>
               </div>
 
               {selectedPatient.vitalSigns && (
                 <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="font-semibold mb-3">Current Vitals</h4>
-                  <div className="grid grid-cols-5 gap-4 text-center">
-                    <div>
-                      <p className="text-xs text-slate-500">BP</p>
-                      <p className="font-medium">{selectedPatient.vitalSigns.bloodPressure || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">HR</p>
-                      <p className="font-medium">{selectedPatient.vitalSigns.heartRate || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Temp</p>
-                      <p className="font-medium">{selectedPatient.vitalSigns.temperature || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">RR</p>
-                      <p className="font-medium">{selectedPatient.vitalSigns.respiratoryRate || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">SpO2</p>
-                      <p className="font-medium">{selectedPatient.vitalSigns.oxygenSaturation || '-'}</p>
-                    </div>
+                  <h4 className="font-semibold mb-2">Current Vitals</h4>
+                  <div className="grid grid-cols-5 gap-2 text-center text-sm">
+                    <div><p className="text-slate-500">BP</p><p className="font-medium">{selectedPatient.vitalSigns.bloodPressure || '-'}</p></div>
+                    <div><p className="text-slate-500">HR</p><p className="font-medium">{selectedPatient.vitalSigns.heartRate || '-'}</p></div>
+                    <div><p className="text-slate-500">Temp</p><p className="font-medium">{selectedPatient.vitalSigns.temperature || '-'}</p></div>
+                    <div><p className="text-slate-500">RR</p><p className="font-medium">{selectedPatient.vitalSigns.respiratoryRate || '-'}</p></div>
+                    <div><p className="text-slate-500">SpO2</p><p className="font-medium">{selectedPatient.vitalSigns.oxygenSaturation || '-'}</p></div>
                   </div>
                 </div>
               )}
 
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setShowVitalsModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Record Vitals
-                </button>
-                <button
-                  onClick={() => setShowProgressModal(true)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                >
-                  Progress Notes
-                </button>
+                <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
+                <button onClick={() => setShowProgressModal(true)} className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
+                <button onClick={() => setShowVisitorModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
                 {isDoctor && (
                   <>
-                    <button
-                      onClick={() => setShowPrescribeModal(true)}
-                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-                    >
-                      Prescribe
-                    </button>
-                    <button
-                      onClick={() => setShowLabOrderModal(true)}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                    >
-                      Order Lab
-                    </button>
+                    <button onClick={() => setShowPrescribeModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Prescribe</button>
+                    <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
+                    <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
                   </>
                 )}
                 {isNurse && (
-                  <button
-                    onClick={handleDischarge}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Discharge Patient
-                  </button>
+                  <>
+                    <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
+                    <button onClick={handleTransfer} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Transfer Out</button>
+                    <button onClick={handleDischarge} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Discharge</button>
+                  </>
                 )}
               </div>
-
-              {selectedPatient.nursingNotesHistory && selectedPatient.nursingNotesHistory.length > 0 && (
-                <div className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="font-semibold mb-3">Nursing Notes History</h4>
-                  <div className="space-y-3 max-h-40 overflow-y-auto">
-                    {selectedPatient.nursingNotesHistory?.slice().reverse().map((note, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 rounded">
-                        <p className="text-sm">{note.content || note.notes || ''}</p>
-                        <p className="text-xs text-slate-400 mt-1">{note.recordedBy} • {note.recordedAt || note.timestamp ? new Date(note.recordedAt || note.timestamp!).toLocaleString() : 'N/A'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -470,75 +622,19 @@ export function GeneralWard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Record Vitals - {selectedPatient.name}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Blood Pressure</label>
-                <input
-                  type="text"
-                  placeholder="120/80"
-                  value={newVitals.bloodPressure}
-                  onChange={(e) => setNewVitals({...newVitals, bloodPressure: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                />
+            <div className="space-y-3">
+              <input type="text" placeholder="Blood Pressure (120/80)" value={newVitals.bloodPressure} onChange={(e) => setNewVitals({...newVitals, bloodPressure: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" placeholder="Heart Rate" value={newVitals.heartRate || ''} onChange={(e) => setNewVitals({...newVitals, heartRate: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
+                <input type="number" step="0.1" placeholder="Temperature" value={newVitals.temperature || ''} onChange={(e) => setNewVitals({...newVitals, temperature: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Heart Rate</label>
-                  <input
-                    type="number"
-                    placeholder="72"
-                    value={newVitals.heartRate || ''}
-                    onChange={(e) => setNewVitals({...newVitals, heartRate: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Temperature (°C)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="36.5"
-                    value={newVitals.temperature || ''}
-                    onChange={(e) => setNewVitals({...newVitals, temperature: parseFloat(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" placeholder="Resp. Rate" value={newVitals.respiratoryRate || ''} onChange={(e) => setNewVitals({...newVitals, respiratoryRate: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
+                <input type="number" placeholder="SpO2" value={newVitals.oxygenSaturation || ''} onChange={(e) => setNewVitals({...newVitals, oxygenSaturation: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Resp. Rate</label>
-                  <input
-                    type="number"
-                    placeholder="16"
-                    value={newVitals.respiratoryRate || ''}
-                    onChange={(e) => setNewVitals({...newVitals, respiratoryRate: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">SpO2 (%)</label>
-                  <input
-                    type="number"
-                    placeholder="98"
-                    value={newVitals.oxygenSaturation || ''}
-                    onChange={(e) => setNewVitals({...newVitals, oxygenSaturation: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowVitalsModal(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveVitals}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Save Vitals
-                </button>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowVitalsModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleSaveVitals} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save</button>
               </div>
             </div>
           </div>
@@ -549,31 +645,10 @@ export function GeneralWard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Progress Note - {selectedPatient.name}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-                <textarea
-                  value={progressNote}
-                  onChange={(e) => setProgressNote(e.target.value)}
-                  placeholder="Enter nursing progress notes..."
-                  className="w-full h-32 px-3 py-2 border border-slate-300 rounded-lg"
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowProgressModal(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveProgress}
-                  disabled={!progressNote}
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                >
-                  Save Note
-                </button>
-              </div>
+            <textarea value={progressNote} onChange={(e) => setProgressNote(e.target.value)} placeholder="Enter nursing notes..." className="w-full h-32 px-3 py-2 border rounded-lg" />
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setShowProgressModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+              <button onClick={handleSaveProgress} disabled={!progressNote} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">Save</button>
             </div>
           </div>
         </div>
@@ -582,81 +657,23 @@ export function GeneralWard() {
       {showPrescribeModal && selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">Prescribe Medication - {selectedPatient.name}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Medication</label>
-                <select
-                  value={prescription.medication}
-                  onChange={(e) => setPrescription({...prescription, medication: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="">Select Medication</option>
-                  {medications.map((med) => (
-                    <option key={med.id} value={med.name}>{med.name}</option>
-                  ))}
+            <h3 className="text-lg font-semibold mb-4">Prescribe - {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <select value={prescription.medication} onChange={(e) => setPrescription({...prescription, medication: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Medication</option>
+                {medications.map((med) => <option key={med.id} value={med.name}>{med.name}</option>)}
+              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Dosage" value={prescription.dosage} onChange={(e) => setPrescription({...prescription, dosage: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                <select value={prescription.frequency} onChange={(e) => setPrescription({...prescription, frequency: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="OD">OD</option><option value="BD">BD</option><option value="TDS">TDS</option><option value="QID">QID</option><option value="PRN">PRN</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Dosage</label>
-                  <input
-                    type="text"
-                    placeholder="500mg"
-                    value={prescription.dosage}
-                    onChange={(e) => setPrescription({...prescription, dosage: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Frequency</label>
-                  <select
-                    value={prescription.frequency}
-                    onChange={(e) => setPrescription({...prescription, frequency: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                  >
-                    <option value="OD">Once Daily</option>
-                    <option value="BD">Twice Daily</option>
-                    <option value="TDS">Three Times Daily</option>
-                    <option value="QID">Four Times Daily</option>
-                    <option value="PRN">As Needed</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Duration</label>
-                <input
-                  type="text"
-                  placeholder="7 days"
-                  value={prescription.duration}
-                  onChange={(e) => setPrescription({...prescription, duration: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Instructions</label>
-                <input
-                  type="text"
-                  placeholder="Take after meals"
-                  value={prescription.instructions}
-                  onChange={(e) => setPrescription({...prescription, instructions: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowPrescribeModal(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePrescribe}
-                  disabled={!prescription.medication}
-                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                >
-                  Prescribe
-                </button>
+              <input type="text" placeholder="Duration (e.g., 7 days)" value={prescription.duration} onChange={(e) => setPrescription({...prescription, duration: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <input type="text" placeholder="Instructions" value={prescription.instructions} onChange={(e) => setPrescription({...prescription, instructions: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowPrescribeModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handlePrescribe} disabled={!prescription.medication} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">Prescribe</button>
               </div>
             </div>
           </div>
@@ -666,42 +683,117 @@ export function GeneralWard() {
       {showLabOrderModal && selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">Order Lab Test - {selectedPatient.name}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Lab Test</label>
-                <select
-                  value={labTestName}
-                  onChange={(e) => setLabTestName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                >
-                  <option value="">Select Lab Test</option>
-                  <option value="Complete Blood Count (CBC)">Complete Blood Count (CBC)</option>
-                  <option value="Blood Glucose (Fasting)">Blood Glucose (Fasting)</option>
-                  <option value="Creatinine">Creatinine</option>
-                  <option value="Sodium">Sodium</option>
-                  <option value="Potassium">Potassium</option>
-                  <option value="AST (SGOT)">AST (SGOT)</option>
-                  <option value="ALT (SGPT)">ALT (SGPT)</option>
-                  <option value="Lipid Profile">Lipid Profile</option>
-                  <option value="Urinalysis">Urinalysis</option>
-                  <option value="Blood Culture">Blood Culture</option>
-                </select>
+            <h3 className="text-lg font-semibold mb-4">Order Lab - {selectedPatient.name}</h3>
+            <select value={labTestName} onChange={(e) => setLabTestName(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+              <option value="">Select Lab Test</option>
+              <option value="Complete Blood Count (CBC)">Complete Blood Count (CBC)</option>
+              <option value="Blood Glucose (Fasting)">Blood Glucose (Fasting)</option>
+              <option value="Creatinine">Creatinine</option>
+              <option value="Sodium">Sodium</option>
+              <option value="Potassium">Potassium</option>
+            </select>
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setShowLabOrderModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+              <button onClick={handleOrderLab} disabled={!labTestName} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50">Order</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAdmitModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Admit Patient to General Ward</h3>
+            <div className="space-y-3">
+              <select value={newAdmit.roomNumber} onChange={(e) => setNewAdmit({...newAdmit, roomNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Room</option>
+                {[...new Set(beds.filter(b => b.status === 'available').map(b => b.roomNumber))].map(r => <option key={r} value={r}>Room {r}</option>)}
+              </select>
+              <select value={newAdmit.bedNumber} onChange={(e) => setNewAdmit({...newAdmit, bedNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Bed</option>
+                {beds.filter(b => b.status === 'available' && b.roomNumber === newAdmit.roomNumber).map(b => <option key={b.bedNumber} value={b.bedNumber}>Bed {b.bedNumber}</option>)}
+              </select>
+              <input type="text" placeholder="Admitting Physician" value={newAdmit.admittingPhysician} onChange={(e) => setNewAdmit({...newAdmit, admittingPhysician: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <input type="text" placeholder="Admission Diagnosis" value={newAdmit.admissionDiagnosis} onChange={(e) => setNewAdmit({...newAdmit, admissionDiagnosis: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowAdmitModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleAdmitPatient} disabled={!newAdmit.roomNumber || !newAdmit.bedNumber} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">Admit</button>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowLabOrderModal(false)}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleOrderLab}
-                  disabled={!labTestName}
-                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
-                >
-                  Order Lab
-                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHandoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Shift Handover</h3>
+            <div className="space-y-3">
+              <textarea value={handover.patientSummary} onChange={(e) => setHandover({...handover, patientSummary: e.target.value})} placeholder="Patient summary..." className="w-full h-24 px-3 py-2 border rounded-lg" />
+              <textarea value={handover.criticalNotes} onChange={(e) => setHandover({...handover, criticalNotes: e.target.value})} placeholder="Critical notes (if any)..." className="w-full h-20 px-3 py-2 border rounded-lg" />
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowHandoverModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleSaveHandover} disabled={!handover.patientSummary} className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRoundingModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Daily Rounding - {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <textarea value={rounding.assessment} onChange={(e) => setRounding({...rounding, assessment: e.target.value})} placeholder="Assessment..." className="w-full h-20 px-3 py-2 border rounded-lg" />
+              <textarea value={rounding.plan} onChange={(e) => setRounding({...rounding, plan: e.target.value})} placeholder="Plan..." className="w-full h-20 px-3 py-2 border rounded-lg" />
+              <textarea value={rounding.complications} onChange={(e) => setRounding({...rounding, complications: e.target.value})} placeholder="Complications (optional)..." className="w-full h-16 px-3 py-2 border rounded-lg" />
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowRoundingModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleSaveRounding} disabled={!rounding.assessment} className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showIncidentModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Report Incident - {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <select value={incident.type} onChange={(e) => setIncident({...incident, type: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="fall">Fall</option>
+                <option value="infection">Infection</option>
+                <option value="medication-error">Medication Error</option>
+                <option value="equipment-failure">Equipment Failure</option>
+                <option value="other">Other</option>
+              </select>
+              <textarea value={incident.description} onChange={(e) => setIncident({...incident, description: e.target.value})} placeholder="Description..." className="w-full h-24 px-3 py-2 border rounded-lg" />
+              <select value={incident.severity} onChange={(e) => setIncident({...incident, severity: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowIncidentModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleReportIncident} disabled={!incident.description} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">Report</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVisitorModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Log Visitor - {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <input type="text" placeholder="Visitor Name" value={visitor.visitorName} onChange={(e) => setVisitor({...visitor, visitorName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <input type="text" placeholder="Relationship (e.g., Spouse, Child)" value={visitor.relation} onChange={(e) => setVisitor({...visitor, relation: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowVisitorModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleAddVisitor} disabled={!visitor.visitorName} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50">Log In</button>
               </div>
             </div>
           </div>

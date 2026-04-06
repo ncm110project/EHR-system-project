@@ -270,6 +270,96 @@ export interface Patient {
   nursingNotesHistory?: NotesEntry[];
   dailyProgress?: string;
   dailyProgressHistory?: NotesEntry[];
+  shiftHandover?: string;
+  ivFluid?: string;
+  ivRate?: number;
+  ivStartedAt?: string;
+  dietType?: 'regular' | 'soft' | 'liquid' | 'NPO' | 'special';
+  equipmentAssigned?: string[];
+  visitorLog?: VisitorRecord[];
+}
+
+export interface WardBed {
+  id: string;
+  roomNumber: string;
+  bedNumber: string;
+  status: 'available' | 'occupied' | 'cleaning' | 'maintenance';
+  patientId?: string;
+  patientName?: string;
+}
+
+export interface ShiftHandover {
+  id: string;
+  date: string;
+  shiftType: ShiftType;
+  nurseOutgoing: string;
+  nurseIncoming: string;
+  patientSummary: string;
+  criticalNotes: string;
+  timestamp: string;
+}
+
+export interface MedicationRound {
+  id: string;
+  patientId: string;
+  medication: string;
+  dosage: string;
+  scheduledTime: string;
+  administeredTime?: string;
+  status: 'pending' | 'given' | 'missed' | 'refused';
+  administeredBy?: string;
+}
+
+export interface IVFluidRecord {
+  id: string;
+  patientId: string;
+  fluidName: string;
+  volume: number;
+  startTime: string;
+  endTime?: string;
+  rate: number;
+  remaining?: number;
+  status: 'running' | 'completed' | 'paused';
+  monitoredBy?: string;
+}
+
+export interface DailyRounding {
+  id: string;
+  patientId: string;
+  date: string;
+  doctorName: string;
+  assessment: string;
+  plan: string;
+  complications?: string;
+  timestamp: string;
+}
+
+export interface WardIncident {
+  id: string;
+  patientId: string;
+  type: 'fall' | 'infection' | 'medication-error' | 'equipment-failure' | 'other';
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  reportedBy: string;
+  timestamp: string;
+  status: 'pending' | 'investigated' | 'resolved';
+}
+
+export interface Equipment {
+  id: string;
+  name: string;
+  type: 'monitor' | 'pump' | 'ventilator' | 'other';
+  status: 'available' | 'in-use' | 'maintenance';
+  assignedTo?: string;
+}
+
+export interface VisitorRecord {
+  id: string;
+  patientId: string;
+  visitorName: string;
+  relation: string;
+  checkIn: string;
+  checkOut?: string;
 }
 
 export interface BillingRecord {
