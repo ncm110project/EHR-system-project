@@ -214,8 +214,9 @@ export const mockUsers: User[] = [
   { id: 'U007', username: 'lab', password: 'lab123', name: 'Lab Technician David Lee', email: 'dlee@hospital.org', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
   { id: 'U008', username: 'clerk', password: 'clerk123', name: 'Registration Clerk Maria Santos', email: 'msantos@hospital.org', role: 'clerk', department: 'registration', departmentName: 'Patient Registration' },
   { id: 'U009', username: 'charge_nurse', password: 'charge123', name: 'Nurse Karen Thompson', email: 'kthompson@hospital.org', role: 'charge-nurse', department: 'general-ward', departmentName: 'General Ward' },
-  { id: 'U010', username: 'staff_nurse', password: 'staff123', name: 'Nurse Mark Rivera', email: 'mrivera@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U010', username: 'staff_nurse_1', password: 'staff123', name: 'Nurse Mark Rivera', email: 'mrivera@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U011', username: 'doctor_ward', password: 'doctor123', name: 'Dr. James Wilson', email: 'jwilson@hospital.org', role: 'doctor', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U012', username: 'staff_nurse_2', password: 'staff123', name: 'Nurse Sarah Chen', email: 'schen@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
 ];
 
 export interface Patient {
