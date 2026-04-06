@@ -267,6 +267,14 @@ export function EHRProvider({ children }: EHRProviderProps) {
     };
     
     setPatients(prev => prev.map(p => p.id === patient.id ? updatedPatient : p));
+
+    setLabOrders(prev => prev.map(order => 
+      order.patientId === patient.id ? { ...order, department: toDepartment } : order
+    ));
+    
+    setPrescriptions(prev => prev.map(rx => 
+      rx.patientId === patient.id ? { ...rx, department: toDepartment } : rx
+    ));
     
     addActivity({
       id: `ACT-${Date.now()}`,
