@@ -1262,7 +1262,7 @@ function PatientDetailModal({
                       <div key={idx} className="p-3 bg-slate-50 rounded-lg">
                         <p className="text-sm">{entry.notes}</p>
                         <p className="text-xs text-slate-500">
-                          {formatDateTime(entry.timestamp)} by {entry.recordedBy}
+                          {formatDateTime(entry.timestamp || '')} by {entry.recordedBy}
                         </p>
                       </div>
                     ))}

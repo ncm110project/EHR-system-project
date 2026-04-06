@@ -6,7 +6,7 @@ export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected';
 
 export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
-export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration';
+export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration' | 'general-ward';
 
 export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient';
 
@@ -258,6 +258,16 @@ export interface Patient {
   billingHistory?: BillingRecord[];
   transferHistory?: TransferRecord[];
   followUps?: FollowUp[];
+  roomNumber?: string;
+  bedNumber?: string;
+  admittingPhysician?: string;
+  admissionDiagnosis?: string;
+  wardStatus?: 'admitted' | 'discharged' | 'transferred-out' | 'transferred-in';
+  wardNurse?: string;
+  nursingNotes?: string;
+  nursingNotesHistory?: NotesEntry[];
+  dailyProgress?: string;
+  dailyProgressHistory?: NotesEntry[];
 }
 
 export interface BillingRecord {
@@ -280,8 +290,9 @@ export interface Prescription {
   duration: string;
   instructions?: string;
   prescribedBy: string;
-  status: 'pending' | 'dispensed';
-  date: string;
+  status: 'pending' | 'dispensed' | 'active';
+  prescribedAt?: string;
+  date?: string;
 }
 
 export interface LabOrder {
@@ -324,8 +335,11 @@ export interface DiagnosisEntry {
 }
 
 export interface NotesEntry {
-  notes: string;
-  timestamp: string;
+  id?: string;
+  notes?: string;
+  content?: string;
+  timestamp?: string;
+  recordedAt?: string;
   recordedBy: string;
 }
 
@@ -381,7 +395,7 @@ export interface NurseSchedule {
 
 export interface Activity {
   id: string;
-  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals';
+  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals' | 'notes' | 'lab-order' | 'ward-admit';
   department: Department;
   patientId?: string;
   patientName?: string;
