@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, Department } from "@/lib/ehr-data";
+import { Patient, Department, mockUsers } from "@/lib/ehr-data";
 
 interface DepartmentTransferProps {
   patient: Patient;
@@ -19,17 +19,26 @@ const departments: { id: Department; name: string; color: string }[] = [
   { id: 'nursing', name: 'Nursing Admin', color: '#10B981' }
 ];
 
+const getDoctorsByDepartment = (dept: Department) => {
+  return mockUsers.filter(u => u.role === 'doctor' && u.department === dept);
+};
+
 export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps) {
   const { transferPatient } = useEHR();
   const { user } = useAuth();
   const [selectedDepartment, setSelectedDepartment] = useState<Department | "">("");
+  const [admittingDiagnosis, setAdmittingDiagnosis] = useState("");
+  const [receivingDoctor, setReceivingDoctor] = useState("");
   const [reason, setReason] = useState("");
 
+  const availableDoctors = selectedDepartment ? getDoctorsByDepartment(selectedDepartment) : [];
+
   const handleTransfer = () => {
-    if (!selectedDepartment || !reason) return;
+    if (!selectedDepartment || !admittingDiagnosis || !receivingDoctor) return;
     
     const userName = user && 'name' in user ? user.name : 'Unknown';
-    transferPatient(patient, selectedDepartment, reason, userName);
+    const transferReason = `Diagnosis: ${admittingDiagnosis}. Receiving Doctor: ${receivingDoctor}. Reason: ${reason}`;
+    transferPatient(patient, selectedDepartment, transferReason, userName);
     onClose();
   };
 
@@ -37,7 +46,7 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Transfer Patient</h3>
+          <h3 className="text-lg font-semibold text-slate-800">Create Transfer Order</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -52,10 +61,10 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Transfer To</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Transfer To <span className="text-red-500">*</span></label>
             <select
               value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value as Department)}
+              onChange={(e) => { setSelectedDepartment(e.target.value as Department); setReceivingDoctor(""); }}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="">Select department</option>
@@ -66,13 +75,41 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Reason for Transfer</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Admitting Diagnosis <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={admittingDiagnosis}
+              onChange={(e) => setAdmittingDiagnosis(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              placeholder="Enter diagnosis for receiving team"
+            />
+          </div>
+
+          {selectedDepartment && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Receiving Doctor <span className="text-red-500">*</span></label>
+              <select
+                value={receivingDoctor}
+                onChange={(e) => setReceivingDoctor(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              >
+                <option value="">Select doctor</option>
+                {availableDoctors.map((doc) => (
+                  <option key={doc.id} value={doc.name}>{doc.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">The receiving department's charge nurse will be notified</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Additional Notes</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              rows={3}
-              placeholder="Explain reason for transfer..."
+              rows={2}
+              placeholder="Additional transfer notes..."
             />
           </div>
 
@@ -85,10 +122,10 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
             </button>
             <button
               onClick={handleTransfer}
-              disabled={!selectedDepartment || !reason}
+              disabled={!selectedDepartment || !admittingDiagnosis || !receivingDoctor}
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              Transfer
+              Send Transfer Order
             </button>
           </div>
         </div>

@@ -217,6 +217,8 @@ export const mockUsers: User[] = [
   { id: 'U010', username: 'staff_nurse_1', password: 'staff123', name: 'Nurse Mark Rivera', email: 'mrivera@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U011', username: 'doctor_ward', password: 'doctor123', name: 'Dr. James Wilson', email: 'jwilson@hospital.org', role: 'doctor', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U012', username: 'staff_nurse_2', password: 'staff123', name: 'Nurse Sarah Chen', email: 'schen@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
+  { id: 'U013', username: 'charge_nurse_er', password: 'charge123', name: 'Nurse Linda Martinez', email: 'lmartinez@hospital.org', role: 'charge-nurse', department: 'er', departmentName: 'Emergency Room' },
+  { id: 'U014', username: 'doctor_er2', password: 'doctor123', name: 'Dr. Sarah Kim', email: 'skim@hospital.org', role: 'doctor', department: 'er', departmentName: 'Emergency Room' },
 ];
 
 export interface Patient {

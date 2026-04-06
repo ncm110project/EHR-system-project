@@ -257,12 +257,17 @@ export function EHRProvider({ children }: EHRProviderProps) {
       reason,
       transferredBy,
       transferredAt: new Date().toISOString(),
-      status: 'completed'
+      status: 'pending'
     };
+    
+    const isWardTransfer = toDepartment === 'general-ward' || toDepartment === 'opd';
     
     const updatedPatient: Patient = {
       ...patient,
       department: toDepartment,
+      wardWorkflowStatus: isWardTransfer ? 'pending_transfer' : undefined,
+      admissionDiagnosis: reason.split('Diagnosis:')[1]?.split('.')[0]?.trim() || patient.admissionDiagnosis,
+      admittingPhysician: reason.includes('Receiving Doctor:') ? reason.split('Receiving Doctor:')[1]?.split('.')[0]?.trim() : undefined,
       transferHistory: [...(patient.transferHistory || []), transferRecord]
     };
     

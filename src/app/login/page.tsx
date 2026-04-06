@@ -138,6 +138,16 @@ export default function LoginPage() {
                   </button>
                 </div>
                 <div className="p-3 bg-red-50 rounded-lg">
+                  <p className="font-medium text-red-800">ER - Charge Nurse</p>
+                  <p className="text-sm text-red-600">Username: charge_nurse_er | Password: charge123</p>
+                  <button
+                    onClick={() => handleQuickLogin("charge_nurse_er", "charge123")}
+                    className="mt-2 text-xs text-red-700 underline"
+                  >
+                    Quick Login
+                  </button>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
                   <p className="font-medium text-red-800">ER - Nurse</p>
                   <p className="text-sm text-red-600">Username: nurse_er | Password: nurse123</p>
                   <button
@@ -152,6 +162,16 @@ export default function LoginPage() {
                   <p className="text-sm text-red-600">Username: doctor_er | Password: doctor123</p>
                   <button
                     onClick={() => handleQuickLogin("doctor_er", "doctor123")}
+                    className="mt-2 text-xs text-red-700 underline"
+                  >
+                    Quick Login
+                  </button>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <p className="font-medium text-red-800">ER - Doctor 2</p>
+                  <p className="text-sm text-red-600">Username: doctor_er2 | Password: doctor123</p>
+                  <button
+                    onClick={() => handleQuickLogin("doctor_er2", "doctor123")}
                     className="mt-2 text-xs text-red-700 underline"
                   >
                     Quick Login

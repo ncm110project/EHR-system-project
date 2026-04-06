@@ -166,6 +166,7 @@ export function EmergencyRoom() {
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
+  const isChargeNurse = !!(user && 'role' in user && user.role === 'charge-nurse');
 
   const erPatients = patients.filter(p => p.department === 'er');
   const sortedByPriority = [...erPatients].sort((a, b) => (a.triagePriority || 5) - (b.triagePriority || 5));
@@ -506,7 +507,7 @@ export function EmergencyRoom() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">
-            Emergency Room - {isNurse ? 'Nurse Station' : isDoctor ? 'Doctor Office' : 'ER'}
+            Emergency Room - {isChargeNurse ? 'Charge Nurse' : isNurse ? 'Nurse Station' : isDoctor ? 'Doctor Office' : 'ER'}
           </h2>
           <p className="text-slate-500">
             {isNurse ? 'Triage, vitals, and patient monitoring' : isDoctor ? 'Diagnose, order tests, and treatment' : 'Emergency department management'}
