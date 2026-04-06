@@ -37,6 +37,51 @@ const formatVitalTime = (timestamp: string): string => {
   return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
+type WardWorkflowStatus = 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
+
+const getWorkflowStatus = (patient: Patient): WardWorkflowStatus => {
+  return patient.wardWorkflowStatus || 'pending_admission';
+};
+
+const canAssignBed = (patient: Patient): boolean => {
+  const status = getWorkflowStatus(patient);
+  return status === 'pending_admission' || status === 'pending_transfer';
+};
+
+const canRecordVitals = (patient: Patient): boolean => {
+  const status = getWorkflowStatus(patient);
+  return status === 'active';
+};
+
+const canDischarge = (patient: Patient): boolean => {
+  const status = getWorkflowStatus(patient);
+  return status === 'active';
+};
+
+const getWorkflowStatusLabel = (status: WardWorkflowStatus): string => {
+  const labels: Record<WardWorkflowStatus, string> = {
+    pending_admission: 'Pending Admission',
+    pending_transfer: 'Pending Transfer',
+    admitted: 'Admitted',
+    active: 'Active',
+    transferred: 'Transferred',
+    discharged: 'Discharged'
+  };
+  return labels[status];
+};
+
+const getWorkflowStatusColor = (status: WardWorkflowStatus): string => {
+  const colors: Record<WardWorkflowStatus, string> = {
+    pending_admission: 'bg-yellow-100 text-yellow-800',
+    pending_transfer: 'bg-orange-100 text-orange-800',
+    admitted: 'bg-blue-100 text-blue-800',
+    active: 'bg-green-100 text-green-800',
+    transferred: 'bg-purple-100 text-purple-800',
+    discharged: 'bg-gray-100 text-gray-800'
+  };
+  return colors[status];
+};
+
 const initialBeds: WardBed[] = [
   { id: 'B001', roomNumber: '101', bedNumber: 'A', status: 'available' },
   { id: 'B002', roomNumber: '101', bedNumber: 'B', status: 'available' },
@@ -109,6 +154,15 @@ export function GeneralWard() {
 
   const wardPatients = patients.filter(p => p.department === 'general-ward');
 
+  const pendingAdmissionPatients = wardPatients.filter(p => getWorkflowStatus(p) === 'pending_admission');
+  const pendingTransferPatients = wardPatients.filter(p => getWorkflowStatus(p) === 'pending_transfer');
+  const admittedPatients = wardPatients.filter(p => getWorkflowStatus(p) === 'admitted');
+  const activePatients = wardPatients.filter(p => getWorkflowStatus(p) === 'active');
+  const dischargedPatients = wardPatients.filter(p => getWorkflowStatus(p) === 'discharged');
+
+  const pendingPatients = [...pendingAdmissionPatients, ...pendingTransferPatients];
+  const currentPatients = [...admittedPatients, ...activePatients];
+
   const handleAdmitPatient = () => {
     if (!selectedPatient || !newAdmit.roomNumber || !newAdmit.bedNumber) return;
     
@@ -128,6 +182,9 @@ export function GeneralWard() {
       admittingPhysician: newAdmit.admittingPhysician || user?.name,
       admissionDiagnosis: newAdmit.admissionDiagnosis || selectedPatient.chiefComplaint,
       wardStatus: 'admitted',
+      wardWorkflowStatus: 'admitted',
+      bedAssignedAt: new Date().toISOString(),
+      admittedAt: new Date().toISOString(),
       wardNurse: isNurse ? user?.name : undefined
     };
     
@@ -224,15 +281,31 @@ export function GeneralWard() {
   };
 
   const handleDischarge = () => {
-    if (!selectedPatient) return;
+    if (!selectedPatient || !canDischarge(selectedPatient)) return;
     const bedIndex = beds.findIndex(b => b.patientId === selectedPatient.id);
     if (bedIndex >= 0) {
       const newBeds = [...beds];
       newBeds[bedIndex] = { ...newBeds[bedIndex], status: 'cleaning', patientId: undefined, patientName: undefined };
       setBeds(newBeds);
     }
-    const updatedPatient: Patient = { ...selectedPatient, status: 'discharged', wardStatus: 'discharged', department: 'opd' };
+    const updatedPatient: Patient = { 
+      ...selectedPatient, 
+      status: 'discharged', 
+      wardStatus: 'discharged', 
+      wardWorkflowStatus: 'discharged',
+      dischargedAt: new Date().toISOString(),
+      department: 'opd' 
+    };
     updatePatient(updatedPatient);
+    addActivity({
+      id: generateId(),
+      type: 'discharge',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Patient discharged from General Ward`,
+      timestamp: new Date().toISOString()
+    });
     setSelectedPatient(null);
   };
 
@@ -486,7 +559,40 @@ export function GeneralWard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {wardPatients.map(patient => (
+              {pendingPatients.length > 0 && (
+                <>
+                  <tr className="bg-yellow-50">
+                    <td colSpan={6} className="px-4 py-2 font-medium text-yellow-800">Pending Admission/Transfer ({pendingPatients.length})</td>
+                  </tr>
+                  {pendingPatients.map(patient => (
+                    <tr key={patient.id} className="hover:bg-yellow-50">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-800">{patient.name}</p>
+                        <p className="text-sm text-slate-500">{patient.age}y {patient.gender[0]}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 bg-slate-100 rounded text-sm">Not Assigned</span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{patient.admissionDiagnosis || patient.diagnosis || patient.chiefComplaint || 'N/A'}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 bg-slate-100 rounded text-xs capitalize">{patient.dietType || 'regular'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs ${getWorkflowStatusColor(getWorkflowStatus(patient))}`}>
+                          {getWorkflowStatusLabel(getWorkflowStatus(patient))}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {isChargeNurse && canAssignBed(patient) && (
+                          <button onClick={() => { setSelectedPatient(patient); setShowAdmitModal(true); }} className="text-blue-600 hover:text-blue-700 text-sm font-medium mr-2">Assign Bed</button>
+                        )}
+                        <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
+              {currentPatients.map(patient => (
                 <tr key={patient.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-800">{patient.name}</p>
@@ -500,8 +606,8 @@ export function GeneralWard() {
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs capitalize">{patient.dietType || 'regular'}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs ${patient.status === 'critical' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                      {patient.status === 'critical' ? 'Critical' : 'Stable'}
+                    <span className={`px-2 py-1 rounded-full text-xs ${getWorkflowStatusColor(getWorkflowStatus(patient))}`}>
+                      {getWorkflowStatusLabel(getWorkflowStatus(patient))}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -699,8 +805,38 @@ export function GeneralWard() {
                 {(isChargeNurse || isNurse) && (
                   <>
                     <button onClick={handleTransfer} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Transfer Out</button>
-                    <button onClick={handleDischarge} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Discharge</button>
+                    <button 
+                      onClick={handleDischarge} 
+                      disabled={!canDischarge(selectedPatient)}
+                      className={`px-3 py-2 rounded-lg text-sm hover:bg-red-700 ${canDischarge(selectedPatient) ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                    >
+                      Discharge
+                    </button>
                   </>
+                )}
+                {isStaffNurse && getWorkflowStatus(selectedPatient) === 'admitted' && (
+                  <button 
+                    onClick={() => {
+                      const updatedPatient: Patient = {
+                        ...selectedPatient,
+                        wardWorkflowStatus: 'active',
+                        activatedAt: new Date().toISOString()
+                      };
+                      updatePatient(updatedPatient);
+                      addActivity({
+                        id: generateId(),
+                        type: 'ward-admit',
+                        department: 'general-ward',
+                        patientId: selectedPatient.id,
+                        patientName: selectedPatient.name,
+                        description: 'Patient activated - admission handoff complete',
+                        timestamp: new Date().toISOString()
+                      });
+                    }}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                  >
+                    Complete Admission Handoff
+                  </button>
                 )}
               </div>
               <button onClick={() => setSelectedPatient(null)} className="text-slate-400 hover:text-slate-600">
@@ -717,10 +853,18 @@ export function GeneralWard() {
               </div>
 
               <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <button onClick={() => setShowVitalsModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
-                <button onClick={() => setShowProgressModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
-                <button onClick={() => setShowPainModal(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
-                <button onClick={() => setShowVisitorModal(true)} className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
+                {canRecordVitals(selectedPatient) ? (
+                  <>
+                    <button onClick={() => setShowVitalsModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
+                    <button onClick={() => setShowProgressModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
+                    <button onClick={() => setShowPainModal(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
+                    <button onClick={() => setShowVisitorModal(true)} className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
+                  </>
+                ) : (
+                  <div className="text-sm text-slate-500 italic">
+                    Patient must be in "Active" status to record vitals and notes
+                  </div>
+                )}
               </div>
 
               {selectedPatient.vitalSigns && (

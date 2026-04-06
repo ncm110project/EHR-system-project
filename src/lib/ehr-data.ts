@@ -267,6 +267,11 @@ export interface Patient {
   admittingPhysician?: string;
   admissionDiagnosis?: string;
   wardStatus?: 'admitted' | 'discharged' | 'transferred-out' | 'transferred-in';
+  wardWorkflowStatus?: 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
+  bedAssignedAt?: string;
+  admittedAt?: string;
+  activatedAt?: string;
+  dischargedAt?: string;
   wardNurse?: string;
   nursingNotes?: string;
   nursingNotesHistory?: NotesEntry[];
