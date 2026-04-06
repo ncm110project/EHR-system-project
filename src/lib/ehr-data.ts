@@ -290,6 +290,8 @@ export interface Patient {
   dietType?: 'regular' | 'soft' | 'liquid' | 'NPO' | 'special';
   equipmentAssigned?: string[];
   visitorLog?: VisitorRecord[];
+  assignedNurse?: string;
+  assignedNurseId?: string;
 }
 
 export interface WardBed {
@@ -510,9 +512,54 @@ export interface NurseSchedule {
   department: Department;
 }
 
+export interface NurseTask {
+  id: string;
+  patientId: string;
+  patientName: string;
+  nurseId?: string;
+  nurseName?: string;
+  taskType: 'medication' | 'vitals' | 'wound-care' | 'feeding' | 'observations' | 'other';
+  description: string;
+  scheduledTime: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'overdue';
+  assignedBy: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface MedicationOrder {
+  id: string;
+  patientId: string;
+  patientName: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  route: 'oral' | 'iv' | 'im' | 'sc' | 'topical' | 'inhalation' | 'rectal';
+  startDate: string;
+  endDate?: string;
+  orderedBy: string;
+  doctorSignature: string;
+  instructions?: string;
+  status: 'pending' | 'active' | 'discontinued' | 'completed';
+  createdAt: string;
+}
+
+export interface NurseNotification {
+  id: string;
+  nurseId: string;
+  nurseName: string;
+  type: 'medication-order' | 'vitals-alert' | 'task-assigned' | 'incident';
+  title: string;
+  message: string;
+  patientId?: string;
+  patientName?: string;
+  read: boolean;
+  timestamp: string;
+}
+
 export interface Activity {
   id: string;
-  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals' | 'notes' | 'lab-order' | 'ward-admit';
+  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals' | 'notes' | 'lab-order' | 'ward-admit' | 'medication-order' | 'task-created' | 'task-completed' | 'vitals-alert';
   department: Department;
   patientId?: string;
   patientName?: string;

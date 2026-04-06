@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment, mockUsers } from "@/lib/ehr-data";
+import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment, mockUsers, NurseTask, MedicationOrder } from "@/lib/ehr-data";
 import { VitalSignsChart } from "./VitalSignsChart";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 const wardDoctors = mockUsers.filter(u => u.role === 'doctor' && u.department === 'general-ward');
+const wardNurses = mockUsers.filter(u => (u.role === 'staff-nurse' || u.role === 'nurse') && u.department === 'general-ward');
 
 const isAbnormalBP = (bp: string | undefined): boolean => {
   if (!bp) return false;
@@ -107,8 +108,8 @@ const mockEquipment: Equipment[] = [
 
 export function GeneralWard() {
   const { user } = useAuth();
-  const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications } = useEHR();
-  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
+  const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications, nurseTasks, medicationOrders, addNurseTask, updateNurseTask, addMedicationOrder } = useEHR();
+  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'tasks' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [beds, setBeds] = useState<WardBed[]>(initialBeds);
   const [medicationRounds, setMedicationRounds] = useState<MedicationRound[]>([]);
@@ -129,6 +130,9 @@ export function GeneralWard() {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showVisitorModal, setShowVisitorModal] = useState(false);
   const [showPainModal, setShowPainModal] = useState(false);
+  const [showNurseAssignModal, setShowNurseAssignModal] = useState(false);
+  const [showMedicationOrderModal, setShowMedicationOrderModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
     bloodPressure: "",
@@ -148,6 +152,23 @@ export function GeneralWard() {
   const [incident, setIncident] = useState({ type: 'fall' as const, description: "", severity: 'low' as const });
   const [visitor, setVisitor] = useState({ visitorName: "", relation: "" });
   const [ivFluid, setIvFluid] = useState({ fluidName: "", volume: 1000, rate: 100 });
+  const [selectedNurseForAssign, setSelectedNurseForAssign] = useState("");
+  const [medicationOrderForm, setMedicationOrderForm] = useState({
+    medication: "",
+    dosage: "",
+    frequency: "",
+    route: "oral" as "oral" | "iv" | "im" | "sc" | "topical" | "inhalation" | "rectal",
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: "",
+    doctorSignature: "",
+    instructions: ""
+  });
+  const [newTask, setNewTask] = useState({
+    taskType: "medication" as "medication" | "vitals" | "wound-care" | "feeding" | "observations" | "other",
+    description: "",
+    scheduledTime: ""
+  });
+  const [assignNurseForTask, setAssignNurseForTask] = useState("");
 
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -384,6 +405,165 @@ export function GeneralWard() {
     setIncident({ type: 'fall', description: "", severity: 'low' });
   };
 
+  const handleAssignNurse = () => {
+    if (!selectedPatient || !selectedNurseForAssign) return;
+    const nurse = wardNurses.find(n => n.id === selectedNurseForAssign);
+    if (!nurse) return;
+    
+    const updatedPatient: Patient = {
+      ...selectedPatient,
+      assignedNurse: nurse.name,
+      assignedNurseId: nurse.id
+    };
+    updatePatient(updatedPatient);
+    addActivity({
+      id: generateId(),
+      type: 'nurse-assign',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Assigned to nurse ${nurse.name}`,
+      timestamp: new Date().toISOString()
+    });
+    setShowNurseAssignModal(false);
+    setSelectedNurseForAssign("");
+  };
+
+  const handleCreateMedicationOrder = () => {
+    if (!selectedPatient || !medicationOrderForm.medication || !medicationOrderForm.dosage || !medicationOrderForm.doctorSignature) return;
+    
+    const order: MedicationOrder = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      medication: medicationOrderForm.medication,
+      dosage: medicationOrderForm.dosage,
+      frequency: medicationOrderForm.frequency,
+      route: medicationOrderForm.route,
+      startDate: medicationOrderForm.startDate,
+      endDate: medicationOrderForm.endDate || undefined,
+      orderedBy: user?.name || 'Unknown',
+      doctorSignature: medicationOrderForm.doctorSignature,
+      instructions: medicationOrderForm.instructions,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    
+    addMedicationOrder(order);
+    
+    const task: NurseTask = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      taskType: 'medication',
+      description: `Administer ${medicationOrderForm.medication} ${medicationOrderForm.dosage} - ${medicationOrderForm.frequency} (${medicationOrderForm.route})`,
+      scheduledTime: new Date().toISOString(),
+      status: 'pending',
+      assignedBy: user?.name || 'Unknown',
+      createdAt: new Date().toISOString()
+    };
+    addNurseTask(task);
+    
+    addActivity({
+      id: generateId(),
+      type: 'medication-order',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Medication order: ${medicationOrderForm.medication} ${medicationOrderForm.dosage} - Signed by ${medicationOrderForm.doctorSignature}`,
+      timestamp: new Date().toISOString()
+    });
+    
+    setShowMedicationOrderModal(false);
+    setMedicationOrderForm({
+      medication: "",
+      dosage: "",
+      frequency: "",
+      route: "oral",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
+      doctorSignature: "",
+      instructions: ""
+    });
+  };
+
+  const handleCreateTask = () => {
+    if (!selectedPatient || !newTask.description || !newTask.scheduledTime) return;
+    
+    const task: NurseTask = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      nurseId: assignNurseForTask || undefined,
+      nurseName: assignNurseForTask ? wardNurses.find(n => n.id === assignNurseForTask)?.name : undefined,
+      taskType: newTask.taskType,
+      description: newTask.description,
+      scheduledTime: newTask.scheduledTime,
+      status: 'pending',
+      assignedBy: user?.name || 'Unknown',
+      createdAt: new Date().toISOString()
+    };
+    addNurseTask(task);
+    
+    addActivity({
+      id: generateId(),
+      type: 'task-created',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Task created: ${newTask.taskType} - ${newTask.description}`,
+      timestamp: new Date().toISOString()
+    });
+    
+    setShowTaskModal(false);
+    setNewTask({ taskType: "medication", description: "", scheduledTime: "" });
+    setAssignNurseForTask("");
+  };
+
+  const handleCompleteTask = (task: NurseTask) => {
+    const updatedTask: NurseTask = {
+      ...task,
+      status: 'completed',
+      completedAt: new Date().toISOString()
+    };
+    updateNurseTask(updatedTask);
+    
+    addActivity({
+      id: generateId(),
+      type: 'task-completed',
+      department: 'general-ward',
+      patientId: task.patientId,
+      patientName: task.patientName,
+      description: `Task completed: ${task.taskType} - ${task.description}`,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const getAbnormalVitalsAlert = (patient: Patient) => {
+    if (!patient.vitalSigns) return null;
+    const vitals = patient.vitalSigns;
+    const alerts: string[] = [];
+    
+    if (isAbnormalBP(vitals.bloodPressure)) alerts.push("BP");
+    if (isAbnormalHR(vitals.heartRate)) alerts.push("HR");
+    if (isAbnormalTemp(vitals.temperature)) alerts.push("Temp");
+    if (isAbnormalRR(vitals.respiratoryRate)) alerts.push("RR");
+    if (isAbnormalSpO2(vitals.oxygenSaturation)) alerts.push("SpO2");
+    
+    if (alerts.length > 0) {
+      return {
+        type: 'vitals-alert' as const,
+        title: 'Abnormal Vitals',
+        message: `Abnormal readings: ${alerts.join(', ')}`
+      };
+    }
+    return null;
+  };
+
+  const pendingTasks = nurseTasks.filter(t => t.status === 'pending');
+  const myTasks = nurseTasks.filter(t => t.nurseName === user?.name && t.status === 'pending');
+  const activeMedOrders = medicationOrders.filter(o => o.status === 'pending' || o.status === 'active');
+
   const handleAddIV = () => {
     if (!selectedPatient || !ivFluid.fluidName) return;
     const newIV: IVFluidRecord = {
@@ -517,6 +697,7 @@ export function GeneralWard() {
           { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
           { id: 'pain', label: 'Pain Assessment' },
+          { id: 'tasks', label: 'Tasks' },
           { id: 'medications', label: 'Medication Rounds' },
           { id: 'iv', label: 'IV Fluids' },
           { id: 'rounds', label: 'Daily Rounds' },
@@ -594,11 +775,15 @@ export function GeneralWard() {
                   ))}
                 </>
               )}
-              {currentPatients.map(patient => (
+                {currentPatients.map(patient => {
+                  const vitalsAlert = getAbnormalVitalsAlert(patient);
+                  return (
                 <tr key={patient.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-800">{patient.name}</p>
                     <p className="text-sm text-slate-500">{patient.age}y {patient.gender[0]}</p>
+                    {patient.assignedNurse && <p className="text-xs text-teal-600">Nurse: {patient.assignedNurse}</p>}
+                    {vitalsAlert && <p className="text-xs text-red-600 font-medium">⚠️ Abnormal Vitals</p>}
                   </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-1 bg-slate-100 rounded text-sm">{patient.roomNumber || 'N/A'}-{patient.bedNumber || 'N/A'}</span>
@@ -616,7 +801,8 @@ export function GeneralWard() {
                     <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
                   </td>
                 </tr>
-              ))}
+                  );
+                })}
               {wardPatients.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No patients in General Ward</td></tr>
               )}
@@ -691,6 +877,70 @@ export function GeneralWard() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'tasks' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Nurse Tasks</h3>
+          {(isChargeNurse || isDoctor) && pendingTasks.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-slate-600 mb-2">All Pending Tasks ({pendingTasks.length})</h4>
+              <div className="space-y-2">
+                {pendingTasks.map(task => (
+                  <div key={task.id} className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{task.taskType.replace('-', ' ').toUpperCase()}</p>
+                      <p className="text-sm text-slate-600">{task.description}</p>
+                      <p className="text-xs text-slate-500">Patient: {task.patientName} • Scheduled: {new Date(task.scheduledTime).toLocaleString()}</p>
+                      {task.nurseName && <p className="text-xs text-blue-600">Assigned to: {task.nurseName}</p>}
+                    </div>
+                    {isNurse && (
+                      <button onClick={() => handleCompleteTask(task)} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">Complete</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {isStaffNurse && myTasks.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-slate-600 mb-2">My Tasks ({myTasks.length})</h4>
+              <div className="space-y-2">
+                {myTasks.map(task => (
+                  <div key={task.id} className="p-3 bg-teal-50 border border-teal-200 rounded-lg flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{task.taskType.replace('-', ' ').toUpperCase()}</p>
+                      <p className="text-sm text-slate-600">{task.description}</p>
+                      <p className="text-xs text-slate-500">Scheduled: {new Date(task.scheduledTime).toLocaleString()}</p>
+                    </div>
+                    <button onClick={() => handleCompleteTask(task)} className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">Complete</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {medicationOrders.filter(o => o.status !== 'completed').length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-slate-600 mb-2">Active Medication Orders ({medicationOrders.filter(o => o.status !== 'completed').length})</h4>
+              <div className="space-y-2">
+                {medicationOrders.filter(o => o.status !== 'completed').map(order => (
+                  <div key={order.id} className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
+                    <p className="font-medium">{order.medication} {order.dosage}</p>
+                    <p className="text-sm text-slate-600">{order.frequency} - {order.route}</p>
+                    <p className="text-xs text-slate-500">Patient: {order.patientName} • Ordered by: {order.orderedBy}</p>
+                    <p className="text-xs text-slate-400">Signed by: {order.doctorSignature}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {pendingTasks.length === 0 && (isStaffNurse ? myTasks.length === 0 : true) && medicationOrders.filter(o => o.status !== 'completed').length === 0 && (
+            <p className="text-slate-500 text-center py-8">No pending tasks</p>
           )}
         </div>
       )}
@@ -795,8 +1045,15 @@ export function GeneralWard() {
                 {isDoctor && (
                   <>
                     <button onClick={() => setShowPrescribeModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Prescribe</button>
+                    <button onClick={() => setShowMedicationOrderModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Medication Order</button>
                     <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
                     <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
+                  </>
+                )}
+                {isChargeNurse && (
+                  <>
+                    <button onClick={() => setShowNurseAssignModal(true)} className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-700">Assign Nurse</button>
+                    <button onClick={() => setShowTaskModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Task</button>
                   </>
                 )}
                 {isNurse && (
@@ -1228,6 +1485,126 @@ export function GeneralWard() {
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setShowPainModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
                 <button onClick={handleSavePainAssessment} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">Save Assessment</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNurseAssignModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Assign Nurse to {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <select value={selectedNurseForAssign} onChange={(e) => setSelectedNurseForAssign(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Nurse</option>
+                {wardNurses.map(nurse => (
+                  <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
+                ))}
+              </select>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowNurseAssignModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleAssignNurse} disabled={!selectedNurseForAssign} className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50">Assign</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMedicationOrderModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Medication Order - {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Medication Name *</label>
+                <input type="text" placeholder="e.g., Amoxicillin" value={medicationOrderForm.medication} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, medication: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Dosage *</label>
+                  <input type="text" placeholder="e.g., 500mg" value={medicationOrderForm.dosage} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, dosage: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Frequency</label>
+                  <input type="text" placeholder="e.g., 3x daily" value={medicationOrderForm.frequency} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, frequency: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Route *</label>
+                <select value={medicationOrderForm.route} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, route: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="oral">Oral</option>
+                  <option value="iv">IV</option>
+                  <option value="im">IM (Intramuscular)</option>
+                  <option value="sc">SC (Subcutaneous)</option>
+                  <option value="topical">Topical</option>
+                  <option value="inhalation">Inhalation</option>
+                  <option value="rectal">Rectal</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                  <input type="date" value={medicationOrderForm.startDate} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, startDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">End Date (optional)</label>
+                  <input type="date" value={medicationOrderForm.endDate} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, endDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Doctor Signature *</label>
+                <input type="text" placeholder="Your name as signature" value={medicationOrderForm.doctorSignature} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, doctorSignature: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Instructions (optional)</label>
+                <textarea placeholder="e.g., Take with food, avoid alcohol" value={medicationOrderForm.instructions} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, instructions: e.target.value})} className="w-full h-20 px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowMedicationOrderModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleCreateMedicationOrder} disabled={!medicationOrderForm.medication || !medicationOrderForm.dosage || !medicationOrderForm.doctorSignature} className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50">Submit Order</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTaskModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Create Task for {selectedPatient.name}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Task Type</label>
+                <select value={newTask.taskType} onChange={(e) => setNewTask({...newTask, taskType: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="medication">Medication</option>
+                  <option value="vitals">Vital Signs</option>
+                  <option value="wound-care">Wound Care</option>
+                  <option value="feeding">Feeding</option>
+                  <option value="observations">Observations</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
+                <textarea placeholder="Task description..." value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} className="w-full h-20 px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Scheduled Time *</label>
+                <input type="datetime-local" value={newTask.scheduledTime} onChange={(e) => setNewTask({...newTask, scheduledTime: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Assign to Nurse (optional)</label>
+                <select value={assignNurseForTask} onChange={(e) => setAssignNurseForTask(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Unassigned</option>
+                  {wardNurses.map(nurse => (
+                    <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowTaskModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleCreateTask} disabled={!newTask.description || !newTask.scheduledTime} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">Create Task</button>
               </div>
             </div>
           </div>

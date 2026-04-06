@@ -13,10 +13,11 @@ import {
   Message,
   Appointment,
   AuditLog,
-  BillingRecord,
   TransferRecord,
   FollowUp,
   Notification,
+  NurseTask,
+  MedicationOrder,
   mockPatients,
   mockMedications,
   mockPrescriptions,
@@ -60,6 +61,12 @@ interface EHRContextType {
   updateFollowUp: (followUp: FollowUp) => void;
   addNotification: (notification: Notification) => void;
   markNotificationRead: (id: string) => void;
+  nurseTasks: NurseTask[];
+  medicationOrders: MedicationOrder[];
+  addNurseTask: (task: NurseTask) => void;
+  updateNurseTask: (task: NurseTask) => void;
+  addMedicationOrder: (order: MedicationOrder) => void;
+  updateMedicationOrder: (order: MedicationOrder) => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -118,6 +125,8 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(localAppointments);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(localAuditLogs);
   const [notifications, setNotifications] = useState<Notification[]>(localNotifications);
+  const [nurseTasks, setNurseTasks] = useState<NurseTask[]>([]);
+  const [medicationOrders, setMedicationOrders] = useState<MedicationOrder[]>([]);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
 
   useEffect(() => {
@@ -332,6 +341,22 @@ export function EHRProvider({ children }: EHRProviderProps) {
     }
   }, []);
 
+  const addNurseTask = useCallback((task: NurseTask) => {
+    setNurseTasks(prev => [...prev, task]);
+  }, []);
+
+  const updateNurseTask = useCallback((task: NurseTask) => {
+    setNurseTasks(prev => prev.map(t => t.id === task.id ? task : t));
+  }, []);
+
+  const addMedicationOrder = useCallback((order: MedicationOrder) => {
+    setMedicationOrders(prev => [...prev, order]);
+  }, []);
+
+  const updateMedicationOrder = useCallback((order: MedicationOrder) => {
+    setMedicationOrders(prev => prev.map(o => o.id === order.id ? order : o));
+  }, []);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -367,7 +392,13 @@ export function EHRProvider({ children }: EHRProviderProps) {
       addFollowUp,
       updateFollowUp,
       addNotification,
-      markNotificationRead
+      markNotificationRead,
+      nurseTasks,
+      medicationOrders,
+      addNurseTask,
+      updateNurseTask,
+      addMedicationOrder,
+      updateMedicationOrder
     }}>
       {children}
     </EHRContext.Provider>
