@@ -262,10 +262,16 @@ function BloodPressureCard({ data }: { data: VitalSignsEntry[] }) {
           ))}
           
           {sysPoints.length > 1 && (
-            <polyline fill="none" stroke="#3B82F6" strokeWidth="2" points={sysLinePath} strokeLinecap="round" strokeLinejoin="round" />
+            <>
+              <polygon points={`${padding.left},${height - padding.bottom} ${sysLinePath} ${width - padding.right},${height - padding.bottom}`} fill="url(#sysGradient)" />
+              <polyline fill="none" stroke="#3B82F6" strokeWidth="2" points={sysLinePath} strokeLinecap="round" strokeLinejoin="round" />
+            </>
           )}
           {diaPoints.length > 1 && (
-            <polyline fill="none" stroke="#8B5CF6" strokeWidth="2" points={diaLinePath} strokeLinecap="round" strokeLinejoin="round" />
+            <>
+              <polygon points={`${padding.left},${height - padding.bottom} ${diaLinePath} ${width - padding.right},${height - padding.bottom}`} fill="url(#diaGradient)" />
+              <polyline fill="none" stroke="#8B5CF6" strokeWidth="2" points={diaLinePath} strokeLinecap="round" strokeLinejoin="round" />
+            </>
           )}
           
           {sysPoints.map((p, i) => (
