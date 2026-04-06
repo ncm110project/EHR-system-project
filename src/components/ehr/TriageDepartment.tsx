@@ -51,8 +51,15 @@ export function TriageDepartment() {
     respiratoryRate: 0,
     oxygenSaturation: 0,
     priority: undefined as TriagePriority | undefined,
-    destination: '' as 'er' | 'opd' | 'discharge' | ''
+    destination: '' as 'er' | 'opd' | 'discharge' | '',
+    name: '',
+    age: 0,
+    gender: 'Male' as 'Male' | 'Female',
+    phone: '',
+    address: ''
   });
+
+  const [isEditingDemographics, setIsEditingDemographics] = useState(false);
 
   const resetTriageForm = () => {
     setTriageForm({
@@ -65,14 +72,37 @@ export function TriageDepartment() {
       respiratoryRate: 0,
       oxygenSaturation: 0,
       priority: undefined,
-      destination: ''
+      destination: '',
+      name: '',
+      age: 0,
+      gender: 'Male',
+      phone: '',
+      address: ''
     });
+    setIsEditingDemographics(false);
   };
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     setShowTriageForm(true);
-    resetTriageForm();
+    setTriageForm({
+      category: '',
+      chiefComplaint: patient.chiefComplaint || '',
+      painScore: 5,
+      bloodPressure: '',
+      heartRate: 0,
+      temperature: 0,
+      respiratoryRate: 0,
+      oxygenSaturation: 0,
+      priority: undefined,
+      destination: '',
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      phone: patient.phone,
+      address: patient.address
+    });
+    setIsEditingDemographics(false);
   };
 
   const handleSubmitTriage = () => {
@@ -92,6 +122,11 @@ export function TriageDepartment() {
 
     const updatedPatient: Patient = {
       ...selectedPatient,
+      name: triageForm.name || selectedPatient.name,
+      age: triageForm.age || selectedPatient.age,
+      gender: triageForm.gender || selectedPatient.gender,
+      phone: triageForm.phone || selectedPatient.phone,
+      address: triageForm.address || selectedPatient.address,
       triageStatus: 'triaged',
       triagePriority: triageForm.priority,
       chiefComplaint: triageForm.chiefComplaint || selectedPatient.chiefComplaint || '',
@@ -105,6 +140,8 @@ export function TriageDepartment() {
       updatePatient({ ...updatedPatient, department: 'er' });
     } else if (triageForm.destination === 'opd') {
       updatePatient({ ...updatedPatient, department: 'opd' });
+    } else if (triageForm.destination === 'discharge') {
+      updatePatient({ ...updatedPatient, department: 'registration', status: 'discharged' });
     }
 
     addActivity({
@@ -112,7 +149,7 @@ export function TriageDepartment() {
       type: 'triage',
       department: 'triage',
       patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
+      patientName: triageForm.name || selectedPatient.name,
       description: `Triaged: Priority ${triageForm.priority} - ${triageForm.destination.toUpperCase()} - Pain: ${triageForm.painScore}/10`,
       timestamp: now
     });
@@ -315,6 +352,81 @@ export function TriageDepartment() {
               <p className="text-slate-500">{selectedPatient.name} • {selectedPatient.age}y • {selectedPatient.gender}</p>
             </div>
             <div className="p-6 space-y-6">
+              {!isEditingDemographics ? (
+                <div className="p-4 bg-slate-50 rounded-lg flex justify-between items-center">
+                  <div>
+                    <p className="font-medium">{triageForm.name}</p>
+                    <p className="text-sm text-slate-500">{triageForm.age}y • {triageForm.gender} • {triageForm.phone}</p>
+                    <p className="text-xs text-slate-400">{triageForm.address}</p>
+                  </div>
+                  <button
+                    onClick={() => setIsEditingDemographics(true)}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    ✏️ Edit
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                  <h4 className="font-medium text-slate-700">Patient Demographics</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={triageForm.name}
+                        onChange={(e) => setTriageForm({ ...triageForm, name: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Age</label>
+                      <input
+                        type="number"
+                        value={triageForm.age || ''}
+                        onChange={(e) => setTriageForm({ ...triageForm, age: parseInt(e.target.value) || 0 })}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Gender</label>
+                      <select
+                        value={triageForm.gender}
+                        onChange={(e) => setTriageForm({ ...triageForm, gender: e.target.value as 'Male' | 'Female' })}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Phone</label>
+                      <input
+                        type="text"
+                        value={triageForm.phone}
+                        onChange={(e) => setTriageForm({ ...triageForm, phone: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs text-slate-500 mb-1">Address</label>
+                      <input
+                        type="text"
+                        value={triageForm.address}
+                        onChange={(e) => setTriageForm({ ...triageForm, address: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsEditingDemographics(false)}
+                    className="text-sm text-slate-600 hover:text-slate-800"
+                  >
+                    Done editing
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Chief Complaint Category</label>
                 <select

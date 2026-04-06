@@ -11,7 +11,6 @@ import { EmergencyRoom } from "@/components/ehr/EmergencyRoom";
 import { Pharmacy } from "@/components/ehr/Pharmacy";
 import { Laboratory } from "@/components/ehr/Laboratory";
 import { NursingAdmin } from "@/components/ehr/NursingAdmin";
-import { RegistrationClerk } from "@/components/ehr/RegistrationClerk";
 import { PatientDashboard } from "@/components/ehr/PatientDashboard";
 import { GeneralWard } from "@/components/ehr/GeneralWard";
 import { TriageDepartment } from "@/components/ehr/TriageDepartment";
@@ -48,8 +47,6 @@ export default function Dashboard() {
   const renderDepartment = () => {
     const userDept = 'department' in user ? user.department : 'opd';
     switch (userDept) {
-      case 'registration':
-        return <RegistrationClerk />;
       case 'opd':
         return <OutpatientDepartment />;
       case 'er':
