@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord } from "@/lib/ehr-data";
+import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment } from "@/lib/ehr-data";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -31,7 +31,7 @@ const mockEquipment: Equipment[] = [
 export function GeneralWard() {
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications } = useEHR();
-  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover'>('beds');
+  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [beds, setBeds] = useState<WardBed[]>(initialBeds);
   const [medicationRounds, setMedicationRounds] = useState<MedicationRound[]>([]);
@@ -40,6 +40,7 @@ export function GeneralWard() {
   const [incidents, setIncidents] = useState<WardIncident[]>([]);
   const [equipment] = useState<Equipment[]>(mockEquipment);
   const [handovers, setHandovers] = useState<ShiftHandover[]>([]);
+  const [painAssessments, setPainAssessments] = useState<PainAssessment[]>([]);
   
   const [showVitalsModal, setShowVitalsModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -50,6 +51,7 @@ export function GeneralWard() {
   const [showRoundingModal, setShowRoundingModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showVisitorModal, setShowVisitorModal] = useState(false);
+  const [showPainModal, setShowPainModal] = useState(false);
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
     bloodPressure: "",
@@ -309,6 +311,26 @@ export function GeneralWard() {
     setVisitor({ visitorName: "", relation: "" });
   };
 
+  const [painAssessment, setPainAssessment] = useState({ painScore: 0, painLocation: "", painType: 'dull' as const, interventions: "" });
+
+  const handleSavePainAssessment = () => {
+    if (!selectedPatient) return;
+    const newPain: PainAssessment = {
+      id: generateId(),
+      patientId: selectedPatient.id,
+      painScore: painAssessment.painScore,
+      painLocation: painAssessment.painLocation,
+      painType: painAssessment.painType,
+      painScale: 'numeric',
+      interventions: painAssessment.interventions,
+      assessedBy: user?.name || 'Unknown',
+      timestamp: new Date().toISOString()
+    };
+    setPainAssessments([...painAssessments, newPain]);
+    setShowPainModal(false);
+    setPainAssessment({ painScore: 0, painLocation: "", painType: 'dull', interventions: "" });
+  };
+
   const stats = {
     totalBeds: beds.length,
     occupied: beds.filter(b => b.status === 'occupied').length,
@@ -356,6 +378,7 @@ export function GeneralWard() {
         {[
           { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
+          { id: 'pain', label: 'Pain Assessment' },
           { id: 'medications', label: 'Medication Rounds' },
           { id: 'iv', label: 'IV Fluids' },
           { id: 'rounds', label: 'Daily Rounds' },
@@ -428,6 +451,35 @@ export function GeneralWard() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {activeTab === 'pain' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Pain Assessment Records</h3>
+          {painAssessments.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">No pain assessments recorded</p>
+          ) : (
+            <div className="space-y-3">
+              {painAssessments.map((assessment, idx) => (
+                <div key={idx} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">Patient: {patients.find(p => p.id === assessment.patientId)?.name || 'Unknown'}</p>
+                      <p className="text-sm text-slate-600">Pain Score: <span className="font-bold text-orange-600">{assessment.painScore}/10</span> {assessment.painScore >= 7 ? '⚠️ Severe' : assessment.painScore >= 4 ? '⚡ Moderate' : '✓ Mild'}</p>
+                      {assessment.painLocation && <p className="text-sm text-slate-600">Location: {assessment.painLocation}</p>}
+                      {assessment.painType && <p className="text-sm text-slate-600">Type: {assessment.painType}</p>}
+                      {assessment.interventions && <p className="text-sm text-slate-600">Interventions: {assessment.interventions}</p>}
+                    </div>
+                    <div className="text-right text-sm text-slate-500">
+                      <p>{assessment.assessedBy}</p>
+                      <p>{new Date(assessment.timestamp).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -597,6 +649,7 @@ export function GeneralWard() {
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
                 <button onClick={() => setShowProgressModal(true)} className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
+                <button onClick={() => setShowPainModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
                 <button onClick={() => setShowVisitorModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
                 {isDoctor && (
                   <>
@@ -794,6 +847,58 @@ export function GeneralWard() {
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setShowVisitorModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
                 <button onClick={handleAddVisitor} disabled={!visitor.visitorName} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50">Log In</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPainModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Pain Assessment - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Pain Score (0-10)</label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="10" 
+                    value={painAssessment.painScore} 
+                    onChange={(e) => setPainAssessment({...painAssessment, painScore: parseInt(e.target.value)})}
+                    className="flex-1"
+                  />
+                  <span className={`px-3 py-1 rounded font-bold ${painAssessment.painScore >= 7 ? 'bg-red-100 text-red-700' : painAssessment.painScore >= 4 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                    {painAssessment.painScore}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>No Pain</span>
+                  <span>Severe</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pain Location</label>
+                <input type="text" placeholder="e.g., Abdomen, Back" value={painAssessment.painLocation} onChange={(e) => setPainAssessment({...painAssessment, painLocation: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Pain Type</label>
+                <select value={painAssessment.painType} onChange={(e) => setPainAssessment({...painAssessment, painType: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="sharp">Sharp</option>
+                  <option value="dull">Dull</option>
+                  <option value="burning">Burning</option>
+                  <option value="aching">Aching</option>
+                  <option value="throbbing">Throbbing</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Interventions Given</label>
+                <textarea placeholder="e.g., Given pain medication, applied cold compress" value={painAssessment.interventions} onChange={(e) => setPainAssessment({...painAssessment, interventions: e.target.value})} className="w-full h-20 px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowPainModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={handleSavePainAssessment} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">Save Assessment</button>
               </div>
             </div>
           </div>

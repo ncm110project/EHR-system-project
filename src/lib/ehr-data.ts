@@ -362,6 +362,18 @@ export interface VisitorRecord {
   checkOut?: string;
 }
 
+export interface PainAssessment {
+  id: string;
+  patientId: string;
+  painScore: number;
+  painLocation?: string;
+  painType?: 'sharp' | 'dull' | 'burning' | 'aching' | 'throbbing';
+  painScale: 'numeric' | 'faces' | 'verbal';
+  interventions?: string;
+  assessedBy: string;
+  timestamp: string;
+}
+
 export interface BillingRecord {
   id: string;
   patientId: string;
