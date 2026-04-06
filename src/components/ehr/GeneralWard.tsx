@@ -106,7 +106,7 @@ export function GeneralWard() {
   const isChargeNurse = !!(user && 'role' in user && user.role === 'charge-nurse');
   const isStaffNurse = !!(user && 'role' in user && user.role === 'staff-nurse');
 
-  const wardPatients = patients.filter(p => p.department === 'general-ward' && p.registrationStatus === 'confirmed');
+  const wardPatients = patients.filter(p => p.department === 'general-ward');
 
   const handleAdmitPatient = () => {
     if (!selectedPatient || !newAdmit.roomNumber || !newAdmit.bedNumber) return;
