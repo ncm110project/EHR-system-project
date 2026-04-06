@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment } from "@/lib/ehr-data";
+import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment, mockUsers } from "@/lib/ehr-data";
 import { VitalSignsChart } from "./VitalSignsChart";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const wardDoctors = mockUsers.filter(u => u.role === 'doctor' && u.department === 'general-ward');
 
 const isAbnormalBP = (bp: string | undefined): boolean => {
   if (!bp) return false;
@@ -1090,7 +1092,10 @@ export function GeneralWard() {
                 <option value="">Select Bed</option>
                 {beds.filter(b => b.status === 'available' && b.roomNumber === newAdmit.roomNumber).map(b => <option key={b.bedNumber} value={b.bedNumber}>Bed {b.bedNumber}</option>)}
               </select>
-              <input type="text" placeholder="Admitting Physician" value={newAdmit.admittingPhysician} onChange={(e) => setNewAdmit({...newAdmit, admittingPhysician: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              <select value={newAdmit.admittingPhysician} onChange={(e) => setNewAdmit({...newAdmit, admittingPhysician: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                <option value="">Select Admitting Doctor</option>
+                {wardDoctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+              </select>
               <input type="text" placeholder="Admission Diagnosis" value={newAdmit.admissionDiagnosis} onChange={(e) => setNewAdmit({...newAdmit, admissionDiagnosis: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setShowAdmitModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
