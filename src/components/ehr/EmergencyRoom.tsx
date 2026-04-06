@@ -887,13 +887,10 @@ export function EmergencyRoom() {
                       <p className="font-semibold">{selectedPatient.vitalSigns.oxygenSaturation}%</p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Recorded: {formatDateTime(selectedPatient.vitalSigns.recordedAt)}
-                  </p>
                 </div>
               )}
 
-              {(selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0) && (
+              {selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0 && (
                 <div className="mt-4">
                   <h4 className="font-semibold mb-3">Vital Signs Trends</h4>
                   <VitalSignsChart history={selectedPatient.vitalSignsHistory} />
