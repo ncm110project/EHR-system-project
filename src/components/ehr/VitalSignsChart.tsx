@@ -61,9 +61,9 @@ function VitalCard({
   const values = data.map((d, i) => ({ x: i, y: getValue(d), entry: d })).filter(d => d.y > 0);
   const range = yMax - yMin;
   
-  const width = 240;
-  const height = 140;
-  const padding = { top: 15, right: 15, bottom: 35, left: 45 };
+  const width = 400;
+  const height = 180;
+  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
   
@@ -98,7 +98,7 @@ function VitalCard({
         <span className="text-xs text-slate-400">{normalRange}</span>
       </div>
       
-      <div className="relative h-32" onMouseLeave={() => setHoveredPoint(null)}>
+      <div className="relative h-44" onMouseLeave={() => setHoveredPoint(null)}>
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
           <defs>
             <linearGradient id={`gradient-${label.replace(/\s/g, '')}`} x1="0" y1="0" x2="0" y2="1">
@@ -121,7 +121,7 @@ function VitalCard({
               <text 
                 x={padding.left - 5} 
                 y={getY(val) + 4} 
-                fontSize="9" 
+                fontSize="11" 
                 fill="#94A3B8" 
                 textAnchor="end"
               >
@@ -148,7 +148,7 @@ function VitalCard({
               key={`label-${i}`}
               x={p.x} 
               y={height - 5} 
-              fontSize="8" 
+              fontSize="10" 
               fill="#94A3B8" 
               textAnchor="middle"
             >
@@ -191,7 +191,7 @@ export function VitalSignsChart({ history }: VitalSignsChartProps) {
   const maxDia = Math.max(...bpDiastolic, 90);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 gap-4">
       <VitalCard 
         data={data} 
         label="Heart Rate" 
