@@ -5,6 +5,7 @@ import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
 import { DepartmentTransfer } from "./DepartmentTransfer";
+import { VitalSignsChart } from "./VitalSignsChart";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -893,24 +894,9 @@ export function EmergencyRoom() {
               )}
 
               {(selectedPatient.vitalSignsHistory && selectedPatient.vitalSignsHistory.length > 0) && (
-                <div>
-                  <h4 className="font-semibold mb-3">Vital Signs History</h4>
-                  <div className="space-y-3">
-                    {selectedPatient.vitalSignsHistory.map((entry, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
-                        <div className="grid grid-cols-5 gap-2 text-sm mb-1">
-                          <div><span className="text-xs text-slate-500">BP:</span> {entry.vitals.bloodPressure}</div>
-                          <div><span className="text-xs text-slate-500">HR:</span> {entry.vitals.heartRate}</div>
-                          <div><span className="text-xs text-slate-500">Temp:</span> {entry.vitals.temperature}°F</div>
-                          <div><span className="text-xs text-slate-500">RR:</span> {entry.vitals.respiratoryRate}</div>
-                          <div><span className="text-xs text-slate-500">SpO2:</span> {entry.vitals.oxygenSaturation}%</div>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          Recorded: {formatDateTime(entry.timestamp)} by {entry.recordedBy}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-3">Vital Signs Trends</h4>
+                  <VitalSignsChart history={selectedPatient.vitalSignsHistory} />
                 </div>
               )}
 
@@ -963,48 +949,102 @@ export function EmergencyRoom() {
                       </svg>
                       <span className="font-medium">Add New Vital Signs</span>
                     </button>
-                    {showAddVitals && (
-                      <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
+                    {showAddVitals && selectedPatient.vitalSigns && selectedPatient.vitalSigns.bloodPressure && (
+                      <div className="p-4 bg-slate-50 rounded-lg space-y-4">
+                        {(() => {
+                          const prev = selectedPatient.vitalSigns;
+                          return (
+                            <button 
+                              onClick={() => setVitalsData({
+                                bloodPressure: prev.bloodPressure || '',
+                                heartRate: prev.heartRate || 0,
+                                temperature: prev.temperature || 0,
+                                respiratoryRate: prev.respiratoryRate || 0,
+                                oxygenSaturation: prev.oxygenSaturation || 0,
+                                recordedAt: new Date().toISOString()
+                              })}
+                              className="text-xs text-blue-600 underline hover:text-blue-800"
+                            >
+                              Copy from previous vitals
+                            </button>
+                          );
+                        })()}
+                        
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-sm font-medium text-slate-700">Blood Pressure</label>
+                            <span className="text-xs text-slate-400">Normal: 90-140/60-90</span>
+                          </div>
                           <input
                             type="text"
-                            placeholder="Blood Pressure (e.g., 120/80)"
+                            placeholder="e.g., 120/80"
                             value={vitalsData.bloodPressure}
                             onChange={(e) => setVitalsData({...vitalsData, bloodPressure: e.target.value})}
-                            className="px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Heart Rate (e.g., 72)"
-                            value={vitalsData.heartRate || ''}
-                            onChange={(e) => setVitalsData({...vitalsData, heartRate: parseInt(e.target.value) || 0})}
-                            className="px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="number"
-                            step="0.1"
-                            placeholder="Temperature (e.g., 98.6)"
-                            value={vitalsData.temperature || ''}
-                            onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
-                            className="px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Respiratory Rate (e.g., 16)"
-                            value={vitalsData.respiratoryRate || ''}
-                            onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: parseInt(e.target.value) || 0})}
-                            className="px-3 py-2 border border-slate-300 rounded-lg"
-                          />
-                          <input
-                            type="number"
-                            placeholder="SpO2 (e.g., 98)"
-                            value={vitalsData.oxygenSaturation || ''}
-                            onChange={(e) => setVitalsData({...vitalsData, oxygenSaturation: parseInt(e.target.value) || 0})}
-                            className="px-3 py-2 border border-slate-300 rounded-lg"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                           />
                         </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-sm font-medium text-slate-700">Heart Rate</label>
+                              <span className="text-xs text-slate-400">60-100</span>
+                            </div>
+                            <input
+                              type="number"
+                              placeholder="e.g., 72"
+                              value={vitalsData.heartRate || ''}
+                              onChange={(e) => setVitalsData({...vitalsData, heartRate: parseInt(e.target.value) || 0})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-sm font-medium text-slate-700">Temperature (°C)</label>
+                              <span className="text-xs text-slate-400">36.1-37.2</span>
+                            </div>
+                            <input
+                              type="number"
+                              step="0.1"
+                              placeholder="e.g., 36.5"
+                              value={vitalsData.temperature || ''}
+                              onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-sm font-medium text-slate-700">Resp. Rate</label>
+                              <span className="text-xs text-slate-400">12-20</span>
+                            </div>
+                            <input
+                              type="number"
+                              placeholder="e.g., 16"
+                              value={vitalsData.respiratoryRate || ''}
+                              onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: parseInt(e.target.value) || 0})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="text-sm font-medium text-slate-700">SpO2 (%)</label>
+                              <span className="text-xs text-slate-400">95-100</span>
+                            </div>
+                            <input
+                              type="number"
+                              placeholder="e.g., 98"
+                              value={vitalsData.oxygenSaturation || ''}
+                              onChange={(e) => setVitalsData({...vitalsData, oxygenSaturation: parseInt(e.target.value) || 0})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        
                         <button 
-                          className="btn btn-primary"
+                          className="btn btn-primary w-full"
                           onClick={() => {
                             if (vitalsData.bloodPressure && vitalsData.heartRate > 0) {
                               handleAddVitalsForCompleted(selectedPatient, vitalsData);
