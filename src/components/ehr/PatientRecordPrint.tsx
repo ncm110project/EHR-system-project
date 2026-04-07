@@ -14,7 +14,7 @@ export function PatientRecordPrint({ patient, onClose }: PatientRecordPrintProps
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto print:fixed print:inset-0 print:w-full print:max-h-none print:overflow-visible">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between print:hidden">
           <h3 className="text-lg font-semibold">Patient Record - Print Preview</h3>
           <div className="flex gap-2">

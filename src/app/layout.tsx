@@ -3,6 +3,7 @@ import { DM_Sans, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { EHRProvider } from "@/lib/ehr-context";
 import { AuthProviderWrapper } from "@/components/providers/AuthProviderWrapper";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${dmSans.variable} ${ibmPlexSans.variable}`}>
         <EHRProvider>
-          <AuthProviderWrapper>{children}</AuthProviderWrapper>
+          <AuthProviderWrapper>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProviderWrapper>
         </EHRProvider>
       </body>
     </html>

@@ -227,3 +227,50 @@ tr:hover td {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-secondary);
 }
+
+@media print {
+  @page {
+    margin: 0.5in;
+    size: letter;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-hidden,
+  nav,
+  header,
+  aside,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-break-before {
+    page-break-before: always;
+  }
+
+  .print-break-after {
+    page-break-after: always;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a[href]:after {
+    content: none !important;
+  }
+}
