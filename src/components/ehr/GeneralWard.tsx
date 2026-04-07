@@ -5,6 +5,8 @@ import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, VitalSignsEntry, NotesEntry, Prescription, WardBed, ShiftHandover, MedicationRound, IVFluidRecord, DailyRounding, WardIncident, Equipment, VisitorRecord, PainAssessment, mockUsers, NurseTask, MedicationOrder } from "@/lib/ehr-data";
 import { VitalSignsChart } from "./VitalSignsChart";
+import { ConfirmDialog } from "../providers/ConfirmDialog";
+import { useToast } from "../providers/ToastProvider";
 
 const generateId = () => `GW-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -109,6 +111,8 @@ const mockEquipment: Equipment[] = [
 export function GeneralWard() {
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications, nurseTasks, medicationOrders, addNurseTask, updateNurseTask, addMedicationOrder } = useEHR();
+  const { addToast } = useToast();
+  const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'tasks' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [beds, setBeds] = useState<WardBed[]>(initialBeds);
@@ -303,7 +307,7 @@ export function GeneralWard() {
     setPrescription({ medication: "", dosage: "", frequency: "OD", duration: "", instructions: "" });
   };
 
-  const handleDischarge = () => {
+  const confirmDischarge = () => {
     if (!selectedPatient || !canDischarge(selectedPatient)) return;
     const bedIndex = beds.findIndex(b => b.patientId === selectedPatient.id);
     if (bedIndex >= 0) {
@@ -329,7 +333,14 @@ export function GeneralWard() {
       description: `Patient discharged from General Ward`,
       timestamp: new Date().toISOString()
     });
+    addToast(`${selectedPatient.name} has been discharged successfully`, "success");
+    setShowDischargeConfirm(false);
     setSelectedPatient(null);
+  };
+
+  const handleDischarge = () => {
+    if (!selectedPatient || !canDischarge(selectedPatient)) return;
+    setShowDischargeConfirm(true);
   };
 
   const handleTransfer = () => {
@@ -1610,6 +1621,16 @@ export function GeneralWard() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDischargeConfirm}
+        title="Confirm Discharge"
+        message={`Are you sure you want to discharge ${selectedPatient?.name}? This action cannot be undone.`}
+        confirmLabel="Discharge"
+        confirmVariant="danger"
+        onConfirm={confirmDischarge}
+        onCancel={() => setShowDischargeConfirm(false)}
+      />
     </div>
   );
 }
