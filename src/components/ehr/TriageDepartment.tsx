@@ -141,7 +141,7 @@ export function TriageDepartment() {
     } else if (triageForm.destination === 'opd') {
       updatePatient({ ...updatedPatient, department: 'opd' });
     } else if (triageForm.destination === 'discharge') {
-      updatePatient({ ...updatedPatient, department: 'registration', status: 'discharged' });
+      updatePatient({ ...updatedPatient, department: 'opd', status: 'discharged' });
     }
 
     addActivity({
