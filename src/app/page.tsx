@@ -65,6 +65,62 @@ export default function LandingPage() {
     signatureDate: ""
   });
 
+  const autoFillForm = () => {
+    setFormData({
+      firstName: "Test",
+      middleName: "M",
+      lastName: "Patient",
+      dob: "1990-05-15",
+      sex: "Male",
+      civilStatus: "Single",
+      phone: "555-9999",
+      email: "testpatient@email.com",
+      streetAddress: "123 Test Street",
+      city: "Test City",
+      province: "Test Province",
+      emergencyName: "Emergency Contact",
+      emergencyRelationship: "Spouse",
+      emergencyPhone: "555-8888",
+      hypertension: false,
+      diabetes: false,
+      asthma: true,
+      heartDisease: false,
+      kidneyDisease: false,
+      stroke: false,
+      cancer: false,
+      tuberculosis: false,
+      arthritis: false,
+      thyroidDisorder: false,
+      epilepsy: false,
+      chronicLungDisease: false,
+      conditionsOther: "",
+      allergyPeanuts: false,
+      allergyTreeNuts: false,
+      allergyShellfish: false,
+      allergyFish: false,
+      allergyEggs: true,
+      allergyDairy: false,
+      allergySoy: false,
+      allergyGluten: false,
+      allergyPollen: false,
+      allergyLatex: false,
+      allergyDustMites: false,
+      allergiesOther: "",
+      currentMedications: "None",
+      pastSurgeries: "Appendectomy (2015)",
+      smoking: "No",
+      alcoholUse: "No",
+      occupation: "Software Engineer",
+      insuranceProvider: "Health Plus",
+      policyNumber: "HP123456",
+      memberId: "MEM987654",
+      selfPay: false,
+      consent: true,
+      signatureName: "Test Patient",
+      signatureDate: new Date().toISOString().split('T')[0]
+    });
+  };
+
   const calculateAge = (dob: string) => {
     if (!dob) return 0;
     const birthDate = new Date(dob);
@@ -252,6 +308,18 @@ export default function LandingPage() {
           <Link href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
             Employee Login
           </Link>
+          <button 
+            onClick={autoFillForm}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
+          >
+            Fill Sample Data
+          </button>
+          <button 
+            onClick={() => { autoFillForm(); setTimeout(() => document.getElementById('submit-btn')?.click(), 100); }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+          >
+            Quick Submit
+          </button>
         </div>
       </header>
 
@@ -564,7 +632,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <button type="submit" className="w-full btn btn-primary py-4 text-lg font-semibold">
+            <button type="submit" id="submit-btn" className="w-full btn btn-primary py-4 text-lg font-semibold">
               Submit Registration
             </button>
           </form>
