@@ -98,7 +98,7 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
                   <option key={doc.id} value={doc.name}>{doc.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500 mt-1">The receiving department's charge nurse will be notified</p>
+              <p className="text-xs text-slate-500 mt-1">The receiving department&apos;s charge nurse will be notified</p>
             </div>
           )}
 

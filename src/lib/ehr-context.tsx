@@ -299,7 +299,7 @@ export function EHRProvider({ children }: EHRProviderProps) {
       description: `Transferred from ${patient.department} to ${toDepartment}: ${reason}`,
       timestamp: new Date().toISOString()
     });
-  }, []);
+  }, [addActivity]);
 
   const addFollowUp = useCallback((followUp: FollowUp) => {
     const patient = patients.find(p => p.id === followUp.patientId);

@@ -1121,7 +1121,7 @@ export function GeneralWard() {
                   </>
                 ) : (
                   <div className="text-sm text-slate-500 italic">
-                    Patient must be in "Active" status to record vitals and notes
+                    Patient must be in &quot;Active&quot; status to record vitals and notes
                   </div>
                 )}
               </div>
