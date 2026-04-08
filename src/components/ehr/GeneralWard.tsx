@@ -1127,7 +1127,11 @@ export function GeneralWard() {
                 {isNurse && (
                   <>
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
+                    <button onClick={() => setShowCarePlanModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Care Plan</button>
                   </>
+                )}
+                {isChargeNurse && selectedPatient && getWorkflowStatus(selectedPatient) === 'discharged' && (
+                  <button onClick={() => setShowDischargeSummaryModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Discharge Summary</button>
                 )}
                 {(isChargeNurse || isNurse) && (
                   <>
@@ -1698,6 +1702,149 @@ export function GeneralWard() {
         onConfirm={confirmTransfer}
         onCancel={() => setShowTransferConfirm(false)}
       />
+
+      {showCarePlanModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Care Plan - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Problems/Issues</label>
+                <textarea
+                  value={carePlan.problems}
+                  onChange={(e) => setCarePlan({...carePlan, problems: e.target.value})}
+                  placeholder="List patient problems and nursing diagnoses..."
+                  className="w-full h-24 px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Goals</label>
+                <textarea
+                  value={carePlan.goals}
+                  onChange={(e) => setCarePlan({...carePlan, goals: e.target.value})}
+                  placeholder="Set measurable goals and expected outcomes..."
+                  className="w-full h-24 px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Interventions</label>
+                <textarea
+                  value={carePlan.interventions}
+                  onChange={(e) => setCarePlan({...carePlan, interventions: e.target.value})}
+                  placeholder="List nursing interventions and actions..."
+                  className="w-full h-24 px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => { setShowCarePlanModal(false); setCarePlan({ problems: "", goals: "", interventions: "" }); }} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={() => { addToast("Care plan saved successfully", "success"); setShowCarePlanModal(false); }} className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">Save Care Plan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDischargeSummaryModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Discharge Summary</h3>
+              <div className="flex gap-2">
+                <button onClick={() => window.print()} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                  Print
+                </button>
+                <button onClick={() => setShowDischargeSummaryModal(false)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">Close</button>
+              </div>
+            </div>
+            <div className="p-6 print:p-0">
+              <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
+                <h1 className="text-2xl font-bold">MedConnect Hospital</h1>
+                <p className="text-slate-600">Discharge Summary - General Ward</p>
+              </div>
+              
+              <div className="mb-4">
+                <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">PATIENT INFORMATION</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p><span className="text-slate-500">Name:</span> <span className="font-medium">{selectedPatient.name}</span></p>
+                  <p><span className="text-slate-500">Age/Gender:</span> <span className="font-medium">{selectedPatient.age} years / {selectedPatient.gender}</span></p>
+                  <p><span className="text-slate-500">Patient ID:</span> <span className="font-medium">{selectedPatient.id}</span></p>
+                  <p><span className="text-slate-500">Blood Type:</span> <span className="font-medium">{selectedPatient.bloodType}</span></p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">ADMISSION DETAILS</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p><span className="text-slate-500">Admission Date:</span> <span className="font-medium">{selectedPatient.admissionDate ? new Date(selectedPatient.admissionDate).toLocaleDateString() : 'N/A'}</span></p>
+                  <p><span className="text-slate-500">Discharge Date:</span> <span className="font-medium">{selectedPatient.dischargedAt ? new Date(selectedPatient.dischargedAt).toLocaleDateString() : 'N/A'}</span></p>
+                  <p><span className="text-slate-500">Room/Bed:</span> <span className="font-medium">{selectedPatient.roomNumber || 'N/A'} / {selectedPatient.bedNumber || 'N/A'}</span></p>
+                  <p><span className="text-slate-500">Admitting Physician:</span> <span className="font-medium">{selectedPatient.admittingPhysician || 'N/A'}</span></p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">DIAGNOSIS</h4>
+                <p className="text-sm">{selectedPatient.diagnosis || selectedPatient.admissionDiagnosis || selectedPatient.chiefComplaint || 'No diagnosis recorded'}</p>
+              </div>
+
+              {selectedPatient.vitalSigns && (
+                <div className="mb-4">
+                  <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">DISCHARGE VITALS</h4>
+                  <div className="grid grid-cols-5 gap-2 text-sm text-center">
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">BP</p><p className="font-medium">{selectedPatient.vitalSigns.bloodPressure}</p></div>
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">HR</p><p className="font-medium">{selectedPatient.vitalSigns.heartRate} bpm</p></div>
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">Temp</p><p className="font-medium">{selectedPatient.vitalSigns.temperature}°F</p></div>
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">RR</p><p className="font-medium">{selectedPatient.vitalSigns.respiratoryRate}/min</p></div>
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">SpO2</p><p className="font-medium">{selectedPatient.vitalSigns.oxygenSaturation}%</p></div>
+                  </div>
+                </div>
+              )}
+
+              {selectedPatient.prescriptions && selectedPatient.prescriptions.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">DISCHARGE MEDICATIONS</h4>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-2">Medication</th>
+                        <th className="text-left py-2">Dosage</th>
+                        <th className="text-left py-2">Frequency</th>
+                        <th className="text-left py-2">Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPatient.prescriptions.map((rx, idx) => (
+                        <tr key={idx} className="border-b border-slate-100">
+                          <td className="py-2">{rx.medication}</td>
+                          <td className="py-2">{rx.dosage}</td>
+                          <td className="py-2">{rx.frequency}</td>
+                          <td className="py-2">{rx.duration}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <h4 className="font-bold border-b border-slate-300 pb-2 mb-2">DISCHARGE INSTRUCTIONS</h4>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>Follow up with your physician in 1 week</li>
+                  <li>Take medications as prescribed</li>
+                  <li>Return to hospital if symptoms worsen</li>
+                  <li>Keep wound dry and clean</li>
+                </ul>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-slate-300 text-center text-xs text-slate-500">
+                <p>Generated from MedConnect EHR System</p>
+                <p>Printed on: {new Date().toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
