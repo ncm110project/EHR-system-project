@@ -149,6 +149,9 @@ export function GeneralWard() {
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [showCodeStatusModal, setShowCodeStatusModal] = useState(false);
   const [showLabResultsModal, setShowLabResultsModal] = useState(false);
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+  const [showDietModal, setShowDietModal] = useState(false);
+  const [newDiagnosis, setNewDiagnosis] = useState("");
   const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
   const [ivForm, setIvForm] = useState({ fluidName: "", volume: 1000, rate: 100 });
   const [dischargePlan, setDischargePlan] = useState({ targetDate: "", destination: "", notes: "" });
@@ -1039,6 +1042,8 @@ export function GeneralWard() {
                     <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
                     <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
                     <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Record Vitals</button>
+                    <button onClick={() => setShowDiagnosisModal(true)} className="px-3 py-2 bg-rose-600 text-white rounded-lg text-sm hover:bg-rose-700">Add Diagnosis</button>
+                    <button onClick={() => setShowDietModal(true)} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Update Diet</button>
                   </>
                 )}
                 {isChargeNurse && (
@@ -2093,6 +2098,61 @@ export function GeneralWard() {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDiagnosisModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Add Diagnosis - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Diagnosis</label>
+                <input type="text" value={newDiagnosis} onChange={(e) => setNewDiagnosis(e.target.value)} placeholder="Enter diagnosis..." className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600">Current: <span className="font-medium">{selectedPatient.diagnosis || selectedPatient.admissionDiagnosis || 'None'}</span></p>
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => { setShowDiagnosisModal(false); setNewDiagnosis(""); }} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={() => {
+                  const updated = { ...selectedPatient, diagnosis: newDiagnosis };
+                  updatePatient(updated);
+                  addToast("Diagnosis updated successfully", "success");
+                  setShowDiagnosisModal(false);
+                  setNewDiagnosis("");
+                }} disabled={!newDiagnosis.trim()} className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDietModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Update Diet - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Select Diet Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['regular', 'soft', 'liquid', 'NPO', 'special'].map(diet => (
+                    <button key={diet} onClick={() => {
+                      const updated = { ...selectedPatient, dietType: diet as any };
+                      updatePatient(updated);
+                      addToast(`Diet updated to ${diet}`, "success");
+                      setShowDietModal(false);
+                    }} className={`px-4 py-3 rounded-lg border text-sm capitalize ${selectedPatient.dietType === diet ? 'bg-teal-100 border-teal-500 text-teal-700' : 'hover:bg-slate-50'}`}>
+                      {diet}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowDietModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Close</button>
+              </div>
             </div>
           </div>
         </div>
