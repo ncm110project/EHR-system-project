@@ -143,6 +143,7 @@ export function GeneralWard() {
   const [showCarePlanModal, setShowCarePlanModal] = useState(false);
   const [showDischargeSummaryModal, setShowDischargeSummaryModal] = useState(false);
   const [showTimelineModal, setShowTimelineModal] = useState(false);
+  const [showVitalsConfirm, setShowVitalsConfirm] = useState(false);
   const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
@@ -238,7 +239,7 @@ export function GeneralWard() {
     setNewAdmit({ roomNumber: "", bedNumber: "", admittingPhysician: "", admissionDiagnosis: "" });
   };
 
-  const handleSaveVitals = () => {
+  const confirmSaveVitals = () => {
     if (!selectedPatient) return;
     const vitalsEntry: VitalSignsEntry = {
       vitals: newVitals,
@@ -251,8 +252,15 @@ export function GeneralWard() {
       vitalSignsHistory: [...(selectedPatient.vitalSignsHistory || []), vitalsEntry]
     };
     updatePatient(updatedPatient);
+    addToast(`Vital signs saved for ${selectedPatient.name}`, "success");
+    setShowVitalsConfirm(false);
     setShowVitalsModal(false);
     setNewVitals({ bloodPressure: "", heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() });
+  };
+
+  const handleSaveVitals = () => {
+    if (!selectedPatient) return;
+    setShowVitalsConfirm(true);
   };
 
   const handleSaveProgress = () => {
@@ -1955,6 +1963,16 @@ export function GeneralWard() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showVitalsConfirm}
+        title="Confirm Save Vitals"
+        message={`Are you sure you want to save these vital signs for ${selectedPatient?.name}?`}
+        confirmLabel="Save Vitals"
+        confirmVariant="primary"
+        onConfirm={confirmSaveVitals}
+        onCancel={() => setShowVitalsConfirm(false)}
+      />
     </div>
   );
 }
