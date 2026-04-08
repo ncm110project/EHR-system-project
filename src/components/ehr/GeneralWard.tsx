@@ -1330,14 +1330,57 @@ export function GeneralWard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Order Lab - {selectedPatient.name}</h3>
-            <select value={labTestName} onChange={(e) => setLabTestName(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
-              <option value="">Select Lab Test</option>
-              <option value="Complete Blood Count (CBC)">Complete Blood Count (CBC)</option>
-              <option value="Blood Glucose (Fasting)">Blood Glucose (Fasting)</option>
-              <option value="Creatinine">Creatinine</option>
-              <option value="Sodium">Sodium</option>
-              <option value="Potassium">Potassium</option>
-            </select>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Test Category</label>
+                <select className="w-full px-3 py-2 border rounded-lg" onChange={(e) => setLabTestName(e.target.value)} value="">
+                  <option value="">Select Category</option>
+                  <option disabled>--- Hematology ---</option>
+                  <option value="Complete Blood Count (CBC)">Complete Blood Count (CBC)</option>
+                  <option value="Hemoglobin & Hematocrit">Hemoglobin & Hematocrit</option>
+                  <option value="Platelet Count">Platelet Count</option>
+                  <option value="ESR">Erythrocyte Sedimentation Rate (ESR)</option>
+                  <option value="PT">Prothrombin Time (PT)</option>
+                  <option value="aPTT">Activated Partial Thromboplastin Time (aPTT)</option>
+                  <option value="INR">INR</option>
+                  <option disabled>--- Clinical Chemistry ---</option>
+                  <option value="Blood Glucose (Fasting)">Blood Glucose (Fasting)</option>
+                  <option value="Blood Glucose (Random)">Blood Glucose (Random)</option>
+                  <option value="HbA1c">HbA1c</option>
+                  <option value="BUN">Blood Urea Nitrogen (BUN)</option>
+                  <option value="Creatinine">Creatinine</option>
+                  <option value="Uric Acid">Uric Acid</option>
+                  <option value="Total Cholesterol">Total Cholesterol</option>
+                  <option value="HDL">HDL</option>
+                  <option value="LDL">LDL</option>
+                  <option value="Triglycerides">Triglycerides</option>
+                  <option value="Sodium">Sodium</option>
+                  <option value="Potassium">Potassium</option>
+                  <option value="Chloride">Chloride</option>
+                  <option value="Calcium">Calcium</option>
+                  <option value="Magnesium">Magnesium</option>
+                  <option value="Phosphate">Phosphate</option>
+                  <option value="Total Protein">Total Protein</option>
+                  <option value="Albumin">Albumin</option>
+                  <option value="Bilirubin">Bilirubin</option>
+                  <option value="ALT">ALT (SGPT)</option>
+                  <option value="AST">AST (SGOT)</option>
+                  <option value="Alkaline Phosphatase">Alkaline Phosphatase</option>
+                  <option value="GGT">GGT</option>
+                  <option disabled>--- Urinalysis ---</option>
+                  <option value="Urinalysis">Urinalysis (Complete)</option>
+                  <option value="Urine Culture">Urine Culture</option>
+                  <option disabled>--- Microbiology ---</option>
+                  <option value="Blood Culture">Blood Culture</option>
+                  <option value="Sputum Culture">Sputum Culture</option>
+                  <option value="Wound Swab Culture">Wound Swab Culture</option>
+                  <option disabled>--- Imaging ---</option>
+                  <option value="Chest X-Ray">Chest X-Ray</option>
+                  <option value="Abdominal Ultrasound">Abdominal Ultrasound</option>
+                  <option value="ECG">ECG (Electrocardiogram)</option>
+                </select>
+              </div>
+            </div>
             <div className="flex gap-3 pt-4">
               <button onClick={() => setShowLabOrderModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
               <button onClick={handleOrderLab} disabled={!labTestName} className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50">Order</button>
@@ -1528,7 +1571,12 @@ export function GeneralWard() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Medication Name *</label>
-                <input type="text" placeholder="e.g., Amoxicillin" value={medicationOrderForm.medication} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, medication: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                <select value={medicationOrderForm.medication} onChange={(e) => setMedicationOrderForm({...medicationOrderForm, medication: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Medication</option>
+                  {medications.map(med => (
+                    <option key={med.id} value={med.name}>{med.name} ({med.category})</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
