@@ -743,10 +743,6 @@ export function GeneralWard() {
           { id: 'handover', label: 'Handover Log' },
         ] : isStaffNurse ? [
           { id: 'patients', label: 'My Patients' },
-          { id: 'lab-results', label: 'Lab Results' },
-          { id: 'medications', label: 'Medication Rounds' },
-          { id: 'iv', label: 'IV Fluids' },
-          { id: 'pain', label: 'Pain Assessment' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'handover', label: 'Handover Log' },
         ] : isDoctor ? [
@@ -757,10 +753,7 @@ export function GeneralWard() {
         ] : [
           { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
-          { id: 'pain', label: 'Pain Assessment' },
           { id: 'tasks', label: 'Tasks' },
-          { id: 'medications', label: 'Medication Rounds' },
-          { id: 'iv', label: 'IV Fluids' },
           { id: 'rounds', label: 'Daily Rounds' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'equipment', label: 'Equipment' },
@@ -895,77 +888,7 @@ export function GeneralWard() {
           </table>
           </div>
         </div>
-      )}
-
-      {activeTab === 'pain' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <h3 className="font-semibold mb-4">Pain Assessment Records</h3>
-          {painAssessments.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">No pain assessments recorded</p>
-          ) : (
-            <div className="space-y-3">
-              {painAssessments.map((assessment, idx) => (
-                <div key={idx} className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium">Patient: {patients.find(p => p.id === assessment.patientId)?.name || 'Unknown'}</p>
-                      <p className="text-sm text-slate-600">Pain Score: <span className="font-bold text-orange-600">{assessment.painScore}/10</span> {assessment.painScore >= 7 ? '⚠️ Severe' : assessment.painScore >= 4 ? '⚡ Moderate' : '✓ Mild'}</p>
-                      {assessment.painLocation && <p className="text-sm text-slate-600">Location: {assessment.painLocation}</p>}
-                      {assessment.painType && <p className="text-sm text-slate-600">Type: {assessment.painType}</p>}
-                      {assessment.interventions && <p className="text-sm text-slate-600">Interventions: {assessment.interventions}</p>}
-                    </div>
-                    <div className="text-right text-sm text-slate-500">
-                      <p>{assessment.assessedBy}</p>
-                      <p>{new Date(assessment.timestamp).toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'medications' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <h3 className="font-semibold mb-4">Medication Rounds</h3>
-          {medicationRounds.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">No medications scheduled</p>
-          ) : (
-            <div className="space-y-3">
-              {medicationRounds.map((round, idx) => (
-                <div key={idx} className="p-4 bg-slate-50 rounded-lg flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{round.medication} - {round.dosage}</p>
-                    <p className="text-sm text-slate-500">Patient: {patients.find(p => p.id === round.patientId)?.name || 'Unknown'}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    {round.status === 'pending' && (
-                      <>
-                        <button onClick={() => {
-                          const updated = [...medicationRounds];
-                          updated[idx].status = 'given';
-                          updated[idx].administeredTime = new Date().toISOString();
-                          updated[idx].administeredBy = user?.name;
-                          setMedicationRounds(updated);
-                        }} className="px-3 py-1 bg-green-600 text-white text-sm rounded">Given</button>
-                        <button onClick={() => {
-                          const updated = [...medicationRounds];
-                          updated[idx].status = 'missed';
-                          setMedicationRounds(updated);
-                        }} className="px-3 py-1 bg-red-600 text-white text-sm rounded">Missed</button>
-                      </>
-                    )}
-                    <span className={`px-2 py-1 rounded text-xs ${round.status === 'given' ? 'bg-green-100 text-green-700' : round.status === 'missed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {round.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
       {activeTab === 'tasks' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -1029,63 +952,7 @@ export function GeneralWard() {
             <p className="text-slate-500 text-center py-8">No pending tasks</p>
           )}
         </div>
-      )}
-
-      {activeTab === 'iv' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <h3 className="font-semibold mb-4">IV Fluid Monitoring</h3>
-          <div className="space-y-3">
-            {ivFluids.map((iv, idx) => (
-              <div key={idx} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{iv.fluidName}</p>
-                    <p className="text-sm text-blue-600">Rate: {iv.rate} ml/hr | Remaining: {iv.remaining} ml</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded text-xs ${iv.status === 'running' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{iv.status}</span>
-                </div>
-              </div>
-            ))}
-            {ivFluids.length === 0 && <p className="text-slate-500 text-center py-8">No IV fluids running</p>}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'lab-results' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-          <h3 className="font-semibold mb-4">Lab Results</h3>
-          {(() => {
-            const patientLabOrders = labOrders.filter(lo => wardPatients.some(p => p.id === lo.patientId));
-            if (patientLabOrders.length === 0) {
-              return <p className="text-slate-500 text-center py-8">No lab orders yet</p>;
-            }
-            return (
-              <div className="space-y-3">
-                {patientLabOrders.map((order, idx) => (
-                  <div key={idx} className={`p-4 border rounded-lg ${order.status === 'completed' ? 'bg-green-50 border-green-200' : order.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-slate-50'}`}>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{order.testName}</p>
-                        <p className="text-sm text-slate-600">Patient: {patients.find(p => p.id === order.patientId)?.name || 'Unknown'}</p>
-                        <p className="text-xs text-slate-500">Ordered: {order.date} by {order.orderedBy}</p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-700' : order.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'}`}>
-                        {order.status === 'completed' ? 'Completed' : order.status === 'pending' ? 'Pending' : order.status}
-                      </span>
-                    </div>
-                    {order.status === 'completed' && order.results && (
-                      <div className="mt-3 p-3 bg-white rounded border">
-                        <p className="text-sm font-medium text-slate-700">Results:</p>
-                        <pre className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{order.results}</pre>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+        )}
 
       {activeTab === 'rounds' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -1170,6 +1037,7 @@ export function GeneralWard() {
                     <button onClick={() => setShowMedicationOrderModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Medication Order</button>
                     <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
                     <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
+                    <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Record Vitals</button>
                   </>
                 )}
                 {isChargeNurse && (
@@ -1180,12 +1048,14 @@ export function GeneralWard() {
                 )}
                 {isNurse && (
                   <>
+                    <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Record Vitals</button>
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
                     <button onClick={() => setShowCarePlanModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Care Plan</button>
                     <button onClick={() => setShowTimelineModal(true)} className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-700">Timeline</button>
                     <button onClick={() => setShowIVModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">IV Management</button>
                     <button onClick={() => setShowAllergyModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Allergy Alert</button>
                     <button onClick={() => setShowCodeStatusModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Code Status</button>
+                    <button onClick={() => setShowPainModal(true)} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Pain Assessment</button>
                   </>
                 )}
                 {isChargeNurse && (
