@@ -148,6 +148,7 @@ export function GeneralWard() {
   const [showDischargePlanModal, setShowDischargePlanModal] = useState(false);
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [showCodeStatusModal, setShowCodeStatusModal] = useState(false);
+  const [showLabResultsModal, setShowLabResultsModal] = useState(false);
   const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
   const [ivForm, setIvForm] = useState({ fluidName: "", volume: 1000, rate: 100 });
   const [dischargePlan, setDischargePlan] = useState({ targetDate: "", destination: "", notes: "" });
@@ -1052,6 +1053,7 @@ export function GeneralWard() {
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
                     <button onClick={() => setShowCarePlanModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Care Plan</button>
                     <button onClick={() => setShowTimelineModal(true)} className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-700">Timeline</button>
+                    <button onClick={() => setShowLabResultsModal(true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">Lab Results</button>
                     <button onClick={() => setShowIVModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">IV Management</button>
                     <button onClick={() => setShowAllergyModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Allergy Alert</button>
                     <button onClick={() => setShowCodeStatusModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Code Status</button>
@@ -2049,6 +2051,48 @@ export function GeneralWard() {
                   setShowCodeStatusModal(false);
                 }} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700">Save</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLabResultsModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Lab Results - {selectedPatient.name}</h3>
+              <button onClick={() => setShowLabResultsModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div className="p-4">
+              {(() => {
+                const patientLabOrders = labOrders.filter(lo => lo.patientId === selectedPatient.id);
+                if (patientLabOrders.length === 0) {
+                  return <p className="text-slate-500 text-center py-8">No lab orders yet</p>;
+                }
+                return (
+                  <div className="space-y-3">
+                    {patientLabOrders.map((order, idx) => (
+                      <div key={idx} className={`p-4 border rounded-lg ${order.status === 'completed' ? 'bg-green-50 border-green-200' : order.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-slate-50'}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{order.testName}</p>
+                            <p className="text-sm text-slate-500">Ordered: {order.date} by {order.orderedBy}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-700' : order.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {order.status === 'completed' ? 'Completed' : order.status === 'pending' ? 'Pending' : order.status}
+                          </span>
+                        </div>
+                        {order.status === 'completed' && order.results && (
+                          <div className="mt-3 p-3 bg-white rounded border">
+                            <p className="text-sm font-medium text-slate-700">Results:</p>
+                            <pre className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{order.results}</pre>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
