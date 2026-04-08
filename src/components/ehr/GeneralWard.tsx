@@ -138,6 +138,11 @@ export function GeneralWard() {
   const [showNurseAssignModal, setShowNurseAssignModal] = useState(false);
   const [showMedicationOrderModal, setShowMedicationOrderModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showCarePlanModal, setShowCarePlanModal] = useState(false);
+  const [showDischargeSummaryModal, setShowDischargeSummaryModal] = useState(false);
+  const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
     bloodPressure: "",
@@ -386,6 +391,7 @@ export function GeneralWard() {
       timestamp: new Date().toISOString()
     };
     setHandovers([...handovers, newHandover]);
+    addToast("Shift handover saved successfully", "success");
     setShowHandoverModal(false);
     setHandover({ patientSummary: "", criticalNotes: "" });
   };
@@ -641,8 +647,18 @@ export function GeneralWard() {
     totalBeds: beds.length,
     occupied: beds.filter(b => b.status === 'occupied').length,
     available: beds.filter(b => b.status === 'available').length,
-    critical: wardPatients.filter(p => p.status === 'critical').length
+    critical: wardPatients.filter(p => p.status === 'critical').length,
+    averageStay: 3,
+    turnoverRate: 10
   };
+
+  const filteredPatients = wardPatients.filter(p => {
+    const matchesSearch = searchQuery === "" || 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || getWorkflowStatus(p) === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -674,7 +690,7 @@ export function GeneralWard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         <div className="px-4 py-3 bg-blue-100 rounded-lg">
           <p className="text-sm text-blue-600">Total Beds</p>
           <p className="text-2xl font-bold text-blue-800">{stats.totalBeds}</p>
@@ -690,6 +706,14 @@ export function GeneralWard() {
         <div className="px-4 py-3 bg-red-100 rounded-lg">
           <p className="text-sm text-red-600">Critical</p>
           <p className="text-2xl font-bold text-red-800">{stats.critical}</p>
+        </div>
+        <div className="px-4 py-3 bg-purple-100 rounded-lg">
+          <p className="text-sm text-purple-600">Avg Stay (days)</p>
+          <p className="text-2xl font-bold text-purple-800">{stats.averageStay}</p>
+        </div>
+        <div className="px-4 py-3 bg-cyan-100 rounded-lg">
+          <p className="text-sm text-cyan-600">Turnover %</p>
+          <p className="text-2xl font-bold text-cyan-800">{stats.turnoverRate}%</p>
         </div>
       </div>
 
@@ -748,8 +772,32 @@ export function GeneralWard() {
       )}
 
       {activeTab === 'patients' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full">
+        <div className="space-y-4">
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search by patient name or ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="all">All Status</option>
+              <option value="pending_admission">Pending Admission</option>
+              <option value="pending_transfer">Pending Transfer</option>
+              <option value="admitted">Admitted</option>
+              <option value="active">Active</option>
+              <option value="discharged">Discharged</option>
+            </select>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Patient</th>
@@ -794,7 +842,7 @@ export function GeneralWard() {
                   ))}
                 </>
               )}
-                {currentPatients.map(patient => {
+              {currentPatients.map(patient => {
                   const vitalsAlert = getAbnormalVitalsAlert(patient);
                   return (
                 <tr key={patient.id} className="hover:bg-slate-50">
@@ -827,6 +875,7 @@ export function GeneralWard() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
