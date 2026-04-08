@@ -113,6 +113,7 @@ export function GeneralWard() {
   const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications, nurseTasks, medicationOrders, addNurseTask, updateNurseTask, addMedicationOrder } = useEHR();
   const { addToast } = useToast();
   const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
+  const [showTransferConfirm, setShowTransferConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'tasks' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [beds, setBeds] = useState<WardBed[]>(initialBeds);
@@ -343,7 +344,7 @@ export function GeneralWard() {
     setShowDischargeConfirm(true);
   };
 
-  const handleTransfer = () => {
+  const confirmTransfer = () => {
     if (!selectedPatient) return;
     const bedIndex = beds.findIndex(b => b.patientId === selectedPatient.id);
     if (bedIndex >= 0) {
@@ -362,7 +363,14 @@ export function GeneralWard() {
       description: `Transferred out of General Ward`,
       timestamp: new Date().toISOString()
     });
+    addToast(`${selectedPatient.name} has been transferred successfully`, "success");
+    setShowTransferConfirm(false);
     setSelectedPatient(null);
+  };
+
+  const handleTransfer = () => {
+    if (!selectedPatient) return;
+    setShowTransferConfirm(true);
   };
 
   const handleSaveHandover = () => {
@@ -1630,6 +1638,16 @@ export function GeneralWard() {
         confirmVariant="danger"
         onConfirm={confirmDischarge}
         onCancel={() => setShowDischargeConfirm(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showTransferConfirm}
+        title="Confirm Transfer"
+        message={`Are you sure you want to transfer ${selectedPatient?.name} to another department? This action cannot be undone.`}
+        confirmLabel="Transfer"
+        confirmVariant="warning"
+        onConfirm={confirmTransfer}
+        onCancel={() => setShowTransferConfirm(false)}
       />
     </div>
   );

@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 import { VitalSignsChart } from "./VitalSignsChart";
+import { ConfirmDialog } from "../providers/ConfirmDialog";
+import { useToast } from "../providers/ToastProvider";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -161,8 +163,10 @@ interface EMTNotification {
 export function EmergencyRoom() {
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, setCurrentDepartment, medications, addLabOrder, addPrescription, labOrders, prescriptions } = useEHR();
+  const { addToast } = useToast();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState<'patients' | 'emt' | 'orders'>('patients');
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -386,20 +390,28 @@ export function EmergencyRoom() {
     });
   };
 
-  const handleDischarge = (patient: Patient) => {
-    if (!isDoctor) return;
+  const confirmDischarge = () => {
+    if (!selectedPatient || !isDoctor) return;
     const now = new Date().toISOString();
-    updatePatient({ ...patient, status: 'discharged' });
+    updatePatient({ ...selectedPatient, status: 'discharged' });
     addActivity({
       id: generateId(),
       type: 'discharge',
       department: 'er',
-      patientId: patient.id,
-      patientName: patient.name,
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
       description: `Patient discharged from ER`,
       timestamp: now
     });
+    addToast(`${selectedPatient.name} has been discharged from ER`, "success");
+    setShowDischargeConfirm(false);
     setSelectedPatient(null);
+  };
+
+  const handleDischarge = (patient: Patient) => {
+    if (!isDoctor) return;
+    setSelectedPatient(patient);
+    setShowDischargeConfirm(true);
   };
 
   const handleAddVitalsForCompleted = (patient: Patient, vitals: VitalSigns) => {
@@ -1317,6 +1329,16 @@ export function EmergencyRoom() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showDischargeConfirm}
+        title="Confirm Discharge"
+        message={`Are you sure you want to discharge ${selectedPatient?.name} from ER? This action cannot be undone.`}
+        confirmLabel="Discharge"
+        confirmVariant="danger"
+        onConfirm={confirmDischarge}
+        onCancel={() => setShowDischargeConfirm(false)}
+      />
     </div>
   );
 }
