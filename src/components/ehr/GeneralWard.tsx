@@ -142,6 +142,7 @@ export function GeneralWard() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCarePlanModal, setShowCarePlanModal] = useState(false);
   const [showDischargeSummaryModal, setShowDischargeSummaryModal] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
@@ -1128,6 +1129,7 @@ export function GeneralWard() {
                   <>
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
                     <button onClick={() => setShowCarePlanModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Care Plan</button>
+                    <button onClick={() => setShowTimelineModal(true)} className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-700">Timeline</button>
                   </>
                 )}
                 {isChargeNurse && selectedPatient && getWorkflowStatus(selectedPatient) === 'discharged' && (
@@ -1841,6 +1843,114 @@ export function GeneralWard() {
                 <p>Generated from MedConnect EHR System</p>
                 <p>Printed on: {new Date().toLocaleString()}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTimelineModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-lg font-semibold">Patient Timeline - {selectedPatient.name}</h3>
+              <button onClick={() => setShowTimelineModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+            </div>
+            <div className="p-4">
+              {(() => {
+                const timeline: { time: string; event: string; details: string; type: string }[] = [];
+                
+                if (selectedPatient.admissionDate) {
+                  timeline.push({ time: selectedPatient.admissionDate, event: 'Admission', details: `Admitted to ${selectedPatient.department}`, type: 'admission' });
+                }
+                if (selectedPatient.admittedAt) {
+                  timeline.push({ time: selectedPatient.admittedAt, event: 'Ward Admission', details: `Room ${selectedPatient.roomNumber}, Bed ${selectedPatient.bedNumber}`, type: 'ward' });
+                }
+                if (selectedPatient.activatedAt) {
+                  timeline.push({ time: selectedPatient.activatedAt, event: 'Status Changed', details: 'Patient activated for full care', type: 'status' });
+                }
+                if (selectedPatient.assignedNurse) {
+                  timeline.push({ time: new Date().toISOString(), event: 'Nurse Assigned', details: `Assigned to ${selectedPatient.assignedNurse}`, type: 'nurse' });
+                }
+                if (selectedPatient.vitalSigns?.recordedAt) {
+                  timeline.push({ time: selectedPatient.vitalSigns.recordedAt, event: 'Vitals Recorded', details: `BP: ${selectedPatient.vitalSigns.bloodPressure}, HR: ${selectedPatient.vitalSigns.heartRate}`, type: 'vitals' });
+                }
+                if (selectedPatient.vitalSignsHistory) {
+                  selectedPatient.vitalSignsHistory.slice().reverse().forEach((v, i) => {
+                    if (i > 0) timeline.push({ time: v.timestamp, event: 'Vital Signs', details: `Recorded by ${v.recordedBy}`, type: 'vitals' });
+                  });
+                }
+                if (selectedPatient.nurseNotes) {
+                  timeline.push({ time: new Date().toISOString(), event: 'Nursing Notes', details: selectedPatient.nurseNotes.substring(0, 100) + '...', type: 'notes' });
+                }
+                if (selectedPatient.prescriptions) {
+                  selectedPatient.prescriptions.forEach(rx => {
+                    timeline.push({ time: rx.prescribedAt || new Date().toISOString(), event: 'Medication Prescribed', details: `${rx.medication} ${rx.dosage} - ${rx.frequency}`, type: 'medication' });
+                  });
+                }
+                if (selectedPatient.dischargedAt) {
+                  timeline.push({ time: selectedPatient.dischargedAt, event: 'Discharge', details: 'Patient discharged from General Ward', type: 'discharge' });
+                }
+                if (selectedPatient.transferHistory) {
+                  selectedPatient.transferHistory.forEach(t => {
+                    timeline.push({ time: t.transferredAt, event: 'Transfer', details: `From ${t.fromDepartment} to ${t.toDepartment}: ${t.reason}`, type: 'transfer' });
+                  });
+                }
+
+                timeline.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+                const getTypeColor = (type: string) => {
+                  switch (type) {
+                    case 'admission': return 'bg-blue-100 border-blue-500';
+                    case 'ward': return 'bg-green-100 border-green-500';
+                    case 'status': return 'bg-purple-100 border-purple-500';
+                    case 'nurse': return 'bg-cyan-100 border-cyan-500';
+                    case 'vitals': return 'bg-red-100 border-red-500';
+                    case 'notes': return 'bg-yellow-100 border-yellow-500';
+                    case 'medication': return 'bg-teal-100 border-teal-500';
+                    case 'discharge': return 'bg-gray-100 border-gray-500';
+                    case 'transfer': return 'bg-orange-100 border-orange-500';
+                    default: return 'bg-slate-100 border-slate-500';
+                  }
+                };
+
+                const getTypeIcon = (type: string) => {
+                  switch (type) {
+                    case 'admission': return '🏥';
+                    case 'ward': return '🛏️';
+                    case 'status': return '📊';
+                    case 'nurse': return '👩‍⚕️';
+                    case 'vitals': return '❤️';
+                    case 'notes': return '📝';
+                    case 'medication': return '💊';
+                    case 'discharge': return '🚪';
+                    case 'transfer': return '🔄';
+                    default: return '📌';
+                  }
+                };
+
+                if (timeline.length === 0) {
+                  return <p className="text-slate-500 text-center py-8">No timeline events recorded yet</p>;
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {timeline.map((item, idx) => (
+                      <div key={idx} className={`p-3 rounded-lg border-l-4 ${getTypeColor(item.type)}`}>
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl">{getTypeIcon(item.type)}</span>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                              <p className="font-medium text-slate-800">{item.event}</p>
+                              <p className="text-xs text-slate-500">{new Date(item.time).toLocaleString()}</p>
+                            </div>
+                            <p className="text-sm text-slate-600 mt-1">{item.details}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
