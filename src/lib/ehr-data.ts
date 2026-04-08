@@ -292,6 +292,7 @@ export interface Patient {
   visitorLog?: VisitorRecord[];
   assignedNurse?: string;
   assignedNurseId?: string;
+  codeStatus?: 'full' | 'dnr' | 'comfort' | 'dna';
 }
 
 export interface WardBed {

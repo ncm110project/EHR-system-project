@@ -110,11 +110,11 @@ const mockEquipment: Equipment[] = [
 
 export function GeneralWard() {
   const { user } = useAuth();
-  const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications, nurseTasks, medicationOrders, addNurseTask, updateNurseTask, addMedicationOrder } = useEHR();
+  const { patients, updatePatient, addActivity, addLabOrder, addPrescription, medications, nurseTasks, medicationOrders, addNurseTask, updateNurseTask, addMedicationOrder, labOrders } = useEHR();
   const { addToast } = useToast();
   const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'medications' | 'tasks' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
+  const [activeTab, setActiveTab] = useState<'beds' | 'patients' | 'lab-results' | 'medications' | 'tasks' | 'iv' | 'rounds' | 'incidents' | 'equipment' | 'handover' | 'pain'>('beds');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [beds, setBeds] = useState<WardBed[]>(initialBeds);
   const [medicationRounds, setMedicationRounds] = useState<MedicationRound[]>([]);
@@ -144,7 +144,15 @@ export function GeneralWard() {
   const [showDischargeSummaryModal, setShowDischargeSummaryModal] = useState(false);
   const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [showVitalsConfirm, setShowVitalsConfirm] = useState(false);
+  const [showIVModal, setShowIVModal] = useState(false);
+  const [showDischargePlanModal, setShowDischargePlanModal] = useState(false);
+  const [showAllergyModal, setShowAllergyModal] = useState(false);
+  const [showCodeStatusModal, setShowCodeStatusModal] = useState(false);
   const [carePlan, setCarePlan] = useState({ problems: "", goals: "", interventions: "" });
+  const [ivForm, setIvForm] = useState({ fluidName: "", volume: 1000, rate: 100 });
+  const [dischargePlan, setDischargePlan] = useState({ targetDate: "", destination: "", notes: "" });
+  const [newAllergy, setNewAllergy] = useState("");
+  const [codeStatus, setCodeStatus] = useState<"full" | "dnr" | "comfort" | "dna">("full");
 
   const [newVitals, setNewVitals] = useState<VitalSigns>({
     bloodPressure: "",
@@ -735,6 +743,7 @@ export function GeneralWard() {
           { id: 'handover', label: 'Handover Log' },
         ] : isStaffNurse ? [
           { id: 'patients', label: 'My Patients' },
+          { id: 'lab-results', label: 'Lab Results' },
           { id: 'medications', label: 'Medication Rounds' },
           { id: 'iv', label: 'IV Fluids' },
           { id: 'pain', label: 'Pain Assessment' },
@@ -1042,6 +1051,42 @@ export function GeneralWard() {
         </div>
       )}
 
+      {activeTab === 'lab-results' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h3 className="font-semibold mb-4">Lab Results</h3>
+          {(() => {
+            const patientLabOrders = labOrders.filter(lo => wardPatients.some(p => p.id === lo.patientId));
+            if (patientLabOrders.length === 0) {
+              return <p className="text-slate-500 text-center py-8">No lab orders yet</p>;
+            }
+            return (
+              <div className="space-y-3">
+                {patientLabOrders.map((order, idx) => (
+                  <div key={idx} className={`p-4 border rounded-lg ${order.status === 'completed' ? 'bg-green-50 border-green-200' : order.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-slate-50'}`}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{order.testName}</p>
+                        <p className="text-sm text-slate-600">Patient: {patients.find(p => p.id === order.patientId)?.name || 'Unknown'}</p>
+                        <p className="text-xs text-slate-500">Ordered: {order.date} by {order.orderedBy}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-700' : order.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {order.status === 'completed' ? 'Completed' : order.status === 'pending' ? 'Pending' : order.status}
+                      </span>
+                    </div>
+                    {order.status === 'completed' && order.results && (
+                      <div className="mt-3 p-3 bg-white rounded border">
+                        <p className="text-sm font-medium text-slate-700">Results:</p>
+                        <pre className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{order.results}</pre>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {activeTab === 'rounds' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <h3 className="font-semibold mb-4">Daily Doctor Rounding</h3>
@@ -1138,7 +1183,13 @@ export function GeneralWard() {
                     <button onClick={() => setShowIncidentModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Report Incident</button>
                     <button onClick={() => setShowCarePlanModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Care Plan</button>
                     <button onClick={() => setShowTimelineModal(true)} className="px-3 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-700">Timeline</button>
+                    <button onClick={() => setShowIVModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">IV Management</button>
+                    <button onClick={() => setShowAllergyModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Allergy Alert</button>
+                    <button onClick={() => setShowCodeStatusModal(true)} className="px-3 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Code Status</button>
                   </>
+                )}
+                {isChargeNurse && (
+                  <button onClick={() => setShowDischargePlanModal(true)} className="px-3 py-2 bg-lime-600 text-white rounded-lg text-sm hover:bg-lime-700">Discharge Plan</button>
                 )}
                 {isChargeNurse && selectedPatient && getWorkflowStatus(selectedPatient) === 'discharged' && (
                   <button onClick={() => setShowDischargeSummaryModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Discharge Summary</button>
@@ -1973,6 +2024,165 @@ export function GeneralWard() {
         onConfirm={confirmSaveVitals}
         onCancel={() => setShowVitalsConfirm(false)}
       />
+
+      {showIVModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">IV Fluid Management - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Fluid Name</label>
+                <select value={ivForm.fluidName} onChange={(e) => setIvForm({...ivForm, fluidName: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Fluid</option>
+                  <option value="Normal Saline">Normal Saline (0.9% NaCl)</option>
+                  <option value="D5W">D5W (5% Dextrose)</option>
+                  <option value="RL">Ringer&apos;s Lactate</option>
+                  <option value="NS">Normal Saline Bolus</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Volume (mL)</label>
+                  <input type="number" value={ivForm.volume} onChange={(e) => setIvForm({...ivForm, volume: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Rate (mL/hr)</label>
+                  <input type="number" value={ivForm.rate} onChange={(e) => setIvForm({...ivForm, rate: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <h4 className="font-medium text-slate-700 mb-2">Current IV Fluids</h4>
+                {ivFluids.filter(iv => iv.patientId === selectedPatient.id).length === 0 ? (
+                  <p className="text-sm text-slate-500">No active IV fluids</p>
+                ) : (
+                  <div className="space-y-2">
+                    {ivFluids.filter(iv => iv.patientId === selectedPatient.id).map(iv => (
+                      <div key={iv.id} className="p-2 bg-white rounded border text-sm">
+                        <p className="font-medium">{iv.fluidName} - {iv.volume}mL @ {iv.rate}mL/hr</p>
+                        <p className="text-xs text-slate-500">Status: {iv.status}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowIVModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Close</button>
+                <button onClick={() => { 
+                  if (!ivForm.fluidName) return;
+                  const newIV: IVFluidRecord = { id: generateId(), patientId: selectedPatient.id, fluidName: ivForm.fluidName, volume: ivForm.volume, startTime: new Date().toISOString(), rate: ivForm.rate, remaining: ivForm.volume, status: 'running' };
+                  setIvFluids([...ivFluids, newIV]);
+                  addToast(`IV fluid started for ${selectedPatient.name}`, "success");
+                  setShowIVModal(false);
+                }} disabled={!ivForm.fluidName} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">Start IV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDischargePlanModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Discharge Planning - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Target Discharge Date</label>
+                <input type="date" value={dischargePlan.targetDate} onChange={(e) => setDischargePlan({...dischargePlan, targetDate: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Discharge Destination</label>
+                <select value={dischargePlan.destination} onChange={(e) => setDischargePlan({...dischargePlan, destination: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Destination</option>
+                  <option value="home">Home</option>
+                  <option value="home-care">Home with Care</option>
+                  <option value="rehab">Rehabilitation</option>
+                  <option value="nursing-home">Nursing Home</option>
+                  <option value="transfer">Transfer to Another Facility</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                <textarea value={dischargePlan.notes} onChange={(e) => setDischargePlan({...dischargePlan, notes: e.target.value})} placeholder="Discharge planning notes..." className="w-full h-24 px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowDischargePlanModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={() => { addToast("Discharge plan saved", "success"); setShowDischargePlanModal(false); }} className="flex-1 px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700">Save Plan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAllergyModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Allergy Alert - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h4 className="font-medium text-red-800 mb-2">Current Allergies</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPatient.allergies.map((allergy, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">{allergy}</span>
+                  ))}
+                  {selectedPatient.allergies.length === 0 && <p className="text-sm text-slate-500">No known allergies</p>}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Add New Allergy</label>
+                <div className="flex gap-2">
+                  <input type="text" value={newAllergy} onChange={(e) => setNewAllergy(e.target.value)} placeholder="e.g., Penicillin" className="flex-1 px-3 py-2 border rounded-lg" />
+                  <button onClick={() => {
+                    if (!newAllergy.trim()) return;
+                    const updated = { ...selectedPatient, allergies: [...selectedPatient.allergies, newAllergy] };
+                    updatePatient(updated);
+                    addToast(`Allergy "${newAllergy}" added`, "success");
+                    setNewAllergy("");
+                  }} className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">Add</button>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowAllergyModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCodeStatusModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Code Status - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-600 mb-2">Current Status: <span className="font-bold">{selectedPatient.codeStatus || 'Not documented'}</span></p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Select Code Status</label>
+                <div className="space-y-2">
+                  {[{ value: 'full', label: 'Full Code', desc: 'Full resuscitation and life-saving measures' }, { value: 'dnr', label: 'DNR - Do Not Resuscitate', desc: 'No CPR if heart stops' }, { value: 'comfort', label: 'Comfort Care', desc: 'Focus on comfort, no aggressive interventions' }, { value: 'dna', label: 'DNA - Do Not Admit', desc: 'No transfer to ICU or intubation' }].map(option => (
+                    <label key={option.value} className={`flex items-start p-3 border rounded-lg cursor-pointer ${codeStatus === option.value ? 'border-teal-500 bg-teal-50' : 'hover:bg-slate-50'}`}>
+                      <input type="radio" name="codeStatus" value={option.value} checked={codeStatus === option.value} onChange={(e) => setCodeStatus(e.target.value as any)} className="mt-1 mr-3" />
+                      <div>
+                        <p className="font-medium">{option.label}</p>
+                        <p className="text-xs text-slate-500">{option.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setShowCodeStatusModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button onClick={() => { 
+                  const updated = { ...selectedPatient, codeStatus: codeStatus };
+                  updatePatient(updated);
+                  addToast(`Code status updated to ${codeStatus}`, "success");
+                  setShowCodeStatusModal(false);
+                }} className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
