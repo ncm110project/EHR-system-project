@@ -237,6 +237,7 @@ export interface Patient {
   status: PatientStatus;
   department: Department;
   admissionDate: string;
+  religion?: string;
   registrationStatus?: RegistrationStatus;
   triagePriority?: TriagePriority;
   triageStatus?: 'pending' | 'triaged';

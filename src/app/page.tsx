@@ -11,6 +11,7 @@ export default function LandingPage() {
   const [patientId, setPatientId] = useState("");
   const [showConditionsOther, setShowConditionsOther] = useState(false);
   const [showAllergiesOther, setShowAllergiesOther] = useState(false);
+  const [showReligionOther, setShowReligionOther] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -18,6 +19,8 @@ export default function LandingPage() {
     dob: "",
     sex: "Male" as "Male" | "Female",
     civilStatus: "Single",
+    religion: "",
+    religionOther: "",
     phone: "",
     email: "",
     streetAddress: "",
@@ -73,6 +76,8 @@ export default function LandingPage() {
       dob: "1990-05-15",
       sex: "Male",
       civilStatus: "Single",
+      religion: "Roman Catholic",
+      religionOther: "",
       phone: "555-9999",
       email: "testpatient@email.com",
       streetAddress: "123 Test Street",
@@ -171,6 +176,8 @@ export default function LandingPage() {
     if (formData.allergyDustMites) allergiesList.push("Dust Mites");
     if (formData.allergiesOther) allergiesList.push(formData.allergiesOther);
 
+    const religionValue = formData.religion === "Others" ? formData.religionOther : formData.religion;
+
     const newPatient: Patient = {
       id: newPatientId,
       name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
@@ -191,8 +198,9 @@ export default function LandingPage() {
       emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
+      religion: religionValue,
       vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() },
-      notes: `Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
+      notes: `Religion: ${religionValue || 'Not specified'}. Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
     };
 
     const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
@@ -229,6 +237,8 @@ export default function LandingPage() {
                 dob: "",
                 sex: "Male",
                 civilStatus: "Single",
+                religion: "",
+                religionOther: "",
                 phone: "",
                 email: "",
                 streetAddress: "",
@@ -371,6 +381,33 @@ export default function LandingPage() {
                     <option value="Divorced">Divorced</option>
                   </select>
                 </div>
+                <div>
+                  <label className={labelClass}>Religion</label>
+                  <select value={formData.religion} onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData({...formData, religion: value, religionOther: value !== "Others" ? "" : formData.religionOther});
+                    setShowReligionOther(value === "Others");
+                  }} className={inputClass}>
+                    <option value="">Select Religion</option>
+                    <option value="Roman Catholic">Roman Catholic</option>
+                    <option value="Christian (Protestant / Born Again)">Christian (Protestant / Born Again)</option>
+                    <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Seventh-day Adventist">Seventh-day Adventist</option>
+                    <option value="Jehovah's Witness">Jehovah&apos;s Witness</option>
+                    <option value="Baptist">Baptist</option>
+                    <option value="Methodist">Methodist</option>
+                    <option value="Pentecostal">Pentecostal</option>
+                    <option value="Latter-day Saints (Mormon)">Latter-day Saints (Mormon)</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+                {showReligionOther && (
+                  <div className="md:col-span-3">
+                    <label className={labelClass}>Please specify your religion</label>
+                    <input type="text" value={formData.religionOther} onChange={(e) => setFormData({...formData, religionOther: e.target.value})} className={inputClass} placeholder="Enter your religion" />
+                  </div>
+                )}
               </div>
             </div>
 
