@@ -6,16 +6,18 @@ import { LabOrder, LabTestStatus } from "@/lib/ehr-data";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-export function Laboratory() {
+export function Imaging() {
   const { labOrders, patients, updateLabOrder, addActivity, setCurrentDepartment, addNotification } = useEHR();
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
   const [resultsText, setResultsText] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
 
+  const imagingOrders = labOrders.filter(o => o.testType === 'imaging');
+  
   const filteredOrders = activeTab === 'all' 
-    ? labOrders.filter(o => o.testType !== 'imaging')
-    : labOrders.filter(o => o.status === activeTab && o.testType !== 'imaging');
+    ? imagingOrders 
+    : imagingOrders.filter(o => o.status === activeTab);
 
   const getPatientInfo = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);
@@ -31,38 +33,13 @@ export function Laboratory() {
 
   const getTestTypeIcon = (type: string) => {
     switch (type) {
-      case 'blood':
-        return (
-          <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center text-red-600">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2l3 7h6l-5 4 2 7-6-4-6 4 2-7-5-4h6l3-7z"></path>
-            </svg>
-          </div>
-        );
-      case 'urine':
-        return (
-          <div className="w-8 h-8 bg-amber-100 rounded flex items-center justify-center text-amber-600">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2v20M8 6c2-2 6-2 8 0M6 10c3-3 9-3 12 0M4 14c4-4 12-4 16 0"></path>
-            </svg>
-          </div>
-        );
       case 'imaging':
         return (
-          <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-600">
+          <div className="w-8 h-8 bg-cyan-100 rounded flex items-center justify-center text-cyan-600">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
               <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-          </div>
-        );
-      case 'pathology':
-        return (
-          <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center text-green-600">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 16v-4M12 8h.01"></path>
             </svg>
           </div>
         );
@@ -90,10 +67,10 @@ export function Laboratory() {
       addActivity({
         id: generateId(),
         type: 'lab-result',
-        department: 'lab',
+        department: 'imaging',
         patientId: order.patientId,
         patientName: getPatientInfo(order.patientId)?.name || 'Unknown',
-        description: `${order.testName} results ready`,
+        description: `${order.testName} imaging results ready`,
         timestamp: new Date().toISOString()
       });
     }
@@ -110,10 +87,10 @@ export function Laboratory() {
     addActivity({
       id: generateId(),
       type: 'lab-result',
-      department: 'lab',
+      department: 'imaging',
       patientId: selectedOrder.patientId,
       patientName: getPatientInfo(selectedOrder.patientId)?.name || 'Unknown',
-      description: `${selectedOrder.testName} results saved`,
+      description: `${selectedOrder.testName} imaging results saved`,
       timestamp: new Date().toISOString()
     });
     setSelectedOrder(null);
@@ -140,8 +117,8 @@ export function Laboratory() {
       id: `NOTIF-${Date.now()}`,
       patientId: selectedOrder.patientId,
       type: 'lab_result',
-      title: 'Lab Results Ready',
-      message: `Your ${selectedOrder.testName} results are now available. Please check your patient portal.`,
+      title: 'Imaging Results Ready',
+      message: `Your ${selectedOrder.testName} imaging results are now available. Please check your patient portal.`,
       timestamp: new Date().toISOString(),
       read: false,
       relatedId: selectedOrder.id
@@ -149,17 +126,17 @@ export function Laboratory() {
   };
 
   const stats = {
-    pending: labOrders.filter(o => o.status === 'pending' && o.testType !== 'imaging').length,
-    inProgress: labOrders.filter(o => o.status === 'in-progress' && o.testType !== 'imaging').length,
-    completed: labOrders.filter(o => o.status === 'completed' && o.testType !== 'imaging').length,
+    pending: imagingOrders.filter(o => o.status === 'pending').length,
+    inProgress: imagingOrders.filter(o => o.status === 'in-progress').length,
+    completed: imagingOrders.filter(o => o.status === 'completed').length,
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Laboratory</h2>
-          <p className="text-slate-500">View and process doctor&apos;s lab orders</p>
+          <h2 className="text-2xl font-bold text-slate-800">Imaging Department</h2>
+          <p className="text-slate-500">View and process doctor&apos;s imaging orders (X-Ray, CT, MRI, etc.)</p>
         </div>
         <div className="flex gap-3">
           <div className="px-4 py-2 bg-amber-50 text-amber-700 rounded-lg">
@@ -179,7 +156,7 @@ export function Laboratory() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${activeTab === tab ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${activeTab === tab ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
             {tab.replace('-', ' ')}
           </button>
@@ -266,7 +243,7 @@ export function Laboratory() {
 
         {filteredOrders.length === 0 && (
           <div className="p-8 text-center text-slate-500">
-            No lab orders found
+            No imaging orders found
           </div>
         )}
       </div>
@@ -339,7 +316,7 @@ export function Laboratory() {
                         {selectedOrder.attachments.map((url, idx) => (
                           <div key={idx} className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-green-200">
                             <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                             </svg>
                             <span className="text-sm">Attachment {idx + 1}</span>
                           </div>
@@ -352,11 +329,11 @@ export function Laboratory() {
 
               {selectedOrder.status === 'in-progress' && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Enter Results</label>
+                  <label className="block text-sm font-medium mb-2">Enter Imaging Results</label>
                   <textarea
                     value={resultsText}
                     onChange={(e) => setResultsText(e.target.value)}
-                    placeholder="Enter test results..."
+                    placeholder="Enter imaging findings..."
                     className="w-full h-32"
                   />
                   {selectedOrder.referenceRange && (
@@ -364,13 +341,13 @@ export function Laboratory() {
                   )}
                   
                   <div className="mt-4">
-                    <label className="block text-sm font-medium mb-2">Attach Files / Pictures</label>
+                    <label className="block text-sm font-medium mb-2">Attach Images / Reports</label>
                     <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
                       <input
                         type="file"
-                        id="file-upload"
+                        id="imaging-file-upload"
                         multiple
-                        accept="image/*,.pdf,.doc,.docx"
+                        accept="image/*,.pdf,.dcm"
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
                           const fileUrls = files.map(file => URL.createObjectURL(file));
@@ -378,11 +355,11 @@ export function Laboratory() {
                         }}
                         className="hidden"
                       />
-                      <label htmlFor="file-upload" className="cursor-pointer">
+                      <label htmlFor="imaging-file-upload" className="cursor-pointer">
                         <svg className="mx-auto h-12 w-12 text-slate-400" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                           <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
                         </svg>
-                        <p className="mt-1 text-sm text-slate-600">Click to upload files or images</p>
+                        <p className="mt-1 text-sm text-slate-600">Click to upload images or documents</p>
                       </label>
                     </div>
                     {attachments.length > 0 && (

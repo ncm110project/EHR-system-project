@@ -10,6 +10,7 @@ import { OutpatientDepartment } from "@/components/ehr/OutpatientDepartment";
 import { EmergencyRoom } from "@/components/ehr/EmergencyRoom";
 import { Pharmacy } from "@/components/ehr/Pharmacy";
 import { Laboratory } from "@/components/ehr/Laboratory";
+import { Imaging } from "@/components/ehr/Imaging";
 import { NursingAdmin } from "@/components/ehr/NursingAdmin";
 import { PatientDashboard } from "@/components/ehr/PatientDashboard";
 import { GeneralWard } from "@/components/ehr/GeneralWard";
@@ -55,6 +56,8 @@ export default function Dashboard() {
         return <Pharmacy />;
       case 'lab':
         return <Laboratory />;
+      case 'imaging':
+        return <Imaging />;
       case 'nursing':
         return <NursingAdmin />;
       case 'triage':

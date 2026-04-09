@@ -45,6 +45,7 @@ export function Dashboard() {
       case 'er': return 'Emergency';
       case 'pharmacy': return 'Pharmacy';
       case 'lab': return 'Laboratory';
+      case 'imaging': return 'Imaging';
       case 'nursing': return 'Nursing';
       default: return 'System';
     }

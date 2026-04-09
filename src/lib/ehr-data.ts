@@ -6,9 +6,9 @@ export type RegistrationStatus = 'pending' | 'confirmed' | 'rejected';
 
 export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
-export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'nursing' | 'registration' | 'general-ward' | 'triage';
+export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'imaging' | 'nursing' | 'registration' | 'general-ward' | 'triage';
 
-export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient' | 'charge-nurse' | 'staff-nurse';
+export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient' | 'charge-nurse' | 'staff-nurse' | 'radiologic-technologist';
 
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
@@ -221,6 +221,7 @@ export const mockUsers: User[] = [
   { id: 'U014', username: 'doctor_er2', password: 'doctor123', name: 'Dr. Sarah Kim', email: 'skim@hospital.org', role: 'doctor', department: 'er', departmentName: 'Emergency Room' },
   { id: 'U015', username: 'nurse_triage', password: 'triage123', name: 'Nurse Anna Torres', email: 'atorres@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
   { id: 'U016', username: 'nurse_triage2', password: 'triage123', name: 'Nurse Brian Chen', email: 'bchen@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
+  { id: 'U017', username: 'imaging', password: 'imaging123', name: 'Radiologic Technologist Alex Rivera', email: 'arivera@hospital.org', role: 'radiologic-technologist', department: 'imaging', departmentName: 'Imaging Department' },
 ];
 
 export interface Patient {
@@ -801,5 +802,6 @@ export const departments: { id: Department; name: string; icon: string; color: s
   { id: 'er', name: 'Emergency', icon: 'alert', color: '#EF4444' },
   { id: 'pharmacy', icon: 'pill', name: 'Pharmacy', color: '#8B5CF6' },
   { id: 'lab', name: 'Laboratory', icon: 'flask', color: '#F59E0B' },
+  { id: 'imaging', name: 'Imaging', icon: 'scan', color: '#06B6D4' },
   { id: 'nursing', name: 'Nursing Admin', icon: 'clipboard', color: '#10B981' }
 ];

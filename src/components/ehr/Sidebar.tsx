@@ -39,6 +39,11 @@ const icons: Record<string, React.ReactNode> = {
       <line x1="9" y1="3" x2="15" y2="3"></line>
     </svg>
   ),
+  scan: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12h4l3-9 4 18 3-9h4"></path>
+    </svg>
+  ),
   clipboard: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
@@ -57,6 +62,7 @@ const allDepartments = [
   { id: 'er' as Department, name: 'Emergency', icon: 'alert' },
   { id: 'pharmacy' as Department, name: 'Pharmacy', icon: 'pill' },
   { id: 'lab' as Department, name: 'Laboratory', icon: 'flask' },
+  { id: 'imaging' as Department, name: 'Imaging', icon: 'scan' },
   { id: 'nursing' as Department, name: 'Nursing Admin', icon: 'clipboard' }
 ];
 
@@ -68,6 +74,7 @@ export function Sidebar() {
     if (!user) return allDepartments;
     
     const userDept = 'department' in user ? user.department : 'dashboard';
+    const userRole = 'role' in user ? user.role : null;
     
     switch (userDept) {
       case 'registration':
@@ -80,6 +87,8 @@ export function Sidebar() {
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'pharmacy');
       case 'lab':
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'lab');
+      case 'imaging':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'imaging');
       case 'nursing':
         return allDepartments.filter(d => d.id === 'nursing');
       default:
