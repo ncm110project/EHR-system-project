@@ -1160,6 +1160,102 @@ export function GeneralWard() {
                   </div>
                 </div>
               )}
+
+              {(isStaffNurse || isChargeNurse) && (
+                <>
+                  <div className="p-4 border border-slate-200 rounded-lg">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                      Lab Results
+                      <span className="text-xs text-slate-400 font-normal ml-2">(View Only)</span>
+                    </h4>
+                    {labOrders.filter(o => o.patientId === selectedPatient.id).length > 0 ? (
+                      <div className="space-y-2">
+                        {labOrders.filter(o => o.patientId === selectedPatient.id).map(order => (
+                          <div key={order.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-medium text-slate-800">{order.testName}</p>
+                                <p className="text-xs text-slate-500">Ordered by: {order.orderedBy} • {order.date}</p>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                order.status === 'in-progress' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {order.status === 'completed' ? 'Completed' : order.status === 'in-progress' ? 'In Progress' : 'Pending'}
+                              </span>
+                            </div>
+                            {order.results && (
+                              <div className="mt-2 pt-2 border-t border-slate-200">
+                                <p className="text-sm">
+                                  <span className="text-slate-500">Result: </span>
+                                  <span className="font-medium text-slate-800">{order.results}</span>
+                                </p>
+                                {order.referenceRange && (
+                                  <p className="text-xs text-slate-500">Reference: {order.referenceRange}</p>
+                                )}
+                              </div>
+                            )}
+                            {!order.results && order.status !== 'completed' && (
+                              <p className="text-xs text-slate-400 italic mt-1">Result not yet available</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 italic">No lab orders for this patient</p>
+                    )}
+                  </div>
+
+                  <div className="p-4 border border-slate-200 rounded-lg">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Medication Orders
+                      <span className="text-xs text-slate-400 font-normal ml-2">(View Only)</span>
+                    </h4>
+                    {medicationOrders.filter(o => o.patientId === selectedPatient.id).length > 0 ? (
+                      <div className="space-y-2">
+                        {medicationOrders.filter(o => o.patientId === selectedPatient.id).map(order => (
+                          <div key={order.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-medium text-slate-800">{order.medication} {order.dosage}</p>
+                                <p className="text-xs text-slate-500">
+                                  {order.frequency} • {order.route} • Prescribed by: {order.orderedBy}
+                                </p>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                order.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                                order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                order.status === 'discontinued' ? 'bg-gray-100 text-gray-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {order.status === 'active' ? 'Active' : 
+                                 order.status === 'completed' ? 'Completed' :
+                                 order.status === 'discontinued' ? 'Discontinued' : 'Pending'}
+                              </span>
+                            </div>
+                            {order.instructions && (
+                              <p className="text-xs text-slate-500 mt-1">Instructions: {order.instructions}</p>
+                            )}
+                            <p className="text-xs text-slate-400 mt-1">
+                              Started: {new Date(order.startDate).toLocaleDateString()}
+                              {order.endDate && ` • Until: ${new Date(order.endDate).toLocaleDateString()}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 italic">No medication orders for this patient</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
