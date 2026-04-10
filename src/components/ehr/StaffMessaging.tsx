@@ -32,7 +32,6 @@ export function StaffMessaging({ onClose }: StaffMessagingProps) {
     { id: 'U005', username: 'pharmacy', password: '', name: 'Pharmacist Emily Wong', email: '', role: 'nurse', department: 'pharmacy', departmentName: 'Pharmacy' },
     { id: 'U006', username: 'nursing_admin', password: '', name: 'Admin Nurse Manager', email: '', role: 'admin', department: 'nursing', departmentName: 'Nursing Administration' },
     { id: 'U007', username: 'lab', password: '', name: 'Lab Technician David Lee', email: '', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
-    { id: 'U008', username: 'clerk', password: '', name: 'Registration Clerk Maria Santos', email: '', role: 'clerk', department: 'registration', departmentName: 'Patient Registration' },
   ];
 
   const userId = user && 'id' in user ? user.id : '';

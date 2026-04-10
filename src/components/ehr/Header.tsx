@@ -51,7 +51,6 @@ export function Header() {
       case 'doctor': return 'bg-blue-100 text-blue-700';
       case 'nurse': return 'bg-green-100 text-green-700';
       case 'admin': return 'bg-purple-100 text-purple-700';
-      case 'clerk': return 'bg-amber-100 text-amber-700';
       case 'patient': return 'bg-teal-100 text-teal-700';
       default: return 'bg-slate-100 text-slate-700';
     }

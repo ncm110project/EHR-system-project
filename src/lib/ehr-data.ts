@@ -8,7 +8,7 @@ export type ChartVerificationStatus = 'pending' | 'verified' | 'rejected';
 
 export type Department = 'dashboard' | 'opd' | 'er' | 'pharmacy' | 'lab' | 'imaging' | 'nursing' | 'registration' | 'general-ward' | 'triage';
 
-export type UserRole = 'doctor' | 'nurse' | 'admin' | 'clerk' | 'patient' | 'charge-nurse' | 'staff-nurse' | 'radiologic-technologist';
+export type UserRole = 'doctor' | 'nurse' | 'admin' | 'patient' | 'charge-nurse' | 'staff-nurse' | 'radiologic-technologist';
 
 export type TriagePriority = 1 | 2 | 3 | 4 | 5;
 
@@ -212,7 +212,6 @@ export const mockUsers: User[] = [
   { id: 'U005', username: 'pharmacy', password: 'pharmacy123', name: 'Pharmacist Emily Wong', email: 'ewong@hospital.org', role: 'nurse', department: 'pharmacy', departmentName: 'Pharmacy' },
   { id: 'U006', username: 'nursing_admin', password: 'admin123', name: 'Admin Nurse Manager', email: 'admin@hospital.org', role: 'admin', department: 'nursing', departmentName: 'Nursing Administration' },
   { id: 'U007', username: 'lab', password: 'lab123', name: 'Lab Technician David Lee', email: 'dlee@hospital.org', role: 'nurse', department: 'lab', departmentName: 'Laboratory' },
-  { id: 'U008', username: 'clerk', password: 'clerk123', name: 'Registration Clerk Maria Santos', email: 'msantos@hospital.org', role: 'clerk', department: 'registration', departmentName: 'Patient Registration' },
   { id: 'U009', username: 'charge_nurse', password: 'charge123', name: 'Nurse Karen Thompson', email: 'kthompson@hospital.org', role: 'charge-nurse', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U010', username: 'staff_nurse_1', password: 'staff123', name: 'Nurse Mark Rivera', email: 'mrivera@hospital.org', role: 'staff-nurse', department: 'general-ward', departmentName: 'General Ward' },
   { id: 'U011', username: 'doctor_ward', password: 'doctor123', name: 'Dr. James Wilson', email: 'jwilson@hospital.org', role: 'doctor', department: 'general-ward', departmentName: 'General Ward' },
@@ -220,7 +219,6 @@ export const mockUsers: User[] = [
   { id: 'U013', username: 'charge_nurse_er', password: 'charge123', name: 'Nurse Linda Martinez', email: 'lmartinez@hospital.org', role: 'charge-nurse', department: 'er', departmentName: 'Emergency Room' },
   { id: 'U014', username: 'doctor_er2', password: 'doctor123', name: 'Dr. Sarah Kim', email: 'skim@hospital.org', role: 'doctor', department: 'er', departmentName: 'Emergency Room' },
   { id: 'U015', username: 'nurse_triage', password: 'triage123', name: 'Nurse Anna Torres', email: 'atorres@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
-  { id: 'U016', username: 'nurse_triage2', password: 'triage123', name: 'Nurse Brian Chen', email: 'bchen@hospital.org', role: 'nurse', department: 'triage', departmentName: 'Triage' },
   { id: 'U017', username: 'imaging', password: 'imaging123', name: 'Radiologic Technologist Alex Rivera', email: 'arivera@hospital.org', role: 'radiologic-technologist', department: 'imaging', departmentName: 'Imaging Department' },
 ];
 
