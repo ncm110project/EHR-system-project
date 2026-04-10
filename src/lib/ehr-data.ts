@@ -115,7 +115,7 @@ export type StaffRole =
   | 'nurse'
   | 'pharmacist'
   | 'lab-technician'
-  | 'registration-clerk'
+  | 'triage-nurse'
   | 'other';
 
 export type TransferStatus = 'pending' | 'approved' | 'rejected' | 'completed';

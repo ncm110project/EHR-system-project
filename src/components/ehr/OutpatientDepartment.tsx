@@ -262,7 +262,8 @@ export function OutpatientDepartment() {
       bloodType: 'Unknown',
       allergies: [],
       status: 'waiting',
-      department: 'opd',
+      department: 'triage',
+      triageStatus: 'pending',
       admissionDate: now.split('T')[0],
       chiefComplaint: newPatient.chiefComplaint,
       workflowStatus: 'registered',
@@ -276,7 +277,7 @@ export function OutpatientDepartment() {
     addActivity({
       id: generateId(),
       type: 'admission',
-      department: 'opd',
+      department: 'triage',
       patientId: patient.id,
       patientName: patient.name,
       description: `New patient registered - ${patient.chiefComplaint || 'General visit'}`,

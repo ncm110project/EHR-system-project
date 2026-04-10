@@ -62,7 +62,7 @@ const staffRoles: { value: StaffRole; label: string }[] = [
   { value: "nurse", label: "Nurse" },
   { value: "pharmacist", label: "Pharmacist" },
   { value: "lab-technician", label: "Lab Technician" },
-  { value: "registration-clerk", label: "Registration Clerk" },
+  { value: "triage-nurse", label: "Triage Nurse" },
   { value: "other", label: "Other" },
 ];
 
