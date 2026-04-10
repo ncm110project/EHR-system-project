@@ -26,7 +26,7 @@ export function RegistrationClerk() {
   const [accountError, setAccountError] = useState('');
   const [accountSuccess, setAccountSuccess] = useState('');
 
-  const pendingRegistrations = patients.filter(p => p.department === 'registration' && (!p.registrationStatus || p.registrationStatus === 'pending'));
+  const pendingRegistrations = patients.filter(p => p.department === 'triage' && (!p.registrationStatus || p.registrationStatus === 'pending'));
   const confirmedRegistrations = patients.filter(p => p.registrationStatus === 'confirmed');
   const rejectedRegistrations = patients.filter(p => p.registrationStatus === 'rejected');
   const patientsWithAccounts = patients.filter(p => p.hasPatientAccount);
@@ -45,7 +45,7 @@ export function RegistrationClerk() {
     const updatedPatient: Patient = {
       ...patient,
       registrationStatus: 'confirmed',
-      department: 'registration',
+      department: 'triage',
       triageStatus: 'pending',
       status: 'waiting',
       workflowStatus: 'registered',
@@ -73,7 +73,7 @@ export function RegistrationClerk() {
     addActivity({
       id: generateId(),
       type: 'admission',
-      department: 'registration',
+      department: 'triage',
       patientId: patient.id,
       patientName: patient.name,
       description: `Registration rejected`,
@@ -134,7 +134,7 @@ export function RegistrationClerk() {
     addActivity({
       id: generateId(),
       type: 'admission',
-      department: 'registration',
+      department: 'triage',
       patientId: patient.id,
       patientName: patient.name,
       description: `Patient account created - Username: ${newAccount.username}`,

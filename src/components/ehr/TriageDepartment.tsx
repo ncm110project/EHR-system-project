@@ -30,7 +30,7 @@ export function TriageDepartment() {
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
 
   const pendingTriagePatients = patients.filter(p => 
-    p.department === 'registration' && p.triageStatus !== 'triaged'
+    p.department === 'triage' && p.triageStatus !== 'triaged'
   );
   
   const triagedPatients = patients.filter(p => 
