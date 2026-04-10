@@ -27,9 +27,10 @@ const rolePermissions: Record<string, string[]> = {
   doctor: ['view_patients', 'edit_patients', 'prescribe', 'order_lab', 'order_imaging', 'view_own_department'],
   nurse: ['view_patients', 'edit_patients', 'record_vitals', 'view_own_department'],
   admin: ['view_all', 'edit_all', 'manage_staff', 'view_reports', 'manage_incidents'],
-  clerk: ['register_patients', 'view_patients', 'edit_registration'],
   patient: ['view_own_records', 'book_appointment', 'view_prescriptions', 'view_lab_results', 'view_imaging_results'],
-  'radiologic-technologist': ['view_patients', 'process_imaging', 'view_own_department']
+  'radiologic-technologist': ['view_patients', 'process_imaging', 'view_own_department'],
+  'charge-nurse': ['view_patients', 'edit_patients', 'manage_ward', 'assign_nurse', 'view_reports'],
+  'staff-nurse': ['view_patients', 'record_vitals', 'view_own_department']
 };
 
 interface AuthProviderProps {

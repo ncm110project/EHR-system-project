@@ -57,12 +57,13 @@ const icons: Record<string, React.ReactNode> = {
 
 const allDepartments = [
   { id: 'dashboard' as Department, name: 'Dashboard', icon: 'grid' },
-  { id: 'registration' as Department, name: 'Registration', icon: 'clipboard' },
+  { id: 'triage' as Department, name: 'Triage', icon: 'clipboard' },
   { id: 'opd' as Department, name: 'Outpatient', icon: 'user' },
   { id: 'er' as Department, name: 'Emergency', icon: 'alert' },
   { id: 'pharmacy' as Department, name: 'Pharmacy', icon: 'pill' },
   { id: 'lab' as Department, name: 'Laboratory', icon: 'flask' },
   { id: 'imaging' as Department, name: 'Imaging', icon: 'scan' },
+  { id: 'general-ward' as Department, name: 'General Ward', icon: 'bed' },
   { id: 'nursing' as Department, name: 'Nursing Admin', icon: 'clipboard' }
 ];
 
@@ -77,8 +78,6 @@ export function Sidebar() {
     const userRole = 'role' in user ? user.role : null;
     
     switch (userDept) {
-      case 'registration':
-        return allDepartments.filter(d => d.id === 'registration');
       case 'opd':
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'opd');
       case 'er':
@@ -89,6 +88,10 @@ export function Sidebar() {
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'lab');
       case 'imaging':
         return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'imaging');
+      case 'triage':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'triage');
+      case 'general-ward':
+        return allDepartments.filter(d => d.id === 'dashboard' || d.id === 'general-ward');
       case 'nursing':
         return allDepartments.filter(d => d.id === 'nursing');
       default:
