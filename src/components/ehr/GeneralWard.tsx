@@ -168,6 +168,8 @@ export function GeneralWard() {
   });
 
   const [progressNote, setProgressNote] = useState("");
+  const [fdarNote, setFdarNote] = useState({ focus: "", data: "", action: "", response: "" });
+  const [showFdarModal, setShowFdarModal] = useState(false);
   const [prescription, setPrescription] = useState({ medication: "", dosage: "", frequency: "OD", duration: "", instructions: "" });
   const [labTestName, setLabTestName] = useState("");
   const [newAdmit, setNewAdmit] = useState({ roomNumber: "", bedNumber: "", admittingPhysician: "", admissionDiagnosis: "" });
@@ -290,6 +292,27 @@ export function GeneralWard() {
     updatePatient(updatedPatient);
     setShowProgressModal(false);
     setProgressNote("");
+  };
+
+  const handleSaveFdar = () => {
+    if (!selectedPatient || !fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response) return;
+    const noteEntry: NotesEntry = {
+      id: generateId(),
+      noteType: 'FDAR',
+      focus: fdarNote.focus,
+      data: fdarNote.data,
+      action: fdarNote.action,
+      response: fdarNote.response,
+      recordedBy: user?.name || 'Unknown',
+      recordedAt: new Date().toISOString()
+    };
+    const updatedPatient: Patient = {
+      ...selectedPatient,
+      nursingNotesHistory: [...(selectedPatient.nursingNotesHistory || []), noteEntry]
+    };
+    updatePatient(updatedPatient);
+    setShowFdarModal(false);
+    setFdarNote({ focus: "", data: "", action: "", response: "" });
   };
 
   const handleOrderLab = () => {
@@ -1125,6 +1148,7 @@ export function GeneralWard() {
                 {canRecordVitals(selectedPatient) ? (
                   <>
                     <button onClick={() => setShowVitalsModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
+                    <button onClick={() => setShowFdarModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">FDAR Notes</button>
                     <button onClick={() => setShowProgressModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Progress Notes</button>
                     <button onClick={() => setShowPainModal(true)} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Pain Assessment</button>
                     <button onClick={() => setShowVisitorModal(true)} className="px-4 py-2 bg-pink-600 text-white rounded-lg text-sm hover:bg-pink-700">Log Visitor</button>
@@ -1157,6 +1181,39 @@ export function GeneralWard() {
                   <h4 className="font-semibold mb-3">Vital Signs Trends</h4>
                   <div className="h-40">
                     <VitalSignsChart history={selectedPatient.vitalSignsHistory} />
+                  </div>
+                </div>
+              )}
+
+              {(isStaffNurse || isChargeNurse) && selectedPatient.nursingNotesHistory?.some(n => n.noteType === 'FDAR') && (
+                <div className="p-4 border border-slate-200 rounded-lg">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    FDAR Notes
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedPatient.nursingNotesHistory
+                      .filter(n => n.noteType === 'FDAR')
+                      .sort((a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime())
+                      .map((note, idx) => (
+                        <div key={note.id || idx} className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">FDAR NOTE</span>
+                            <span className="text-xs text-slate-400">
+                              {note.recordedAt ? new Date(note.recordedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' – ' + new Date(note.recordedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <p><span className="text-slate-500 font-medium">Focus:</span> {note.focus}</p>
+                            <p><span className="text-slate-500 font-medium">Data:</span> {note.data}</p>
+                            <p><span className="text-slate-500 font-medium">Action:</span> {note.action}</p>
+                            <p><span className="text-slate-500 font-medium">Response:</span> {note.response}</p>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-2">By: {note.recordedBy}</p>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
@@ -1391,6 +1448,63 @@ export function GeneralWard() {
             <div className="flex gap-3 pt-4">
               <button onClick={() => setShowProgressModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
               <button onClick={handleSaveProgress} disabled={!progressNote} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFdarModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">FDAR Notes - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Focus</label>
+                <input 
+                  type="text" 
+                  placeholder="What is the main concern?" 
+                  value={fdarNote.focus} 
+                  onChange={(e) => setFdarNote({...fdarNote, focus: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+                <textarea 
+                  placeholder="What did you observe/measure?" 
+                  value={fdarNote.data} 
+                  onChange={(e) => setFdarNote({...fdarNote, data: e.target.value})} 
+                  className="w-full h-20 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Action</label>
+                <textarea 
+                  placeholder="What nursing intervention was performed?" 
+                  value={fdarNote.action} 
+                  onChange={(e) => setFdarNote({...fdarNote, action: e.target.value})} 
+                  className="w-full h-20 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Response</label>
+                <textarea 
+                  placeholder="Patient response to intervention?" 
+                  value={fdarNote.response} 
+                  onChange={(e) => setFdarNote({...fdarNote, response: e.target.value})} 
+                  className="w-full h-20 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowFdarModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button 
+                  onClick={handleSaveFdar} 
+                  disabled={!fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response} 
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Add FDAR Entry
+                </button>
+              </div>
             </div>
           </div>
         </div>
