@@ -792,10 +792,12 @@ export function GeneralWard() {
           { id: 'equipment', label: 'Equipment' },
           { id: 'handover', label: 'Handover Log' },
         ] : isStaffNurse ? [
+          { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'My Patients' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'handover', label: 'Handover Log' },
         ] : isDoctor ? [
+          { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
           { id: 'rounds', label: 'Daily Rounds' },
           { id: 'incidents', label: 'Incidents' },
