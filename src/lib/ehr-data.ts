@@ -461,11 +461,14 @@ export interface NotesEntry {
   timestamp?: string;
   recordedAt?: string;
   recordedBy: string;
-  noteType?: 'FDAR' | 'progress';
+  noteType?: 'FDAR' | 'progress' | 'doctor';
   focus?: string;
   data?: string;
   action?: string;
   response?: string;
+  title?: string;
+  clinicalImpression?: string;
+  plan?: string;
 }
 
 export interface Medication {

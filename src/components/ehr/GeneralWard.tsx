@@ -170,6 +170,8 @@ export function GeneralWard() {
   const [progressNote, setProgressNote] = useState("");
   const [fdarNote, setFdarNote] = useState({ focus: "", data: "", action: "", response: "" });
   const [showFdarModal, setShowFdarModal] = useState(false);
+  const [showDoctorNotesModal, setShowDoctorNotesModal] = useState(false);
+  const [doctorNote, setDoctorNote] = useState({ title: "", content: "", clinicalImpression: "", plan: "" });
   const [prescription, setPrescription] = useState({ medication: "", dosage: "", frequency: "OD", duration: "", instructions: "" });
   const [labTestName, setLabTestName] = useState("");
   const [newAdmit, setNewAdmit] = useState({ roomNumber: "", bedNumber: "", admittingPhysician: "", admissionDiagnosis: "" });
@@ -313,6 +315,27 @@ export function GeneralWard() {
     updatePatient(updatedPatient);
     setShowFdarModal(false);
     setFdarNote({ focus: "", data: "", action: "", response: "" });
+  };
+
+  const handleSaveDoctorNote = () => {
+    if (!selectedPatient || !doctorNote.content) return;
+    const noteEntry: NotesEntry = {
+      id: generateId(),
+      noteType: 'doctor',
+      title: doctorNote.title,
+      content: doctorNote.content,
+      clinicalImpression: doctorNote.clinicalImpression,
+      plan: doctorNote.plan,
+      recordedBy: user?.name || 'Unknown',
+      recordedAt: new Date().toISOString()
+    };
+    const updatedPatient: Patient = {
+      ...selectedPatient,
+      nursingNotesHistory: [...(selectedPatient.nursingNotesHistory || []), noteEntry]
+    };
+    updatePatient(updatedPatient);
+    setShowDoctorNotesModal(false);
+    setDoctorNote({ title: "", content: "", clinicalImpression: "", plan: "" });
   };
 
   const handleOrderLab = () => {
@@ -1060,13 +1083,10 @@ export function GeneralWard() {
               <div className="flex flex-wrap gap-2">
                 {isDoctor && (
                   <>
-                    <button onClick={() => setShowPrescribeModal(true)} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700">Prescribe</button>
                     <button onClick={() => setShowMedicationOrderModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Medication Order</button>
                     <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
-                    <button onClick={() => setShowRoundingModal(true)} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Daily Round</button>
-                    <button onClick={() => setShowVitalsModal(true)} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Record Vitals</button>
                     <button onClick={() => setShowDiagnosisModal(true)} className="px-3 py-2 bg-rose-600 text-white rounded-lg text-sm hover:bg-rose-700">Add Diagnosis</button>
-                    <button onClick={() => setShowDietModal(true)} className="px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Update Diet</button>
+                    <button onClick={() => setShowDoctorNotesModal(true)} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Doctor's Notes</button>
                   </>
                 )}
                 {isChargeNurse && (
@@ -1145,7 +1165,7 @@ export function GeneralWard() {
               </div>
 
               <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                {canRecordVitals(selectedPatient) ? (
+                {(isStaffNurse || isChargeNurse) && canRecordVitals(selectedPatient) ? (
                   <>
                     <button onClick={() => setShowVitalsModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Record Vitals</button>
                     <button onClick={() => setShowFdarModal(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">FDAR Notes</button>
@@ -1291,6 +1311,38 @@ export function GeneralWard() {
                               <p><span className="text-slate-500 font-medium">Data:</span> {note.data}</p>
                               <p><span className="text-slate-500 font-medium">Action:</span> {note.action}</p>
                               <p><span className="text-slate-500 font-medium">Response:</span> {note.response}</p>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2">By: {note.recordedBy}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedPatient.nursingNotesHistory?.some(n => n.noteType === 'doctor') && (
+                  <div className="p-4 border border-slate-200 rounded-lg">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Doctor's Notes
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedPatient.nursingNotesHistory
+                        .filter(n => n.noteType === 'doctor')
+                        .sort((a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime())
+                        .map((note, idx) => (
+                          <div key={note.id || idx} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex justify-between items-start mb-2">
+                              {note.title && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">{note.title}</span>}
+                              <span className="text-xs text-slate-400">
+                                {note.recordedAt ? new Date(note.recordedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' – ' + new Date(note.recordedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''}
+                              </span>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              {note.content && <p><span className="text-slate-500 font-medium">Note:</span> {note.content}</p>}
+                              {note.clinicalImpression && <p><span className="text-slate-500 font-medium">Clinical Impression:</span> {note.clinicalImpression}</p>}
+                              {note.plan && <p><span className="text-slate-500 font-medium">Plan:</span> {note.plan}</p>}
                             </div>
                             <p className="text-xs text-slate-400 mt-2">By: {note.recordedBy}</p>
                           </div>
@@ -1512,10 +1564,67 @@ export function GeneralWard() {
                 <button onClick={() => setShowFdarModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
                 <button 
                   onClick={handleSaveFdar} 
-                  disabled={!fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response} 
+                  disabled={!fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response || isDoctor} 
                   className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   Add FDAR Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDoctorNotesModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Doctor's Notes - {selectedPatient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title (Optional)</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g., Morning Review" 
+                  value={doctorNote.title} 
+                  onChange={(e) => setDoctorNote({...doctorNote, title: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Note Content</label>
+                <textarea 
+                  placeholder="Clinical notes..." 
+                  value={doctorNote.content} 
+                  onChange={(e) => setDoctorNote({...doctorNote, content: e.target.value})} 
+                  className="w-full h-24 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Clinical Impression (Optional)</label>
+                <textarea 
+                  placeholder="Patient's clinical status..." 
+                  value={doctorNote.clinicalImpression} 
+                  onChange={(e) => setDoctorNote({...doctorNote, clinicalImpression: e.target.value})} 
+                  className="w-full h-16 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Plan (Optional)</label>
+                <textarea 
+                  placeholder="Treatment plan..." 
+                  value={doctorNote.plan} 
+                  onChange={(e) => setDoctorNote({...doctorNote, plan: e.target.value})} 
+                  className="w-full h-16 px-3 py-2 border rounded-lg" 
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowDoctorNotesModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button 
+                  onClick={handleSaveDoctorNote} 
+                  disabled={!doctorNote.content} 
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Save Note
                 </button>
               </div>
             </div>
