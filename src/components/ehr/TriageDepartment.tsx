@@ -28,11 +28,39 @@ export function TriageDepartment() {
   const [showTriageForm, setShowTriageForm] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [newPatientForm, setNewPatientForm] = useState({
-    name: "", age: "", gender: "Male" as "Male" | "Female", phone: "", chiefComplaint: "",
-    height: "", weight: "", bloodType: "Unknown"
+    firstName: "", middleName: "", lastName: "",
+    dob: "", age: 0,
+    civilStatus: "Single", religion: "", religionOther: "",
+    phone: "", email: "", streetAddress: "", city: "", province: "",
+    emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
+    hypertension: false, diabetes: false, asthma: false, heartDisease: false,
+    kidneyDisease: false, stroke: false, tuberculosis: false, cancer: false,
+    arthritis: false, thyroidDisorder: false, conditionsOther: "",
+    allergyPenicillin: false, allergySulfa: false, allergyAspirin: false, allergyNsaids: false,
+    allergySeafood: false, allergyNuts: false, allergyEggs: false, allergyMilk: false,
+    allergyDust: false, allergyPollen: false, allergiesOther: "",
+    currentMedications: "", pastSurgeries: "",
+    smoking: "Non-smoker", alcoholUse: "None", occupation: "",
+    hasInsurance: false, insuranceProvider: "", policyNumber: "", memberId: "",
+    gender: "Male" as "Male" | "Female",
+    height: "", weight: "", chiefComplaint: "",
+    bloodType: "Unknown"
   });
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
+
+  const calculateAge = (dob: string) => {
+    if (!dob) return 0;
+    const birthDate = new Date(dob);
+    const today = new Date();
+    if (birthDate > today) return 0;
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   const pendingTriagePatients = patients.filter(p => 
     p.department === 'triage' && p.triageStatus !== 'triaged'
@@ -165,18 +193,48 @@ export function TriageDepartment() {
   };
 
   const handleRegisterPatient = () => {
-    if (!newPatientForm.name || !newPatientForm.age) return;
+    if (!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone) return;
     const now = new Date().toISOString();
+    const calculatedAge = calculateAge(newPatientForm.dob);
+    
+    const medicalConditions: string[] = [];
+    if (newPatientForm.hypertension) medicalConditions.push("Hypertension");
+    if (newPatientForm.diabetes) medicalConditions.push("Diabetes");
+    if (newPatientForm.asthma) medicalConditions.push("Asthma");
+    if (newPatientForm.heartDisease) medicalConditions.push("Heart Disease");
+    if (newPatientForm.kidneyDisease) medicalConditions.push("Kidney Disease");
+    if (newPatientForm.stroke) medicalConditions.push("Stroke");
+    if (newPatientForm.tuberculosis) medicalConditions.push("Tuberculosis");
+    if (newPatientForm.cancer) medicalConditions.push("Cancer");
+    if (newPatientForm.arthritis) medicalConditions.push("Arthritis");
+    if (newPatientForm.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
+    if (newPatientForm.conditionsOther) medicalConditions.push(newPatientForm.conditionsOther);
+
+    const allergiesList: string[] = [];
+    if (newPatientForm.allergyPenicillin) allergiesList.push("Penicillin");
+    if (newPatientForm.allergySulfa) allergiesList.push("Sulfa Drugs");
+    if (newPatientForm.allergyAspirin) allergiesList.push("Aspirin");
+    if (newPatientForm.allergyNsaids) allergiesList.push("NSAIDs");
+    if (newPatientForm.allergySeafood) allergiesList.push("Seafood");
+    if (newPatientForm.allergyNuts) allergiesList.push("Nuts");
+    if (newPatientForm.allergyEggs) allergiesList.push("Eggs");
+    if (newPatientForm.allergyMilk) allergiesList.push("Milk");
+    if (newPatientForm.allergyDust) allergiesList.push("Dust");
+    if (newPatientForm.allergyPollen) allergiesList.push("Pollen");
+    if (newPatientForm.allergiesOther) allergiesList.push(newPatientForm.allergiesOther);
+
+    const fullName = `${newPatientForm.firstName} ${newPatientForm.middleName} ${newPatientForm.lastName}`.trim();
+    
     const patient: Patient = {
       id: generateId(),
-      name: newPatientForm.name,
-      age: parseInt(newPatientForm.age),
+      name: fullName,
+      age: calculatedAge,
       gender: newPatientForm.gender,
-      dob: '1990-01-01',
+      dob: newPatientForm.dob,
       phone: newPatientForm.phone,
-      address: '',
+      address: `${newPatientForm.streetAddress}, ${newPatientForm.city}, ${newPatientForm.province}`.trim(),
       bloodType: newPatientForm.bloodType,
-      allergies: [],
+      allergies: allergiesList,
       status: 'waiting',
       department: 'triage',
       triageStatus: 'pending',
@@ -187,6 +245,10 @@ export function TriageDepartment() {
       registrationSource: 'TRIAGE',
       height: newPatientForm.height ? parseFloat(newPatientForm.height) : undefined,
       weight: newPatientForm.weight ? parseFloat(newPatientForm.weight) : undefined,
+      religion: newPatientForm.religion === 'Other' ? newPatientForm.religionOther : newPatientForm.religion,
+      email: newPatientForm.email,
+      emergencyContact: `${newPatientForm.emergencyName} (${newPatientForm.emergencyRelationship}) - ${newPatientForm.emergencyPhone}`,
+      emergencyPhone: newPatientForm.emergencyPhone,
       vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now },
       vitalSignsHistory: [],
       notesHistory: [],
@@ -203,7 +265,25 @@ export function TriageDepartment() {
       timestamp: now
     });
     setShowRegistrationForm(false);
-    setNewPatientForm({ name: "", age: "", gender: "Male", phone: "", chiefComplaint: "", height: "", weight: "", bloodType: "Unknown" });
+    setNewPatientForm({
+      firstName: "", middleName: "", lastName: "",
+      dob: "", age: 0,
+      civilStatus: "Single", religion: "", religionOther: "",
+      phone: "", email: "", streetAddress: "", city: "", province: "",
+      emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
+      hypertension: false, diabetes: false, asthma: false, heartDisease: false,
+      kidneyDisease: false, stroke: false, tuberculosis: false, cancer: false,
+      arthritis: false, thyroidDisorder: false, conditionsOther: "",
+      allergyPenicillin: false, allergySulfa: false, allergyAspirin: false, allergyNsaids: false,
+      allergySeafood: false, allergyNuts: false, allergyEggs: false, allergyMilk: false,
+      allergyDust: false, allergyPollen: false, allergiesOther: "",
+      currentMedications: "", pastSurgeries: "",
+      smoking: "Non-smoker", alcoholUse: "None", occupation: "",
+      hasInsurance: false, insuranceProvider: "", policyNumber: "", memberId: "",
+      gender: "Male",
+      height: "", weight: "", chiefComplaint: "",
+      bloodType: "Unknown"
+    });
   };
 
   const autoAssignPriority = () => {
@@ -645,95 +725,226 @@ export function TriageDepartment() {
 
       {showRegistrationForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-3xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">New Patient Registration (Triage)</h3>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Personal Information */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Patient Name *</label>
-                <input 
-                  type="text" 
-                  value={newPatientForm.name} 
-                  onChange={(e) => setNewPatientForm({...newPatientForm, name: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg" 
-                  placeholder="Full Name"
-                />
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Personal Information</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">First Name *</label>
+                    <input type="text" value={newPatientForm.firstName} onChange={(e) => setNewPatientForm({...newPatientForm, firstName: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="First Name" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Middle Name</label>
+                    <input type="text" value={newPatientForm.middleName} onChange={(e) => setNewPatientForm({...newPatientForm, middleName: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Middle Name" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Last Name *</label>
+                    <input type="text" value={newPatientForm.lastName} onChange={(e) => setNewPatientForm({...newPatientForm, lastName: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Last Name" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Date of Birth *</label>
+                    <input type="date" value={newPatientForm.dob} onChange={(e) => setNewPatientForm({...newPatientForm, dob: e.target.value, age: calculateAge(e.target.value)})} className="w-full px-2 py-1.5 border rounded text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Age</label>
+                    <input type="number" value={newPatientForm.age || ''} onChange={(e) => setNewPatientForm({...newPatientForm, age: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Age" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Sex</label>
+                    <select value={newPatientForm.gender} onChange={(e) => setNewPatientForm({...newPatientForm, gender: e.target.value as "Male" | "Female"})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Civil Status</label>
+                    <select value={newPatientForm.civilStatus} onChange={(e) => setNewPatientForm({...newPatientForm, civilStatus: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Widowed">Widowed</option>
+                      <option value="Separated">Separated</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Annulled">Annulled</option>
+                      <option value="Cohabiting">Cohabiting</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Religion</label>
+                    <select value={newPatientForm.religion} onChange={(e) => setNewPatientForm({...newPatientForm, religion: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select Religion</option>
+                      <option value="Roman Catholic">Roman Catholic</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
+                      <option value="Protestant">Protestant/Christian</option>
+                      <option value="Born Again Christian">Born Again Christian</option>
+                      <option value="Seventh-day Adventist">Seventh-day Adventist</option>
+                      <option value="Jehovah's Witness">Jehovah&apos;s Witness</option>
+                      <option value="Buddhism">Buddhism</option>
+                      <option value="Hinduism">Hinduism</option>
+                      <option value="None">None</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                {newPatientForm.religion === 'Other' && (
+                  <div className="mt-2">
+                    <input type="text" value={newPatientForm.religionOther} onChange={(e) => setNewPatientForm({...newPatientForm, religionOther: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Specify religion" />
+                  </div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Age *</label>
-                  <input 
-                    type="number" 
-                    value={newPatientForm.age} 
-                    onChange={(e) => setNewPatientForm({...newPatientForm, age: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg" 
-                    placeholder="Age"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sex</label>
-                  <select 
-                    value={newPatientForm.gender} 
-                    onChange={(e) => setNewPatientForm({...newPatientForm, gender: e.target.value as "Male" | "Female"})} 
-                    className="w-full px-3 py-2 border rounded-lg"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Height (cm)</label>
-                  <input 
-                    type="number" 
-                    value={newPatientForm.height} 
-                    onChange={(e) => setNewPatientForm({...newPatientForm, height: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg" 
-                    placeholder="e.g., 170"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Weight (kg)</label>
-                  <input 
-                    type="number" 
-                    value={newPatientForm.weight} 
-                    onChange={(e) => setNewPatientForm({...newPatientForm, weight: e.target.value})} 
-                    className="w-full px-3 py-2 border rounded-lg" 
-                    placeholder="e.g., 70"
-                  />
-                </div>
-              </div>
+
+              {/* Contact Information */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                <input 
-                  type="text" 
-                  value={newPatientForm.phone} 
-                  onChange={(e) => setNewPatientForm({...newPatientForm, phone: e.target.value})} 
-                  className="w-full px-3 py-2 border rounded-lg" 
-                  placeholder="Phone number"
-                />
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Contact Information</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Phone Number *</label>
+                    <input type="text" value={newPatientForm.phone} onChange={(e) => setNewPatientForm({...newPatientForm, phone: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Phone" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+                    <input type="email" value={newPatientForm.email} onChange={(e) => setNewPatientForm({...newPatientForm, email: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Email" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Home Address</label>
+                  <input type="text" value={newPatientForm.streetAddress} onChange={(e) => setNewPatientForm({...newPatientForm, streetAddress: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Street Address" />
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <input type="text" value={newPatientForm.city} onChange={(e) => setNewPatientForm({...newPatientForm, city: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="City" />
+                    <input type="text" value={newPatientForm.province} onChange={(e) => setNewPatientForm({...newPatientForm, province: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Province" />
+                  </div>
+                </div>
               </div>
+
+              {/* Emergency Contact */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Chief Complaint / Reason for Visit</label>
-                <textarea 
-                  value={newPatientForm.chiefComplaint} 
-                  onChange={(e) => setNewPatientForm({...newPatientForm, chiefComplaint: e.target.value})} 
-                  className="w-full h-20 px-3 py-2 border rounded-lg" 
-                  placeholder="Describe the patient's condition..."
-                />
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Emergency Contact</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Contact Name</label>
+                    <input type="text" value={newPatientForm.emergencyName} onChange={(e) => setNewPatientForm({...newPatientForm, emergencyName: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Full Name" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Relationship</label>
+                    <select value={newPatientForm.emergencyRelationship} onChange={(e) => setNewPatientForm({...newPatientForm, emergencyRelationship: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select</option>
+                      <option value="Parent">Parent</option>
+                      <option value="Spouse">Spouse</option>
+                      <option value="Sibling">Sibling</option>
+                      <option value="Child">Child</option>
+                      <option value="Relative">Relative</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Guardian">Guardian</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Phone</label>
+                  <input type="text" value={newPatientForm.emergencyPhone} onChange={(e) => setNewPatientForm({...newPatientForm, emergencyPhone: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Emergency Contact Phone" />
+                </div>
               </div>
+
+              {/* Medical Background */}
+              <div>
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Medical Background</h4>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-2">Medical Conditions</label>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.hypertension} onChange={(e) => setNewPatientForm({...newPatientForm, hypertension: e.target.checked})} /> Hypertension</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.diabetes} onChange={(e) => setNewPatientForm({...newPatientForm, diabetes: e.target.checked})} /> Diabetes</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.asthma} onChange={(e) => setNewPatientForm({...newPatientForm, asthma: e.target.checked})} /> Asthma</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.heartDisease} onChange={(e) => setNewPatientForm({...newPatientForm, heartDisease: e.target.checked})} /> Heart Disease</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.kidneyDisease} onChange={(e) => setNewPatientForm({...newPatientForm, kidneyDisease: e.target.checked})} /> Kidney Disease</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.stroke} onChange={(e) => setNewPatientForm({...newPatientForm, stroke: e.target.checked})} /> Stroke</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.tuberculosis} onChange={(e) => setNewPatientForm({...newPatientForm, tuberculosis: e.target.checked})} /> TB</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.cancer} onChange={(e) => setNewPatientForm({...newPatientForm, cancer: e.target.checked})} /> Cancer</label>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-2">Allergies</label>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyPenicillin} onChange={(e) => setNewPatientForm({...newPatientForm, allergyPenicillin: e.target.checked})} /> Penicillin</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergySulfa} onChange={(e) => setNewPatientForm({...newPatientForm, allergySulfa: e.target.checked})} /> Sulfa</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyAspirin} onChange={(e) => setNewPatientForm({...newPatientForm, allergyAspirin: e.target.checked})} /> Aspirin</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyNsaids} onChange={(e) => setNewPatientForm({...newPatientForm, allergyNsaids: e.target.checked})} /> NSAIDs</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergySeafood} onChange={(e) => setNewPatientForm({...newPatientForm, allergySeafood: e.target.checked})} /> Seafood</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyNuts} onChange={(e) => setNewPatientForm({...newPatientForm, allergyNuts: e.target.checked})} /> Nuts</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyEggs} onChange={(e) => setNewPatientForm({...newPatientForm, allergyEggs: e.target.checked})} /> Eggs</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyMilk} onChange={(e) => setNewPatientForm({...newPatientForm, allergyMilk: e.target.checked})} /> Milk</label>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Current Medications</label>
+                  <textarea value={newPatientForm.currentMedications} onChange={(e) => setNewPatientForm({...newPatientForm, currentMedications: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm h-16" placeholder="List current medications" />
+                </div>
+              </div>
+
+              {/* Vitals & Chief Complaint - Keep from original */}
+              <div>
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Triage Information</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Height (cm)</label>
+                    <input type="number" value={newPatientForm.height} onChange={(e) => setNewPatientForm({...newPatientForm, height: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 170" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Weight (kg)</label>
+                    <input type="number" value={newPatientForm.weight} onChange={(e) => setNewPatientForm({...newPatientForm, weight: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 70" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Chief Complaint / Reason for Visit</label>
+                  <textarea value={newPatientForm.chiefComplaint} onChange={(e) => setNewPatientForm({...newPatientForm, chiefComplaint: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm h-20" placeholder="Describe the patient's condition..." />
+                </div>
+              </div>
+
+              {/* Insurance */}
+              <div>
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Insurance Information</h4>
+                <div className="flex items-center gap-2 mb-3">
+                  <input type="checkbox" checked={newPatientForm.hasInsurance} onChange={(e) => setNewPatientForm({...newPatientForm, hasInsurance: e.target.checked})} />
+                  <span className="text-sm">With Insurance</span>
+                </div>
+                {newPatientForm.hasInsurance && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Provider</label>
+                      <select value={newPatientForm.insuranceProvider} onChange={(e) => setNewPatientForm({...newPatientForm, insuranceProvider: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                        <option value="">Select</option>
+                        <option value="PhilHealth">PhilHealth</option>
+                        <option value="Maxicare">Maxicare</option>
+                        <option value="Medicard">Medicard</option>
+                        <option value="Intellicare">Intellicare</option>
+                        <option value="Cocolife">Cocolife Healthcare</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Policy Number</label>
+                      <input type="text" value={newPatientForm.policyNumber} onChange={(e) => setNewPatientForm({...newPatientForm, policyNumber: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Member ID</label>
+                      <input type="text" value={newPatientForm.memberId} onChange={(e) => setNewPatientForm({...newPatientForm, memberId: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-3 pt-4">
-                <button 
-                  onClick={() => setShowRegistrationForm(false)} 
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
-                >
+                <button onClick={() => setShowRegistrationForm(false)} className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
                   Cancel
                 </button>
-                <button 
-                  onClick={handleRegisterPatient} 
-                  disabled={!newPatientForm.name || !newPatientForm.age} 
-                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                >
+                <button onClick={handleRegisterPatient} disabled={!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">
                   Register Patient
                 </button>
               </div>

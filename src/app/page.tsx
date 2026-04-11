@@ -12,6 +12,8 @@ export default function LandingPage() {
   const [showConditionsOther, setShowConditionsOther] = useState(false);
   const [showAllergiesOther, setShowAllergiesOther] = useState(false);
   const [showReligionOther, setShowReligionOther] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -298,9 +300,6 @@ export default function LandingPage() {
   const labelClass = "block text-sm font-medium text-slate-700 mb-1";
   const sectionClass = "bg-white rounded-lg p-6 mb-6";
   const sectionTitleClass = "text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200";
-
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [feedbackForm, setFeedbackForm] = useState({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
 
   const handleFeedbackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
