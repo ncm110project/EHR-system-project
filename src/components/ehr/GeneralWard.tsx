@@ -751,15 +751,14 @@ export function GeneralWard() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || getWorkflowStatus(p) === statusFilter;
+    const workflowStatus = getWorkflowStatus(p);
     
     if (isStaffNurse) {
-      const workflowStatus = getWorkflowStatus(p);
       const isAssignedToMe = p.assignedNurseId === user?.id;
+      if (workflowStatus === 'pending_transfer') {
+        return matchesSearch && matchesStatus;
+      }
       return matchesSearch && matchesStatus && isAssignedToMe && (workflowStatus === 'admitted' || workflowStatus === 'active');
-    }
-    
-    if (isStaffNurse && getWorkflowStatus(p) === 'pending_transfer') {
-      return false;
     }
     
     return matchesSearch && matchesStatus;
@@ -966,7 +965,17 @@ export function GeneralWard() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                    <div className="flex gap-2">
+                      {isDoctor && getWorkflowStatus(patient) === 'pending_transfer' && !patient.transferApproved && (
+                        <button 
+                          onClick={() => { setSelectedPatient(patient); setShowTransferApprovalModal(true); }} 
+                          className="text-amber-600 hover:text-amber-700 text-sm font-medium"
+                        >
+                          Approve Transfer
+                        </button>
+                      )}
+                      <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                    </div>
                   </td>
                 </tr>
                   );
