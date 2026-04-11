@@ -293,6 +293,9 @@ export interface Patient {
   assignedNurse?: string;
   assignedNurseId?: string;
   codeStatus?: 'full' | 'dnr' | 'comfort' | 'dna';
+  transferApproved?: boolean;
+  transferApprovedBy?: string;
+  transferApprovedAt?: string;
 }
 
 export interface WardBed {
@@ -568,7 +571,7 @@ export interface NurseNotification {
 
 export interface Activity {
   id: string;
-  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals' | 'notes' | 'lab-order' | 'ward-admit' | 'medication-order' | 'task-created' | 'task-completed' | 'vitals-alert';
+  type: 'admission' | 'discharge' | 'transfer' | 'lab-result' | 'prescription' | 'triage' | 'nurse-assign' | 'vitals' | 'notes' | 'lab-order' | 'ward-admit' | 'medication-order' | 'task-created' | 'task-completed' | 'vitals-alert' | 'transfer-approval' | 'transfer-rejected';
   department: Department;
   patientId?: string;
   patientName?: string;

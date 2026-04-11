@@ -214,6 +214,33 @@ export function GeneralWard() {
   const pendingPatients = [...pendingAdmissionPatients, ...pendingTransferPatients];
   const currentPatients = [...admittedPatients, ...activePatients];
 
+  const [showTransferApprovalModal, setShowTransferApprovalModal] = useState(false);
+
+  const handleApproveTransfer = () => {
+    if (!selectedPatient) return;
+    
+    const updatedPatient: Patient = {
+      ...selectedPatient,
+      transferApproved: true,
+      transferApprovedBy: user?.name,
+      transferApprovedAt: new Date().toISOString()
+    };
+    
+    updatePatient(updatedPatient);
+    addActivity({
+      id: generateId(),
+      type: 'transfer-approval',
+      department: 'general-ward',
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      description: `Transfer to General Ward approved by ${user?.name}`,
+      timestamp: new Date().toISOString()
+    });
+    
+    setShowTransferApprovalModal(false);
+    addToast("Transfer approved successfully", "success");
+  };
+
   const handleAdmitPatient = () => {
     if (!selectedPatient || !newAdmit.roomNumber || !newAdmit.bedNumber) return;
     
@@ -724,6 +751,17 @@ export function GeneralWard() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || getWorkflowStatus(p) === statusFilter;
+    
+    if (isStaffNurse) {
+      const workflowStatus = getWorkflowStatus(p);
+      const isAssignedToMe = p.assignedNurseId === user?.id;
+      return matchesSearch && matchesStatus && isAssignedToMe && (workflowStatus === 'admitted' || workflowStatus === 'active');
+    }
+    
+    if (isStaffNurse && getWorkflowStatus(p) === 'pending_transfer') {
+      return false;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -1723,28 +1761,74 @@ export function GeneralWard() {
         </div>
       )}
 
-      {showAdmitModal && (
+      {showAdmitModal && selectedPatient && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Admit Patient to General Ward</h3>
-            <div className="space-y-3">
-              <select value={newAdmit.roomNumber} onChange={(e) => setNewAdmit({...newAdmit, roomNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
-                <option value="">Select Room</option>
-                {[...new Set(beds.filter(b => b.status === 'available').map(b => b.roomNumber))].map(r => <option key={r} value={r}>Room {r}</option>)}
-              </select>
-              <select value={newAdmit.bedNumber} onChange={(e) => setNewAdmit({...newAdmit, bedNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
-                <option value="">Select Bed</option>
-                {beds.filter(b => b.status === 'available' && b.roomNumber === newAdmit.roomNumber).map(b => <option key={b.bedNumber} value={b.bedNumber}>Bed {b.bedNumber}</option>)}
-              </select>
-              <select value={newAdmit.admittingPhysician} onChange={(e) => setNewAdmit({...newAdmit, admittingPhysician: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
-                <option value="">Select Admitting Doctor</option>
-                {wardDoctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-              </select>
-              <input type="text" placeholder="Admission Diagnosis" value={newAdmit.admissionDiagnosis} onChange={(e) => setNewAdmit({...newAdmit, admissionDiagnosis: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
-              <div className="flex gap-3 pt-3">
-                <button onClick={() => setShowAdmitModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
-                <button onClick={handleAdmitPatient} disabled={!newAdmit.roomNumber || !newAdmit.bedNumber} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">Admit</button>
+            {selectedPatient.wardWorkflowStatus === 'pending_transfer' && !selectedPatient.transferApproved ? (
+              <div className="text-center py-4">
+                <p className="text-amber-600 mb-4">This patient is pending transfer approval.</p>
+                <p className="text-sm text-slate-500 mb-4">A doctor must approve the transfer before the patient can be admitted.</p>
+                {isDoctor && (
+                  <button 
+                    onClick={() => setShowTransferApprovalModal(true)} 
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                  >
+                    Review Transfer
+                  </button>
+                )}
               </div>
+            ) : (
+              <div className="space-y-3">
+                <select value={newAdmit.roomNumber} onChange={(e) => setNewAdmit({...newAdmit, roomNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Room</option>
+                  {[...new Set(beds.filter(b => b.status === 'available').map(b => b.roomNumber))].map(r => <option key={r} value={r}>Room {r}</option>)}
+                </select>
+                <select value={newAdmit.bedNumber} onChange={(e) => setNewAdmit({...newAdmit, bedNumber: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Bed</option>
+                  {beds.filter(b => b.status === 'available' && b.roomNumber === newAdmit.roomNumber).map(b => <option key={b.bedNumber} value={b.bedNumber}>Bed {b.bedNumber}</option>)}
+                </select>
+                <select value={newAdmit.admittingPhysician} onChange={(e) => setNewAdmit({...newAdmit, admittingPhysician: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select Admitting Doctor</option>
+                  {wardDoctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                </select>
+                <input type="text" placeholder="Admission Diagnosis" value={newAdmit.admissionDiagnosis} onChange={(e) => setNewAdmit({...newAdmit, admissionDiagnosis: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                <div className="flex gap-3 pt-3">
+                  <button onClick={() => setShowAdmitModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                  <button onClick={handleAdmitPatient} disabled={!newAdmit.roomNumber || !newAdmit.bedNumber} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">Admit</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showTransferApprovalModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Transfer Approval - {selectedPatient.name}</h3>
+            <div className="space-y-3 mb-4">
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">Patient ID</p>
+                <p className="font-medium">{selectedPatient.id}</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">Age/Gender</p>
+                <p className="font-medium">{selectedPatient.age}y {selectedPatient.gender}</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">Diagnosis</p>
+                <p className="font-medium">{selectedPatient.admissionDiagnosis || selectedPatient.chiefComplaint || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <p className="text-sm text-slate-500">Transfer From</p>
+                <p className="font-medium">{selectedPatient.department || 'OPD/ER'}</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">Do you approve this transfer to the General Ward?</p>
+            <div className="flex gap-3 pt-3">
+              <button onClick={() => setShowTransferApprovalModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+              <button onClick={handleApproveTransfer} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Approve Transfer</button>
             </div>
           </div>
         </div>
