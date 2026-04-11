@@ -22,10 +22,15 @@ const triageCategories = [
 
 export function TriageDepartment() {
   const { user } = useAuth();
-  const { patients, updatePatient, addActivity, medications } = useEHR();
+  const { patients, updatePatient, addActivity, medications, addPatient } = useEHR();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
   const [showTriageForm, setShowTriageForm] = useState(false);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [newPatientForm, setNewPatientForm] = useState({
+    name: "", age: "", gender: "Male" as "Male" | "Female", phone: "", chiefComplaint: "",
+    height: "", weight: "", bloodType: "Unknown"
+  });
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
 
@@ -159,6 +164,48 @@ export function TriageDepartment() {
     resetTriageForm();
   };
 
+  const handleRegisterPatient = () => {
+    if (!newPatientForm.name || !newPatientForm.age) return;
+    const now = new Date().toISOString();
+    const patient: Patient = {
+      id: generateId(),
+      name: newPatientForm.name,
+      age: parseInt(newPatientForm.age),
+      gender: newPatientForm.gender,
+      dob: '1990-01-01',
+      phone: newPatientForm.phone,
+      address: '',
+      bloodType: newPatientForm.bloodType,
+      allergies: [],
+      status: 'waiting',
+      department: 'triage',
+      triageStatus: 'pending',
+      registrationStatus: 'pending',
+      admissionDate: now.split('T')[0],
+      chiefComplaint: newPatientForm.chiefComplaint,
+      workflowStatus: 'registered',
+      registrationSource: 'TRIAGE',
+      height: newPatientForm.height ? parseFloat(newPatientForm.height) : undefined,
+      weight: newPatientForm.weight ? parseFloat(newPatientForm.weight) : undefined,
+      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now },
+      vitalSignsHistory: [],
+      notesHistory: [],
+      diagnosisHistory: []
+    };
+    addPatient(patient);
+    addActivity({
+      id: generateId(),
+      type: 'admission',
+      department: 'triage',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Patient registered at Triage - ${patient.chiefComplaint || 'Walk-in'}`,
+      timestamp: now
+    });
+    setShowRegistrationForm(false);
+    setNewPatientForm({ name: "", age: "", gender: "Male", phone: "", chiefComplaint: "", height: "", weight: "", bloodType: "Unknown" });
+  };
+
   const autoAssignPriority = () => {
     const pain = triageForm.painScore;
     const bp = triageForm.bloodPressure;
@@ -241,6 +288,14 @@ export function TriageDepartment() {
             <span className="text-green-700 font-semibold">{triagedPatients.length}</span>
             <span className="text-green-600 ml-1">Triaged Today</span>
           </div>
+          {isNurse && (
+            <button 
+              onClick={() => setShowRegistrationForm(true)}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+            >
+              + New Patient Registration
+            </button>
+          )}
         </div>
       </div>
 
@@ -581,6 +636,105 @@ export function TriageDepartment() {
                   className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Submit Triage
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRegistrationForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">New Patient Registration (Triage)</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Patient Name *</label>
+                <input 
+                  type="text" 
+                  value={newPatientForm.name} 
+                  onChange={(e) => setNewPatientForm({...newPatientForm, name: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                  placeholder="Full Name"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Age *</label>
+                  <input 
+                    type="number" 
+                    value={newPatientForm.age} 
+                    onChange={(e) => setNewPatientForm({...newPatientForm, age: e.target.value})} 
+                    className="w-full px-3 py-2 border rounded-lg" 
+                    placeholder="Age"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sex</label>
+                  <select 
+                    value={newPatientForm.gender} 
+                    onChange={(e) => setNewPatientForm({...newPatientForm, gender: e.target.value as "Male" | "Female"})} 
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Height (cm)</label>
+                  <input 
+                    type="number" 
+                    value={newPatientForm.height} 
+                    onChange={(e) => setNewPatientForm({...newPatientForm, height: e.target.value})} 
+                    className="w-full px-3 py-2 border rounded-lg" 
+                    placeholder="e.g., 170"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Weight (kg)</label>
+                  <input 
+                    type="number" 
+                    value={newPatientForm.weight} 
+                    onChange={(e) => setNewPatientForm({...newPatientForm, weight: e.target.value})} 
+                    className="w-full px-3 py-2 border rounded-lg" 
+                    placeholder="e.g., 70"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                <input 
+                  type="text" 
+                  value={newPatientForm.phone} 
+                  onChange={(e) => setNewPatientForm({...newPatientForm, phone: e.target.value})} 
+                  className="w-full px-3 py-2 border rounded-lg" 
+                  placeholder="Phone number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Chief Complaint / Reason for Visit</label>
+                <textarea 
+                  value={newPatientForm.chiefComplaint} 
+                  onChange={(e) => setNewPatientForm({...newPatientForm, chiefComplaint: e.target.value})} 
+                  className="w-full h-20 px-3 py-2 border rounded-lg" 
+                  placeholder="Describe the patient's condition..."
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setShowRegistrationForm(false)} 
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleRegisterPatient} 
+                  disabled={!newPatientForm.name || !newPatientForm.age} 
+                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                >
+                  Register Patient
                 </button>
               </div>
             </div>

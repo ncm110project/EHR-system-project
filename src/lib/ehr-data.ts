@@ -279,6 +279,8 @@ export interface Patient {
   activatedAt?: string;
   dischargedAt?: string;
   wardNurse?: string;
+  height?: number;
+  weight?: number;
   nursingNotes?: string;
   nursingNotesHistory?: NotesEntry[];
   dailyProgress?: string;
@@ -292,6 +294,7 @@ export interface Patient {
   visitorLog?: VisitorRecord[];
   assignedNurse?: string;
   assignedNurseId?: string;
+  registrationSource?: 'OPD' | 'TRIAGE';
   codeStatus?: 'full' | 'dnr' | 'comfort' | 'dna';
   transferApproved?: boolean;
   transferApprovedBy?: string;

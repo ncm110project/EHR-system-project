@@ -189,8 +189,7 @@ export default function LandingPage() {
       bloodType: 'Unknown',
       allergies: allergiesList,
       status: 'waiting',
-      department: 'triage',
-      triageStatus: 'pending',
+      department: 'opd',
       registrationStatus: 'pending',
       admissionDate: new Date().toISOString().split('T')[0],
       email: formData.email,
@@ -198,6 +197,7 @@ export default function LandingPage() {
       emergencyPhone: formData.emergencyPhone,
       workflowStatus: 'registered',
       religion: religionValue,
+      registrationSource: 'OPD',
       vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() },
       notes: `Religion: ${religionValue || 'Not specified'}. Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
     };
@@ -299,6 +299,22 @@ export default function LandingPage() {
   const sectionClass = "bg-white rounded-lg p-6 mb-6";
   const sectionTitleClass = "text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200";
 
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
+
+  const handleFeedbackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const existingFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]');
+    localStorage.setItem('patientFeedback', JSON.stringify([...existingFeedback, { 
+      ...feedbackForm, 
+      id: generateId(),
+      dateSubmitted: new Date().toISOString() 
+    }]));
+    setShowFeedbackModal(false);
+    setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
+    alert("Thank you! Your feedback has been submitted.");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900">
       <header className="p-4">
@@ -314,29 +330,83 @@ export default function LandingPage() {
               <p className="text-xs text-slate-400">EHR System</p>
             </div>
           </div>
-          <Link href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
-            Employee Login
-          </Link>
-          <button 
-            onClick={autoFillForm}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
-          >
-            Fill Sample Data
-          </button>
-          <button 
-            onClick={() => { autoFillForm(); setTimeout(() => document.getElementById('submit-btn')?.click(), 100); }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-          >
-            Quick Submit
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowFeedbackModal(true)}
+              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm"
+            >
+              Submit Feedback
+            </button>
+            <Link href="/login" className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+              Employee Login
+            </Link>
+          </div>
         </div>
       </header>
+
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Patient Feedback</h3>
+            <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Your Name (Optional)</label>
+                <input type="text" value={feedbackForm.patientName} onChange={(e) => setFeedbackForm({...feedbackForm, patientName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" placeholder="Anonymous" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Info (Optional)</label>
+                <input type="text" value={feedbackForm.contactInfo} onChange={(e) => setFeedbackForm({...feedbackForm, contactInfo: e.target.value})} className="w-full px-3 py-2 border rounded-lg" placeholder="Phone or email" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Feedback Type</label>
+                <select value={feedbackForm.feedbackType} onChange={(e) => setFeedbackForm({...feedbackForm, feedbackType: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="complaint">Complaint</option>
+                  <option value="suggestion">Suggestion</option>
+                  <option value="compliment">Compliment</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message *</label>
+                <textarea required value={feedbackForm.message} onChange={(e) => setFeedbackForm({...feedbackForm, message: e.target.value})} className="w-full h-32 px-3 py-2 border rounded-lg" placeholder="Your feedback..." />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setShowFeedbackModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Patient Registration</h1>
             <p className="text-slate-300">Please fill out this form accurately and completely</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-teal-600/20 backdrop-blur rounded-xl p-4 border border-teal-500/30">
+              <div className="flex items-center gap-3 mb-2">
+                <svg className="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-1 4h1m1-4v4" /></svg>
+                <h3 className="font-semibold text-teal-300">Outpatient (OPD)</h3>
+              </div>
+              <p className="text-sm text-slate-300">Regular consultations and follow-up appointments</p>
+            </div>
+            <div className="bg-red-600/20 backdrop-blur rounded-xl p-4 border border-red-500/30">
+              <div className="flex items-center gap-3 mb-2">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <h3 className="font-semibold text-red-300">Emergency (ER)</h3>
+              </div>
+              <p className="text-sm text-slate-300">24/7 emergency and urgent care services</p>
+            </div>
+            <div className="bg-blue-600/20 backdrop-blur rounded-xl p-4 border border-blue-500/30">
+              <div className="flex items-center gap-3 mb-2">
+                <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                <h3 className="font-semibold text-blue-300">General Ward</h3>
+              </div>
+              <p className="text-sm text-slate-300">Inpatient care and hospitalization</p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
