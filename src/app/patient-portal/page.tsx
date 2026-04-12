@@ -12,7 +12,19 @@ export default function PatientPortalPage() {
   const router = useRouter();
   const { user, logout, isAuthenticated, isPatient } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("appointments");
-const storedAppointments: Appointment[] = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('appointments') || '[]') : [];
+  const isClient = typeof window !== 'undefined';
+
+  useEffect(() => {
+    if (!isAuthenticated || !isPatient) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isPatient, router]);
+
+  const storedAppointments: Appointment[] = isClient ? JSON.parse(localStorage.getItem('appointments') || '[]') : [];
+
+  if (!isClient) {
+    return null;
+  }
   const patientId = user && 'id' in user ? (user as any).id : '';
   const appointments = storedAppointments.filter((a: Appointment) => a.patientId === patientId);
   const upcomingAppointments = appointments
@@ -43,7 +55,7 @@ const storedAppointments: Appointment[] = typeof window !== 'undefined' ? JSON.p
             </div>
             <div>
               <h1 className="text-lg font-bold">MedConnect Patient Portal</h1>
-              <p className="text-xs text-teal-200">Welcome, {patient.name}</p>
+              <p className="text-xs text-teal-200">Welcome, {patient?.name || 'Patient'}</p>
             </div>
           </div>
           <button onClick={handleLogout} className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors text-sm">
