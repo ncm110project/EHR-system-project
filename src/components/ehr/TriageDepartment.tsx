@@ -972,7 +972,22 @@ export function TriageDepartment() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Pain Score (0-10)</label>
-                    <input type="number" min="0" max="10" value={newPatientForm.vitalsPainScore || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsPainScore: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="0-10" />
+                    <div className="flex gap-1">
+                      {[0,1,2,3,4,5,6,7,8,9,10].map((score) => (
+                        <button
+                          key={score}
+                          type="button"
+                          onClick={() => setNewPatientForm({...newPatientForm, vitalsPainScore: score})}
+                          className={`flex-1 py-1.5 text-xs font-medium rounded border ${
+                            newPatientForm.vitalsPainScore === score
+                              ? 'bg-red-500 text-white border-red-500'
+                              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          {score}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Height (cm)</label>
