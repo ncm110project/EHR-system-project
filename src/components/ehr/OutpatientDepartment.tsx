@@ -593,6 +593,13 @@ export function OutpatientDepartment() {
     });
     
     if (newPatient) {
+      if (selectedPatient) {
+        const updatedOriginalPatient = {
+          ...selectedPatient,
+          hasPatientAccount: true
+        };
+        updatePatient(updatedOriginalPatient);
+      }
       setCreatedPatient(newPatient);
       addActivity({
         id: generateId(),
@@ -618,6 +625,28 @@ export function OutpatientDepartment() {
     });
   };
 
+  const handleOpenCreateAccountFromPatient = (patient: Patient) => {
+    const nameParts = patient.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    setAccountForm({
+      firstName: firstName,
+      lastName: lastName,
+      dob: patient.dob || '',
+      gender: patient.gender || 'Male',
+      phone: patient.phone || '',
+      email: patient.email || '',
+      address: patient.address || '',
+      emergencyName: patient.emergencyContact || '',
+      emergencyPhone: patient.emergencyPhone || '',
+      username: '',
+      password: '',
+      confirmPassword: ''
+    });
+    setSelectedPatient(patient);
+    setShowCreateAccount(true);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -629,17 +658,7 @@ export function OutpatientDepartment() {
             {isNurse ? 'Review patient charts, record vitals and notes' : 'Consult patients and prescribe treatment'}
           </p>
         </div>
-        {isNurse && (
-          <button onClick={() => setShowCreateAccount(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="8.5" cy="7" r="4"></circle>
-              <line x1="20" y1="8" x2="20" y2="14"></line>
-              <line x1="23" y1="11" x2="17" y2="11"></line>
-            </svg>
-            Create Patient Account
-          </button>
-        )}
+
       </div>
 
       {!isNurse && (
@@ -760,7 +779,10 @@ export function OutpatientDepartment() {
           isNurse={isNurse}
           isDoctor={isDoctor}
           medications={medications}
-          onClose={() => setSelectedPatient(null)}
+          onClose={() => {
+            setSelectedPatient(null);
+            setShowCreateAccount(false);
+          }}
           onSaveNurseNotes={handleSaveNurseNotes}
           onSendToDoctor={handleSendToDoctor}
           onOrderLab={handleOrderLab}
@@ -772,6 +794,13 @@ export function OutpatientDepartment() {
           onAddNotes={handleAddNotesForCompleted}
           onAddDiagnosis={handleAddDiagnosisForCompleted}
           onScheduleAppointment={handleScheduleAppointment}
+          onCreateAccount={() => handleOpenCreateAccountFromPatient(selectedPatient)}
+          showCreateAccount={showCreateAccount}
+          accountForm={accountForm}
+          setAccountForm={setAccountForm}
+          onHandleCreatePatientAccount={handleCreatePatientAccount}
+          onCloseCreateAccount={handleCloseAccountModal}
+          checkUsernameExists={checkUsernameExists}
         />
       )}
 
@@ -903,7 +932,14 @@ function PatientDetailModal({
   onAddVitals,
   onAddNotes,
   onAddDiagnosis,
-  onScheduleAppointment
+  onScheduleAppointment,
+  onCreateAccount,
+  showCreateAccount,
+  accountForm,
+  setAccountForm,
+  onHandleCreatePatientAccount,
+  onCloseCreateAccount,
+  checkUsernameExists
 }: { 
   patient: Patient;
   isNurse: boolean;
@@ -921,6 +957,13 @@ function PatientDetailModal({
   onAddNotes?: (patient: Patient, notes: string) => void;
   onAddDiagnosis?: (patient: Patient, diagnosis: string, diagnosisNotes?: string) => void;
   onScheduleAppointment?: (patient: Patient, date: string, time: string, notes: string) => void;
+  onCreateAccount?: () => void;
+  showCreateAccount?: boolean;
+  accountForm?: any;
+  setAccountForm?: (form: any) => void;
+  onHandleCreatePatientAccount?: () => void;
+  onCloseCreateAccount?: () => void;
+  checkUsernameExists?: (username: string) => boolean;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
     bloodPressure: '',
@@ -1043,15 +1086,31 @@ function PatientDetailModal({
             <h3 className="text-xl font-bold">{patient.name}</h3>
             <p className="text-slate-500">{patient.id} • {patient.age} years • {patient.gender}</p>
           </div>
-          {isCompleted && (
-            <span className="badge badge-success">Completed - View Only</span>
-          )}
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            {isNurse && !patient.hasPatientAccount && (
+              <button onClick={onCreateAccount} className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+                Create Account
+              </button>
+            )}
+            {patient.hasPatientAccount && (
+              <span className="badge badge-info">Account Created</span>
+            )}
+            {isCompleted && (
+              <span className="badge badge-success">Completed - View Only</span>
+            )}
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -1700,6 +1759,69 @@ function PatientDetailModal({
             </div>
           )}
         </div>
+
+        {showCreateAccount && accountForm && setAccountForm && onHandleCreatePatientAccount && onCloseCreateAccount && (
+          <div className="mt-6 p-4 bg-teal-50 border border-teal-200 rounded-lg space-y-4">
+            <h4 className="font-semibold text-teal-800">Create Patient Account</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">First Name *</label>
+                <input type="text" value={accountForm.firstName} onChange={e => setAccountForm({...accountForm, firstName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Last Name *</label>
+                <input type="text" value={accountForm.lastName} onChange={e => setAccountForm({...accountForm, lastName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Date of Birth *</label>
+                <input type="date" value={accountForm.dob} onChange={e => setAccountForm({...accountForm, dob: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Gender</label>
+                <select value={accountForm.gender} onChange={e => setAccountForm({...accountForm, gender: e.target.value as 'Male' | 'Female'})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone *</label>
+                <input type="tel" value={accountForm.phone} onChange={e => setAccountForm({...accountForm, phone: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input type="email" value={accountForm.email} onChange={e => setAccountForm({...accountForm, email: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">Address</label>
+                <input type="text" value={accountForm.address} onChange={e => setAccountForm({...accountForm, address: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Emergency Contact Name</label>
+                <input type="text" value={accountForm.emergencyName} onChange={e => setAccountForm({...accountForm, emergencyName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Emergency Contact Phone</label>
+                <input type="tel" value={accountForm.emergencyPhone} onChange={e => setAccountForm({...accountForm, emergencyPhone: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Username *</label>
+                <input type="text" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password *</label>
+                <input type="password" value={accountForm.password} onChange={e => setAccountForm({...accountForm, password: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+                <input type="password" value={accountForm.confirmPassword} onChange={e => setAccountForm({...accountForm, confirmPassword: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onCloseCreateAccount} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+              <button onClick={onHandleCreatePatientAccount} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Create Account</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 - [x] **Transfer approval workflow** - doctor must approve before bed assignment
 - [x] **Access control** - staff nurses see only assigned patients
 - [x] **TypeScript and lint fixes**
+- [x] **OPD Nurse Create Account workflow** - Search for existing patient → Open their chart → Click "Create Account" (auto-fills their info)
 
 ## EHR System Features
 
@@ -114,6 +115,7 @@ bun dev
 | Apr 12 2026 | Fix EMT notification persistence: charge nurse logged calls now visible to all ER nurses and doctors via context/localStorage |
 | Apr 12 2026 | Enhance Diagnosis input with searchable autocomplete dropdown (55+ common diagnoses) and diagnosis notes field |
 | Apr 12 2026 | Redesign Nursing Admin Census dashboard with proper data visualization, filters, charts by data type |
+| Apr 12 2026 | Update OPD Nurse Create Account: moved inside patient chart modal, auto-fills patient info, marks original patient as having account |
 
 ## Pending Improvements
 
