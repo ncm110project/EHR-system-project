@@ -153,11 +153,23 @@ interface EMTNotification {
   age: number;
   gender: string;
   chiefComplaint: string;
+  eventNotes?: string;
   eta: string;
   priority: TriagePriority;
   ambulanceId: string;
   receivedAt: string;
   status: 'pending' | 'acknowledged' | 'arrived';
+  source: 'emt' | 'walk-in';
+  vitalSigns?: {
+    bloodPressure?: string;
+    heartRate?: number;
+    oxygenSaturation?: number;
+  };
+  consciousness?: 'Alert' | 'Verbal' | 'Pain' | 'Unresponsive';
+  esiLevel?: string;
+  bedId?: number;
+  reservedBy?: string;
+  arrivalTime?: string;
 }
 
 export function EmergencyRoom() {
@@ -193,17 +205,44 @@ export function EmergencyRoom() {
       age: 45,
       gender: 'Male',
       chiefComplaint: 'Chest pain, difficulty breathing',
+      eventNotes: 'Collapsed at home, wife called emergency',
       eta: '5 mins',
       priority: 2,
       ambulanceId: 'AMB-201',
       receivedAt: new Date().toISOString(),
-      status: 'pending'
+      status: 'pending',
+      source: 'emt'
     }
   ]);
 
   const [showVitalsForm, setShowVitalsForm] = useState(false);
   const [showLabOrderForm, setShowLabOrderForm] = useState(false);
   const [showPrescribeForm, setShowPrescribeForm] = useState(false);
+  const [showEmtForm, setShowEmtForm] = useState(false);
+  const [erBeds, setErBeds] = useState<{id: number; status: 'available' | 'reserved' | 'occupied'; patientName?: string; notificationId?: string}[]>([
+    { id: 1, status: 'available' },
+    { id: 2, status: 'available' },
+    { id: 3, status: 'available' },
+    { id: 4, status: 'available' },
+    { id: 5, status: 'available' },
+    { id: 6, status: 'available' },
+  ]);
+  const [emtFormData, setEmtFormData] = useState({
+    patientName: '',
+    age: 0,
+    gender: 'Male' as 'Male' | 'Female',
+    chiefComplaint: '',
+    eventNotes: '',
+    ambulanceId: '',
+    etaMinutes: 15,
+    vitalsBpSystolic: 0,
+    vitalsBpDiastolic: 0,
+    vitalsHeartRate: 0,
+    vitalsOxygenSaturation: 0,
+    consciousness: 'Alert' as 'Alert' | 'Verbal' | 'Pain' | 'Unresponsive',
+    esiLevel: '',
+    bedId: 0
+  });
   const [vitalsData, setVitalsData] = useState<VitalSigns>({
     bloodPressure: '',
     heartRate: 0,
@@ -373,11 +412,29 @@ export function EmergencyRoom() {
       admissionDate: new Date().toISOString(),
       triagePriority: notification.priority,
       chiefComplaint: notification.chiefComplaint,
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() }
+      esiLevel: notification.esiLevel,
+      notes: notification.eventNotes ? `Event Notes: ${notification.eventNotes}` : undefined,
+      vitalSigns: { 
+        bloodPressure: notification.vitalSigns?.bloodPressure || '-', 
+        heartRate: notification.vitalSigns?.heartRate || 0, 
+        temperature: 0, 
+        respiratoryRate: 0, 
+        oxygenSaturation: notification.vitalSigns?.oxygenSaturation || 0, 
+        recordedAt: new Date().toISOString() 
+      }
     };
     updatePatient(newPatient);
+    
+    if (notification.bedId) {
+      setErBeds(prev => prev.map(bed => 
+        bed.id === notification.bedId 
+          ? { ...bed, status: 'occupied', patientName: notification.patientName } 
+          : bed
+      ));
+    }
+    
     setEmtNotifications(prev => prev.map(n => 
-      n.id === notification.id ? { ...n, status: 'arrived' as const } : n
+      n.id === notification.id ? { ...n, status: 'arrived' as const, arrivalTime: new Date().toISOString() } : n
     ));
     addActivity({
       id: generateId(),
@@ -385,9 +442,80 @@ export function EmergencyRoom() {
       department: 'er',
       patientId: newPatient.id,
       patientName: newPatient.name,
-      description: `Patient arrived via ${notification.ambulanceId}`,
+      description: `Patient arrived via ${notification.ambulanceId || 'EMT'}`,
       timestamp: new Date().toISOString()
     });
+    addToast(`${notification.patientName} has arrived and registered`, "success");
+  };
+
+  const handleAddEmtCase = () => {
+    if (!emtFormData.patientName || !emtFormData.chiefComplaint) {
+      addToast("Please fill in patient name and chief complaint", "error");
+      return;
+    }
+    const newEmt: EMTNotification = {
+      id: generateId(),
+      patientName: emtFormData.patientName,
+      age: emtFormData.age,
+      gender: emtFormData.gender,
+      chiefComplaint: emtFormData.chiefComplaint,
+      eventNotes: emtFormData.eventNotes,
+      eta: `${emtFormData.etaMinutes} mins`,
+      priority: emtFormData.esiLevel ? (parseInt(emtFormData.esiLevel.split('-')[1]) as TriagePriority) || 3 : 3,
+      ambulanceId: emtFormData.ambulanceId || 'EMT-CALL',
+      receivedAt: new Date().toISOString(),
+      status: 'acknowledged',
+      source: 'emt',
+      vitalSigns: emtFormData.vitalsHeartRate || emtFormData.vitalsOxygenSaturation ? {
+        bloodPressure: emtFormData.vitalsBpSystolic && emtFormData.vitalsBpDiastolic 
+          ? `${emtFormData.vitalsBpSystolic}/${emtFormData.vitalsBpDiastolic}` 
+          : undefined,
+        heartRate: emtFormData.vitalsHeartRate || undefined,
+        oxygenSaturation: emtFormData.vitalsOxygenSaturation || undefined
+      } : undefined,
+      consciousness: emtFormData.consciousness,
+      esiLevel: emtFormData.esiLevel || undefined,
+      bedId: emtFormData.bedId || undefined,
+      reservedBy: user?.name
+    };
+    
+    if (emtFormData.bedId) {
+      setErBeds(prev => prev.map(bed => 
+        bed.id === emtFormData.bedId 
+          ? { ...bed, status: 'reserved', patientName: emtFormData.patientName, notificationId: newEmt.id } 
+          : bed
+      ));
+    }
+    
+    setEmtNotifications(prev => [...prev, newEmt]);
+    setShowEmtForm(false);
+    setEmtFormData({
+      patientName: '',
+      age: 0,
+      gender: 'Male',
+      chiefComplaint: '',
+      eventNotes: '',
+      ambulanceId: '',
+      etaMinutes: 15,
+      vitalsBpSystolic: 0,
+      vitalsBpDiastolic: 0,
+      vitalsHeartRate: 0,
+      vitalsOxygenSaturation: 0,
+      consciousness: 'Alert',
+      esiLevel: '',
+      bedId: 0
+    });
+    addToast("EMT case logged successfully", "success");
+  };
+
+  const handleReleaseBed = (bedId: number) => {
+    if (!isChargeNurse) return;
+    setErBeds(prev => prev.map(bed => 
+      bed.id === bedId 
+        ? { ...bed, status: 'available', patientName: undefined, notificationId: undefined } 
+        : bed
+    ));
+    addToast(`Bed ${bedId} released`, "success");
   };
 
   const confirmDischarge = () => {
@@ -540,12 +668,22 @@ export function EmergencyRoom() {
           Patient Queue ({erPatients.length})
         </button>
         {isNurse || isChargeNurse ? (
-          <button
-            onClick={() => setActiveTab('emt')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'emt' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            EMT Notifications ({emtNotifications.filter(n => n.status === 'pending').length})
-          </button>
+          <>
+            <button
+              onClick={() => setActiveTab('emt')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'emt' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              Incoming EMT ({emtNotifications.filter(n => n.status !== 'arrived').length})
+            </button>
+            {isChargeNurse && (
+              <button
+                onClick={() => setShowEmtForm(true)}
+                className="px-4 py-2 rounded-lg font-medium transition-colors bg-red-600 text-white hover:bg-red-700"
+              >
+                + Log EMT Call
+              </button>
+            )}
+          </>
         ) : null}
         <button
           onClick={() => setActiveTab('orders')}
@@ -697,15 +835,45 @@ export function EmergencyRoom() {
               <div className="card p-4">
                 <h3 className="font-semibold mb-3">ER Beds</h3>
                 <div className="grid grid-cols-2 gap-2">
-                  {[1, 2, 3, 4, 5, 6].map((bed) => {
-                    const patient = erPatients.find((p, idx) => idx === bed - 1);
+                  {erBeds.map((bed) => {
+                    const patient = erPatients.find((p, idx) => idx === bed.id - 1);
+                    const reservedNotification = bed.notificationId ? emtNotifications.find(n => n.id === bed.notificationId) : null;
                     return (
                       <div 
-                        key={bed}
-                        className={`p-2 rounded-lg text-center text-sm ${patient ? 'bg-teal-50 border border-teal-200' : 'bg-slate-50'}`}
+                        key={bed.id}
+                        className={`p-2 rounded-lg text-center text-sm ${
+                          bed.status === 'available' ? 'bg-green-50 border border-green-200' :
+                          bed.status === 'reserved' ? 'bg-yellow-50 border border-yellow-200' :
+                          'bg-red-50 border border-red-200'
+                        }`}
                       >
-                        Bay {bed}
-                        {patient && <p className="font-medium truncate">{patient.name}</p>}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">Bay {bed.id}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            bed.status === 'available' ? 'bg-green-200 text-green-800' :
+                            bed.status === 'reserved' ? 'bg-yellow-200 text-yellow-800' :
+                            'bg-red-200 text-red-800'
+                          }`}>
+                            {bed.status}
+                          </span>
+                        </div>
+                        {bed.status === 'occupied' && patient && (
+                          <p className="font-medium truncate text-xs">{patient.name}</p>
+                        )}
+                        {bed.status === 'reserved' && bed.patientName && (
+                          <div className="text-xs">
+                            <p className="font-medium truncate">{bed.patientName}</p>
+                            <p className="text-slate-500">Reserved</p>
+                            {isChargeNurse && (
+                              <button 
+                                onClick={() => handleReleaseBed(bed.id)}
+                                className="text-xs text-red-600 hover:underline mt-1"
+                              >
+                                Release
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1339,6 +1507,103 @@ export function EmergencyRoom() {
         onConfirm={confirmDischarge}
         onCancel={() => setShowDischargeConfirm(false)}
       />
+
+      {showEmtForm && isChargeNurse && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Log EMT Incoming Call</h3>
+              <button onClick={() => setShowEmtForm(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Patient Name</label>
+                <input type="text" value={emtFormData.patientName} onChange={(e) => setEmtFormData({...emtFormData, patientName: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Name or Unknown" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                <input type="number" value={emtFormData.age || ''} onChange={(e) => setEmtFormData({...emtFormData, age: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Age" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Sex</label>
+                <select value={emtFormData.gender} onChange={(e) => setEmtFormData({...emtFormData, gender: e.target.value as 'Male' | 'Female'})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Ambulance ID</label>
+                <input type="text" value={emtFormData.ambulanceId} onChange={(e) => setEmtFormData({...emtFormData, ambulanceId: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="AMB-XXX" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Chief Complaint <span className="text-red-500">*</span></label>
+                <input type="text" value={emtFormData.chiefComplaint} onChange={(e) => setEmtFormData({...emtFormData, chiefComplaint: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="Primary complaint" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Event Notes</label>
+                <textarea value={emtFormData.eventNotes} onChange={(e) => setEmtFormData({...emtFormData, eventNotes: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg h-20" placeholder="What led to the emergency (e.g., MVA, collapsed at home)" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">ETA (minutes)</label>
+                <input type="number" value={emtFormData.etaMinutes} onChange={(e) => setEmtFormData({...emtFormData, etaMinutes: parseInt(e.target.value) || 15})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">ESI Level</label>
+                <select value={emtFormData.esiLevel} onChange={(e) => setEmtFormData({...emtFormData, esiLevel: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  <option value="">Select ESI</option>
+                  <option value="ESI-1">ESI-1 (Resuscitation)</option>
+                  <option value="ESI-2">ESI-2 (Emergency)</option>
+                  <option value="ESI-3">ESI-3 (Urgent)</option>
+                  <option value="ESI-4">ESI-4 (Less Urgent)</option>
+                  <option value="ESI-5">ESI-5 (Non-Urgent)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Blood Pressure (Systolic)</label>
+                <input type="number" value={emtFormData.vitalsBpSystolic || ''} onChange={(e) => setEmtFormData({...emtFormData, vitalsBpSystolic: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="120" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Blood Pressure (Diastolic)</label>
+                <input type="number" value={emtFormData.vitalsBpDiastolic || ''} onChange={(e) => setEmtFormData({...emtFormData, vitalsBpDiastolic: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="80" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Heart Rate (bpm)</label>
+                <input type="number" value={emtFormData.vitalsHeartRate || ''} onChange={(e) => setEmtFormData({...emtFormData, vitalsHeartRate: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="72" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">SpO2 (%)</label>
+                <input type="number" value={emtFormData.vitalsOxygenSaturation || ''} onChange={(e) => setEmtFormData({...emtFormData, vitalsOxygenSaturation: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="98" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Level of Consciousness</label>
+                <select value={emtFormData.consciousness} onChange={(e) => setEmtFormData({...emtFormData, consciousness: e.target.value as 'Alert' | 'Verbal' | 'Pain' | 'Unresponsive'})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  <option value="Alert">Alert</option>
+                  <option value="Verbal">Verbal</option>
+                  <option value="Pain">Pain</option>
+                  <option value="Unresponsive">Unresponsive</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Reserve Bed</label>
+                <select value={emtFormData.bedId || ''} onChange={(e) => setEmtFormData({...emtFormData, bedId: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  <option value="">No bed reservation</option>
+                  {erBeds.filter(b => b.status === 'available').map(bed => (
+                    <option key={bed.id} value={bed.id}>Bay {bed.id} - Available</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowEmtForm(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">Cancel</button>
+              <button onClick={handleAddEmtCase} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Log Case</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
