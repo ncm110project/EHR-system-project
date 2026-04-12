@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
 import { useAuth } from "@/lib/auth-context";
@@ -46,6 +46,11 @@ export function NursingAdmin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
+  // Census dashboard filters
+  const [censusDepartmentFilter, setCensusDepartmentFilter] = useState<'all' | 'er' | 'opd' | 'triage' | 'general-ward'>('all');
+  const [censusEsiFilter, setCensusEsiFilter] = useState<'all' | 'critical' | 'stable'>('all');
+  const [censusDateRange, setCensusDateRange] = useState<'today' | 'week' | 'month' | 'year'>('month');
+
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
 
   const pendingVerificationCharts = patients.filter(p => 
@@ -73,6 +78,37 @@ export function NursingAdmin() {
       p.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
+
+  // Census filtered patients based on filters
+  const getCensusFilteredPatients = useCallback(() => {
+    let filtered = [...patients];
+    
+    if (censusDepartmentFilter !== 'all') {
+      filtered = filtered.filter(p => p.department === censusDepartmentFilter);
+    }
+    
+    if (censusEsiFilter === 'critical') {
+      filtered = filtered.filter(p => p.esiLevel === 'ESI-1' || p.esiLevel === 'ESI-2');
+    } else if (censusEsiFilter === 'stable') {
+      filtered = filtered.filter(p => p.esiLevel === 'ESI-3' || p.esiLevel === 'ESI-4' || p.esiLevel === 'ESI-5' || !p.esiLevel);
+    }
+    
+    const now = new Date();
+    if (censusDateRange === 'today') {
+      const today = now.toISOString().split('T')[0];
+      filtered = filtered.filter(p => p.admissionDate === today);
+    } else if (censusDateRange === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(p => new Date(p.admissionDate) >= weekAgo);
+    } else if (censusDateRange === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(p => new Date(p.admissionDate) >= monthAgo);
+    }
+    
+    return filtered;
+  }, [patients, censusDepartmentFilter, censusEsiFilter, censusDateRange]);
+
+  const censusPatients = getCensusFilteredPatients();
 
   const handleVerifyChart = (patient: any) => {
     const now = new Date().toISOString();
@@ -850,228 +886,360 @@ export function NursingAdmin() {
 
       {activeTab === 'census' && (
         <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Patient Census Dashboard</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">View:</span>
-                <div className="flex gap-2">
-                  {(['weekly', 'monthly', 'yearly'] as TimePeriod[]).map((period) => (
-                    <button
-                      key={period}
-                      onClick={() => setTimePeriod(period)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        timePeriod === period
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {period.charAt(0).toUpperCase() + period.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
-                >
-                  {availableYears.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-                {timePeriod !== 'yearly' && (
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
-                  >
-                    {availableMonths.map((month) => (
-                      <option key={month} value={month}>{getFullMonthName(month)}</option>
-                    ))}
-                  </select>
-                )}
-                {timePeriod === 'weekly' && (
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
-                    className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
-                  >
-                    {Array.from({ length: availableWeeks }, (_, i) => (
-                      <option key={i} value={i}>{getWeekLabel(i)}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+          {/* FILTERS */}
+          <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">Department:</span>
+              <select
+                value={censusDepartmentFilter}
+                onChange={(e) => setCensusDepartmentFilter(e.target.value as any)}
+                className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
+              >
+                <option value="all">All Departments</option>
+                <option value="er">Emergency Room</option>
+                <option value="opd">Outpatient</option>
+                <option value="triage">Triage</option>
+                <option value="general-ward">General Ward</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">ESI Level:</span>
+              <select
+                value={censusEsiFilter}
+                onChange={(e) => setCensusEsiFilter(e.target.value as any)}
+                className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
+              >
+                <option value="all">All Levels</option>
+                <option value="critical">Critical (ESI 1-2)</option>
+                <option value="stable">Stable (ESI 3-5)</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">Date Range:</span>
+              <select
+                value={censusDateRange}
+                onChange={(e) => setCensusDateRange(e.target.value as any)}
+                className="px-3 py-1.5 rounded-lg text-sm border border-slate-300 bg-white"
+              >
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+              </select>
             </div>
           </div>
 
-          {/* SECTION A: Patient Census Overview */}
-          <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="w-2 h-8 bg-teal-500 rounded"></span>
-              Patient Census Overview
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-3xl font-bold text-blue-600">{patients.length}</p>
-                <p className="text-sm text-slate-600">Total Patients</p>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-3xl font-bold text-green-600">{patients.filter(p => p.department === 'opd').length}</p>
-                <p className="text-sm text-slate-600">OPD</p>
-              </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <p className="text-3xl font-bold text-red-600">{patients.filter(p => p.department === 'er').length}</p>
-                <p className="text-sm text-slate-600">ER</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-3xl font-bold text-purple-600">{patients.filter(p => p.department === 'triage').length}</p>
-                <p className="text-sm text-slate-600">Triage</p>
-              </div>
-              <div className="text-center p-4 bg-amber-50 rounded-lg">
-                <p className="text-3xl font-bold text-amber-600">{patients.filter(p => p.status === 'discharged').length}</p>
-                <p className="text-sm text-slate-600">Discharged</p>
-              </div>
-              <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                <p className="text-3xl font-bold text-indigo-600">{patients.filter(p => p.status === 'waiting').length}</p>
-                <p className="text-sm text-slate-600">Waiting</p>
-              </div>
+          {/* TOP SECTION: HOSPITAL SNAPSHOT (CARDS ONLY) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+              <p className="text-3xl font-bold text-blue-600">{censusPatients.length}</p>
+              <p className="text-sm text-slate-600 font-medium">Total Patients</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+              <p className="text-3xl font-bold text-green-600">{censusPatients.filter(p => p.status === 'in-treatment' || p.status === 'admitted').length}</p>
+              <p className="text-sm text-slate-600 font-medium">Admissions</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200">
+              <p className="text-3xl font-bold text-amber-600">{censusPatients.filter(p => p.status === 'discharged').length}</p>
+              <p className="text-sm text-slate-600 font-medium">Discharges</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+              <p className="text-3xl font-bold text-purple-600">{censusPatients.filter(p => p.registrationSource === 'TRIAGE').length}</p>
+              <p className="text-sm text-slate-600 font-medium">Transfers</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200">
+              <p className="text-3xl font-bold text-red-600">{censusPatients.filter(p => p.esiLevel === 'ESI-1' || p.esiLevel === 'ESI-2').length}</p>
+              <p className="text-sm text-slate-600 font-medium">Critical (ESI 1-2)</p>
+            </div>
+            <div className="text-center p-4 bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg border border-teal-200">
+              <p className="text-3xl font-bold text-teal-600">{censusPatients.filter(p => p.esiLevel === 'ESI-3' || p.esiLevel === 'ESI-4' || p.esiLevel === 'ESI-5' || !p.esiLevel).length}</p>
+              <p className="text-sm text-slate-600 font-medium">Stable (ESI 3-5)</p>
             </div>
           </div>
 
-          {/* SECTION B: Patient Flow & Movement */}
-          <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
-              <span className="w-2 h-8 bg-blue-500 rounded"></span>
-              Patient Flow & Movement
-            </h4>
-            <div className="relative h-64 border-b border-l border-slate-300">
-              {(() => {
-                const maxCount = Math.max(...timelineData.patientTimeline.map(i => i.count), 1);
-                const chartHeight = 224;
-                const barWidth = `${100 / timelineData.patientTimeline.length - 2}%`;
-                const barGap = '1%';
-                return (
-                  <>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / 4) * 100}%` }}>
-                        <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / 4) * i)}</span>
-                      </div>
-                    ))}
-                    <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
-                      {timelineData.patientTimeline.map((item, idx) => (
-                        <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
-                          <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
-                          <div className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors" style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}></div>
-                          <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* SECTION C: Clinical Indicators */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* ROW 1: ESI Levels + Chief Complaints */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <span className="w-2 h-8 bg-red-500 rounded"></span>
-                ESI Level Distribution
-              </h4>
+              <h4 className="font-semibold text-slate-800 mb-4">ESI Level Distribution</h4>
               <div className="space-y-3">
                 {[
-                  { level: 'ESI-1', label: 'Resuscitation', count: patients.filter(p => p.esiLevel === 'ESI-1').length, color: 'bg-red-600' },
-                  { level: 'ESI-2', label: 'Emergency', count: patients.filter(p => p.esiLevel === 'ESI-2').length, color: 'bg-orange-500' },
-                  { level: 'ESI-3', label: 'Urgent', count: patients.filter(p => p.esiLevel === 'ESI-3').length, color: 'bg-yellow-500' },
-                  { level: 'ESI-4', label: 'Less Urgent', count: patients.filter(p => p.esiLevel === 'ESI-4').length, color: 'bg-green-500' },
-                  { level: 'ESI-5', label: 'Non-Urgent', count: patients.filter(p => p.esiLevel === 'ESI-5').length, color: 'bg-blue-500' },
-                ].map((item) => (
-                  <div key={item.level}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.level} - {item.label}</span>
-                      <span className="text-sm font-semibold">{item.count}</span>
+                  { level: 'ESI-1', label: 'Resuscitation', count: censusPatients.filter(p => p.esiLevel === 'ESI-1').length, color: 'bg-red-600' },
+                  { level: 'ESI-2', label: 'Emergency', count: censusPatients.filter(p => p.esiLevel === 'ESI-2').length, color: 'bg-orange-500' },
+                  { level: 'ESI-3', label: 'Urgent', count: censusPatients.filter(p => p.esiLevel === 'ESI-3').length, color: 'bg-yellow-500' },
+                  { level: 'ESI-4', label: 'Less Urgent', count: censusPatients.filter(p => p.esiLevel === 'ESI-4').length, color: 'bg-green-500' },
+                  { level: 'ESI-5', label: 'Non-Urgent', count: censusPatients.filter(p => p.esiLevel === 'ESI-5').length, color: 'bg-blue-500' },
+                ].map((item) => {
+                  const maxCount = Math.max(censusPatients.filter(p => p.esiLevel).length, 1);
+                  return (
+                    <div key={item.level}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600">{item.level} - {item.label}</span>
+                        <span className="text-sm font-semibold">{item.count}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.count / maxCount) * 100, 5)}%` }}></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.count / Math.max(patients.filter(p => p.esiLevel).length, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-
             <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                <span className="w-2 h-8 bg-amber-500 rounded"></span>
-                Allergy Distribution
-              </h4>
+              <h4 className="font-semibold text-slate-800 mb-4">Top Chief Complaints</h4>
               <div className="space-y-3">
-                {allergyCounts.filter(a => a.count > 0).sort((a, b) => b.count - a.count).slice(0, 8).map((item) => (
-                  <div key={item.name}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.name}</span>
-                      <span className="text-sm font-semibold">{item.count}</span>
+                {(() => {
+                  const complaints = censusPatients.reduce((acc, p) => {
+                    const complaint = p.chiefComplaint || 'Unknown';
+                    acc[complaint] = (acc[complaint] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  const topComplaints = Object.entries(complaints)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 8);
+                  const maxCount = topComplaints[0]?.[1] || 1;
+                  return topComplaints.map(([complaint, count]) => (
+                    <div key={complaint}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600 truncate max-w-[200px]">{complaint}</span>
+                        <span className="text-sm font-semibold">{count}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className="bg-indigo-500 h-4 rounded-full" style={{ width: `${Math.max((count / maxCount) * 100, 5)}%` }}></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className="bg-amber-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...allergyCounts.map(a => a.count), 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>
 
-          {/* Medical Conditions */}
+          {/* ROW 2: Age Group + Sex Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Age Group Distribution</h4>
+              <div className="space-y-3">
+                {[
+                  { group: '0-17', count: censusPatients.filter(p => p.age < 18).length },
+                  { group: '18-35', count: censusPatients.filter(p => p.age >= 18 && p.age <= 35).length },
+                  { group: '36-60', count: censusPatients.filter(p => p.age > 35 && p.age <= 60).length },
+                  { group: '60+', count: censusPatients.filter(p => p.age > 60).length },
+                ].map((item) => {
+                  const maxCount = Math.max(censusPatients.length, 1);
+                  return (
+                    <div key={item.group}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600">{item.group} years</span>
+                        <span className="text-sm font-semibold">{item.count}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className="bg-violet-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / maxCount) * 100, 5)}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Sex Distribution</h4>
+              <div className="flex items-center justify-center">
+                <div className="relative w-48 h-48">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {(() => {
+                      const maleCount = censusPatients.filter(p => p.gender === 'Male').length;
+                      const femaleCount = censusPatients.filter(p => p.gender === 'Female').length;
+                      const total = maleCount + femaleCount || 1;
+                      const malePct = maleCount / total * 100;
+                      const femalePct = femaleCount / total * 100;
+                      const circumference = 2 * Math.PI * 40;
+                      const maleOffset = circumference * (1 - malePct / 100);
+                      return (
+                        <>
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3B82F6" strokeWidth="20" strokeDasharray={`${circumference * malePct / 100} ${circumference}`} transform="rotate(-90 50 50)" />
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="#EC4899" strokeWidth="20" strokeDasharray={`${circumference * femalePct / 100} ${circumference}`} strokeDashoffset={`-${circumference * malePct / 100}`} transform="rotate(-90 50 50)" />
+                        </>
+                      );
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold">{censusPatients.length}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center gap-6 mt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-sm">Male: {censusPatients.filter(p => p.gender === 'Male').length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                  <span className="text-sm">Female: {censusPatients.filter(p => p.gender === 'Female').length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 3: Medical Conditions + Diagnoses */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Top Medical Conditions</h4>
+              <div className="space-y-3">
+                {(() => {
+                  const conditions = censusPatients.reduce((acc, p) => {
+                    (p.medicalConditions || []).forEach(condition => {
+                      acc[condition] = (acc[condition] || 0) + 1;
+                    });
+                    return acc;
+                  }, {} as Record<string, number>);
+                  const topConditions = Object.entries(conditions)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 8);
+                  const maxCount = topConditions[0]?.[1] || 1;
+                  return topConditions.length > 0 ? topConditions.map(([condition, count]) => (
+                    <div key={condition}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600">{condition}</span>
+                        <span className="text-sm font-semibold">{count}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className="bg-purple-500 h-4 rounded-full" style={{ width: `${Math.max((count / maxCount) * 100, 5)}%` }}></div>
+                      </div>
+                    </div>
+                  )) : <p className="text-sm text-slate-500">No medical conditions recorded</p>;
+                })()}
+              </div>
+            </div>
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Top Diagnoses</h4>
+              <div className="space-y-3">
+                {(() => {
+                  const diagnoses = censusPatients.reduce((acc, p) => {
+                    (p.diagnosisHistory || []).forEach(d => {
+                      if (d.diagnosis) {
+                        acc[d.diagnosis] = (acc[d.diagnosis] || 0) + 1;
+                      }
+                    });
+                    if (p.diagnosis) {
+                      acc[p.diagnosis] = (acc[p.diagnosis] || 0) + 1;
+                    }
+                    return acc;
+                  }, {} as Record<string, number>);
+                  const topDiagnoses = Object.entries(diagnoses)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 8);
+                  const maxCount = topDiagnoses[0]?.[1] || 1;
+                  return topDiagnoses.length > 0 ? topDiagnoses.map(([diagnosis, count]) => (
+                    <div key={diagnosis}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600 truncate max-w-[200px]">{diagnosis}</span>
+                        <span className="text-sm font-semibold">{count}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className="bg-teal-500 h-4 rounded-full" style={{ width: `${Math.max((count / maxCount) * 100, 5)}%` }}></div>
+                      </div>
+                    </div>
+                  )) : <p className="text-sm text-slate-500">No diagnoses recorded</p>;
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 4: Disposition + Department Status */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Patient Disposition</h4>
+              <div className="flex items-center justify-center">
+                <div className="relative w-48 h-48">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    {(() => {
+                      const discharged = censusPatients.filter(p => p.status === 'discharged').length;
+                      const admitted = censusPatients.filter(p => p.status === 'admitted' || p.status === 'in-treatment').length;
+                      const waiting = censusPatients.filter(p => p.status === 'waiting').length;
+                      const total = discharged + admitted + waiting || 1;
+                      const dischargedPct = discharged / total * 100;
+                      const admittedPct = admitted / total * 100;
+                      const circumference = 2 * Math.PI * 40;
+                      return (
+                        <>
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10B981" strokeWidth="20" strokeDasharray={`${circumference * dischargedPct / 100} ${circumference}`} transform="rotate(-90 50 50)" />
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="#8B5CF6" strokeWidth="20" strokeDasharray={`${circumference * admittedPct / 100} ${circumference}`} strokeDashoffset={`-${circumference * dischargedPct / 100}`} transform="rotate(-90 50 50)" />
+                          <circle cx="50" cy="50" r="40" fill="transparent" stroke="#F59E0B" strokeWidth="20" strokeDasharray={`${circumference * (100 - dischargedPct - admittedPct) / 100} ${circumference}`} strokeDashoffset={`-${circumference * (dischargedPct + admittedPct) / 100}`} transform="rotate(-90 50 50)" />
+                        </>
+                      );
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold">{censusPatients.length}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-center gap-4 mt-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-sm">Discharged: {censusPatients.filter(p => p.status === 'discharged').length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-violet-500"></div>
+                  <span className="text-sm">Admitted: {censusPatients.filter(p => p.status === 'admitted' || p.status === 'in-treatment').length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                  <span className="text-sm">Waiting: {censusPatients.filter(p => p.status === 'waiting').length}</span>
+                </div>
+              </div>
+            </div>
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4">Department Status</h4>
+              <div className="space-y-4">
+                {[
+                  { dept: 'er', label: 'Emergency Room', total: 20, color: 'bg-red-500' },
+                  { dept: 'opd', label: 'Outpatient', total: 50, color: 'bg-blue-500' },
+                  { dept: 'triage', label: 'Triage', total: 15, color: 'bg-amber-500' },
+                  { dept: 'general-ward', label: 'General Ward', total: 40, color: 'bg-purple-500' },
+                ].map((dept) => {
+                  const count = censusPatients.filter(p => p.department === dept.dept).length;
+                  const pct = Math.round((count / dept.total) * 100);
+                  return (
+                    <div key={dept.dept}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-slate-600">{dept.label}</span>
+                        <span className="text-sm font-semibold">{count}/{dept.total} ({pct}%)</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-4">
+                        <div className={`${dept.color} h-4 rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* BOTTOM: Bed Occupancy */}
           <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="w-2 h-8 bg-purple-500 rounded"></span>
-              Top Medical Conditions
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {conditionCounts.filter(c => c.count > 0).sort((a, b) => b.count - a.count).slice(0, 6).map((item) => (
-                <div key={item.name} className="p-3 bg-slate-50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-700">{item.name}</span>
-                    <span className="text-lg font-bold text-purple-600">{item.count}</span>
+            <h4 className="font-semibold text-slate-800 mb-4">Bed Occupancy</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { dept: 'General Ward', occupied: 32, total: 40 },
+                { dept: 'ICU', occupied: 9, total: 10 },
+                { dept: 'ER Beds', occupied: 15, total: 20 },
+                { dept: 'Pediatric', occupied: 8, total: 15 },
+              ].map((bed) => {
+                const pct = Math.round((bed.occupied / bed.total) * 100);
+                const statusColor = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600';
+                return (
+                  <div key={bed.dept} className="p-4 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-slate-700">{bed.dept}</span>
+                      <span className={`font-bold ${statusColor}`}>{pct}%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
+                      <div className={`h-3 rounded-full ${pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }}></div>
+                    </div>
+                    <p className="text-xs text-slate-500">{bed.occupied} / {bed.total} beds occupied</p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
-
-          {/* SECTION D: Department Workload */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { dept: 'opd', label: 'Outpatient (OPD)', patients: patients.filter(p => p.department === 'opd'), color: 'bg-blue-500' },
-              { dept: 'er', label: 'Emergency (ER)', patients: patients.filter(p => p.department === 'er'), color: 'bg-red-500' },
-              { dept: 'triage', label: 'Triage', patients: patients.filter(p => p.department === 'triage'), color: 'bg-amber-500' },
-              { dept: 'general-ward', label: 'General Ward', patients: patients.filter(p => p.department === 'general-ward'), color: 'bg-purple-500' },
-            ].map(({ dept, label, patients: deptPatients }) => (
-              <div key={dept} className="card p-4">
-                <h5 className="font-semibold text-slate-800 mb-3">{label}</h5>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-500">Total</span>
-                    <span className="text-sm font-semibold">{deptPatients.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-500">Waiting</span>
-                    <span className="text-sm font-semibold text-amber-600">{deptPatients.filter(p => p.status === 'waiting').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-500">In Treatment</span>
-                    <span className="text-sm font-semibold text-blue-600">{deptPatients.filter(p => p.status === 'in-treatment').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-500">Discharged</span>
-                    <span className="text-sm font-semibold text-green-600">{deptPatients.filter(p => p.status === 'discharged').length}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
