@@ -20,6 +20,15 @@ export function Pharmacy() {
   const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending' || p.status === 'partial');
   const dispensedPrescriptions = prescriptions.filter(p => p.status === 'dispensed');
 
+  const getPatientSource = (patientId: string): string => {
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient) return 'OTHER';
+    if (patient.department === 'opd' || patient.registrationSource === 'OPD' || patient.registrationSource === 'SELF_REGISTRATION') return 'OPD';
+    if (patient.department === 'er') return 'ER';
+    if (patient.department === 'general-ward') return 'WARD';
+    return 'OTHER';
+  };
+
   const filteredMeds = medications.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +138,7 @@ export function Pharmacy() {
     }
 
     updateMedication({ ...medication, stock: medication.stock - 1 });
-    updatePrescription({ ...prescription, status: 'dispensed' });
+    updatePrescription({ ...prescription, status: 'dispensed', dispensedQuantity: prescription.quantity || 1 });
     addActivity({
       id: generateId(),
       type: 'prescription',
@@ -148,7 +157,7 @@ export function Pharmacy() {
     
     if (medication && medication.stock > 0) {
       updateMedication({ ...medication, stock: medication.stock - 1 });
-      updatePrescription({ ...prescription, status: 'dispensed' });
+      updatePrescription({ ...prescription, status: 'dispensed', dispensedQuantity: prescription.quantity || 1 });
       addActivity({
         id: generateId(),
         type: 'prescription',
@@ -160,6 +169,20 @@ export function Pharmacy() {
       });
     }
     setDispenseWarning(null);
+  };
+
+  const handlePartialDispense = () => {
+    if (!showPartialDispense) return;
+    const medication = medications.find(m => m.name === showPartialDispense.medication);
+    if (!medication) { alert('Medication not found'); return; }
+    if (medication.stock < partialQuantity) { alert('Insufficient stock'); return; }
+    const newDispensed = (showPartialDispense.dispensedQuantity || 0) + partialQuantity;
+    const total = showPartialDispense.quantity || 1;
+    const newStatus = newDispensed >= total ? 'dispensed' : 'partial';
+    updateMedication({ ...medication, stock: medication.stock - partialQuantity });
+    updatePrescription({ ...showPartialDispense, status: newStatus, dispensedQuantity: newDispensed });
+    setShowPartialDispense(null);
+    setPartialQuantity(1);
   };
 
   const handleUpdateStock = (medication: Medication) => {
@@ -263,12 +286,14 @@ export function Pharmacy() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-slate-400">{rx.date}</span>
+                      {rx.status === 'partial' && <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded">Partial: {rx.dispensedQuantity || 0}/{rx.quantity || 1}</span>}
+                      {getPatientSource(rx.patientId) === 'OPD' && medication && medication.stock > 0 && rx.status !== 'partial' && <button className="px-3 py-1.5 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200" onClick={() => { setShowPartialDispense(rx); setPartialQuantity(1); }}>Partial</button>}
                       <button 
                         className={`btn ${medication && medication.stock <= 0 ? 'btn-disabled' : 'btn-primary'}`}
                         onClick={() => handleDispense(rx)}
                         disabled={medication && medication.stock <= 0}
                       >
-                        {medication && medication.stock <= 0 ? 'Out of Stock' : 'Dispense'}
+                        {medication && medication.stock <= 0 ? 'Out of Stock' : rx.status === 'partial' ? 'Complete' : 'Dispense'}
                       </button>
                     </div>
                   </div>
@@ -486,6 +511,24 @@ export function Pharmacy() {
           </div>
         </div>
       )}
+
+        {showPartialDispense && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+              <h3 className="text-lg font-semibold mb-4">Partial Dispense</h3>
+              <p className="text-slate-600 mb-2">Medication: <strong>{showPartialDispense.medication}</strong></p>
+              <p className="text-sm text-slate-500 mb-4">Prescribed: {showPartialDispense.quantity || 1} | Already dispensed: {showPartialDispense.dispensedQuantity || 0}</p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Quantity to dispense</label>
+                <input type="number" min={1} max={(showPartialDispense.quantity || 1) - (showPartialDispense.dispensedQuantity || 0)} value={partialQuantity} onChange={(e) => setPartialQuantity(parseInt(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div className="flex gap-3">
+                <button className="btn btn-secondary flex-1" onClick={() => setShowPartialDispense(null)}>Cancel</button>
+                <button className="btn btn-primary flex-1" onClick={handlePartialDispense}>Dispense {partialQuantity}</button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
