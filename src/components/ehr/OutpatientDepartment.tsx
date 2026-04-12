@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, Appointment } from "@/lib/ehr-data";
+import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, Appointment, ALL_DIAGNOSES } from "@/lib/ehr-data";
 import { PatientRecordPrint } from "./PatientRecordPrint";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 
@@ -391,12 +391,13 @@ export function OutpatientDepartment() {
     });
   };
 
-  const handleCompleteDoctorVisit = (patient: Patient, diagnosis: string) => {
+  const handleCompleteDoctorVisit = (patient: Patient, diagnosis: string, diagnosisNotes?: string) => {
     const now = new Date().toISOString();
     const doctorName = user?.name || 'Doctor';
     
     const diagnosisEntry: DiagnosisEntry = {
       diagnosis,
+      diagnosisNotes,
       timestamp: now,
       diagnosedBy: doctorName
     };
@@ -466,12 +467,13 @@ export function OutpatientDepartment() {
     });
   };
 
-  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string) => {
+  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string, diagnosisNotes?: string) => {
     const now = new Date().toISOString();
     const doctorName = user?.name || 'Doctor';
     
     const diagnosisEntry: DiagnosisEntry = {
       diagnosis,
+      diagnosisNotes,
       timestamp: now,
       diagnosedBy: doctorName
     };
@@ -734,12 +736,12 @@ function PatientDetailModal({
   onSendToDoctor: (patient: Patient) => void;
   onOrderLab: (patient: Patient, testName: string, testType: any) => void;
   onPrescribe: (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => void;
-  onCompleteVisit: (patient: Patient, diagnosis: string) => void;
+  onCompleteVisit: (patient: Patient, diagnosis: string, diagnosisNotes?: string) => void;
   onPrint: (patient: Patient) => void;
   onReopenVisit: (patient: Patient) => void;
   onAddVitals?: (patient: Patient, vitals: VitalSigns) => void;
   onAddNotes?: (patient: Patient, notes: string) => void;
-  onAddDiagnosis?: (patient: Patient, diagnosis: string) => void;
+  onAddDiagnosis?: (patient: Patient, diagnosis: string, diagnosisNotes?: string) => void;
   onScheduleAppointment?: (patient: Patient, date: string, time: string, notes: string) => void;
 }) {
   const [vitals, setVitals] = useState<VitalSigns>(patient.nurseVitals || {
@@ -757,12 +759,18 @@ function PatientDetailModal({
   const [labTestType, setLabTestType] = useState<'blood' | 'urine' | 'imaging' | 'pathology'>('blood');
   const [prescription, setPrescription] = useState({ medication: '', dosage: '', frequency: 'OD', route: 'Oral', duration: '', instructions: '' });
   const [diagnosis, setDiagnosis] = useState(patient.diagnosis || '');
+  const [diagnosisNotes, setDiagnosisNotes] = useState('');
+  const [activeDiagnosisSuggestions, setActiveDiagnosisSuggestions] = useState<string[]>([]);
+  const [showActiveDiagnosisSuggestions, setShowActiveDiagnosisSuggestions] = useState(false);
   const [showAddVitals, setShowAddVitals] = useState(false);
   const [showAddNotes, setShowAddNotes] = useState(false);
   const [showAddDiagnosis, setShowAddDiagnosis] = useState(false);
   const [showScheduleAppointment, setShowScheduleAppointment] = useState(false);
   const [newNotes, setNewNotes] = useState('');
   const [newDiagnosisInput, setNewDiagnosisInput] = useState('');
+  const [newDiagnosisNotes, setNewDiagnosisNotes] = useState('');
+  const [diagnosisSuggestions, setDiagnosisSuggestions] = useState<string[]>([]);
+  const [showDiagnosisSuggestions, setShowDiagnosisSuggestions] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('09:00');
   const [appointmentNotes, setAppointmentNotes] = useState('');
@@ -806,10 +814,47 @@ function PatientDetailModal({
 
   const handleAddDiagnosis = () => {
     if (onAddDiagnosis && newDiagnosisInput.trim()) {
-      onAddDiagnosis(patient, newDiagnosisInput);
+      onAddDiagnosis(patient, newDiagnosisInput, newDiagnosisNotes || undefined);
       setShowAddDiagnosis(false);
       setNewDiagnosisInput('');
+      setNewDiagnosisNotes('');
     }
+  };
+
+  const handleDiagnosisSearch = (query: string) => {
+    setNewDiagnosisInput(query);
+    if (query.length > 0) {
+      const filtered = ALL_DIAGNOSES.filter(d => 
+        d.toLowerCase().includes(query.toLowerCase())
+      );
+      setDiagnosisSuggestions(filtered);
+      setShowDiagnosisSuggestions(true);
+    } else {
+      setShowDiagnosisSuggestions(false);
+    }
+  };
+
+  const handleDiagnosisSelect = (diag: string) => {
+    setNewDiagnosisInput(diag);
+    setShowDiagnosisSuggestions(false);
+  };
+
+  const handleActiveDiagnosisSearch = (query: string) => {
+    setDiagnosis(query);
+    if (query.length > 0) {
+      const filtered = ALL_DIAGNOSES.filter(d => 
+        d.toLowerCase().includes(query.toLowerCase())
+      );
+      setActiveDiagnosisSuggestions(filtered);
+      setShowActiveDiagnosisSuggestions(true);
+    } else {
+      setShowActiveDiagnosisSuggestions(false);
+    }
+  };
+
+  const handleActiveDiagnosisSelect = (diag: string) => {
+    setDiagnosis(diag);
+    setShowActiveDiagnosisSuggestions(false);
   };
 
   return (
@@ -1106,15 +1151,42 @@ function PatientDetailModal({
 
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="font-semibold mb-3">Diagnosis</h4>
-                <textarea
-                  value={diagnosis}
-                  onChange={(e) => setDiagnosis(e.target.value)}
-                  placeholder="Enter diagnosis..."
-                  className="w-full h-24"
-                />
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={diagnosis}
+                    onChange={(e) => handleActiveDiagnosisSearch(e.target.value)}
+                    onFocus={() => diagnosis && setShowActiveDiagnosisSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowActiveDiagnosisSuggestions(false), 200)}
+                    placeholder="Type to search diagnosis..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                  {showActiveDiagnosisSuggestions && activeDiagnosisSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {activeDiagnosisSuggestions.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleActiveDiagnosisSelect(suggestion)}
+                          className="w-full px-3 py-2 text-left hover:bg-slate-50 text-sm"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="mb-3">
+                  <textarea
+                    value={diagnosisNotes}
+                    onChange={(e) => setDiagnosisNotes(e.target.value)}
+                    placeholder="Diagnosis notes (optional)..."
+                    className="w-full h-16 px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
                 <button 
-                  className="btn btn-primary w-full mt-3"
-                  onClick={() => onCompleteVisit(patient, diagnosis)}
+                  className="btn btn-primary w-full"
+                  onClick={() => onCompleteVisit(patient, diagnosis, diagnosisNotes)}
                 >
                   Complete Visit
                 </button>
@@ -1380,12 +1452,41 @@ function PatientDetailModal({
                 </button>
                 {showAddDiagnosis && (
                   <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                    <textarea
-                      value={newDiagnosisInput}
-                      onChange={(e) => setNewDiagnosisInput(e.target.value)}
-                      placeholder="Enter new diagnosis..."
-                      className="w-full h-24"
-                    />
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Primary Diagnosis (Search)</label>
+                      <input
+                        type="text"
+                        value={newDiagnosisInput}
+                        onChange={(e) => handleDiagnosisSearch(e.target.value)}
+                        onFocus={() => newDiagnosisInput && setShowDiagnosisSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowDiagnosisSuggestions(false), 200)}
+                        placeholder="Type to search diagnosis..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      />
+                      {showDiagnosisSuggestions && diagnosisSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {diagnosisSuggestions.map((suggestion, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleDiagnosisSelect(suggestion)}
+                              className="w-full px-3 py-2 text-left hover:bg-slate-50 text-sm"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Diagnosis Notes (Optional)</label>
+                      <textarea
+                        value={newDiagnosisNotes}
+                        onChange={(e) => setNewDiagnosisNotes(e.target.value)}
+                        placeholder="Detailed clinical explanation..."
+                        className="w-full h-20 px-3 py-2 border border-slate-300 rounded-lg"
+                      />
+                    </div>
                     <button className="btn btn-primary" onClick={handleAddDiagnosis}>
                       Save Diagnosis
                     </button>
