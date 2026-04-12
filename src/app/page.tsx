@@ -13,7 +13,16 @@ export default function LandingPage() {
   const [showAllergiesOther, setShowAllergiesOther] = useState(false);
   const [showReligionOther, setShowReligionOther] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [feedbackForm, setFeedbackForm] = useState({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
+  const [feedbackForm, setFeedbackForm] = useState({
+    patientName: "",
+    contactInfo: "",
+    feedbackType: "complaint" as "complaint" | "suggestion" | "compliment",
+    department: "er" as "er" | "opd" | "general-ward" | "icu" | "others",
+    serviceArea: "nursing" as "nursing" | "doctor" | "waiting-time" | "facilities" | "cleanliness" | "staff-attitude" | "billing" | "others",
+    rating: 3 as 1 | 2 | 3 | 4 | 5,
+    visitType: "" as "er" | "opd" | "admission" | "",
+    message: ""
+  });
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -310,7 +319,7 @@ export default function LandingPage() {
       dateSubmitted: new Date().toISOString() 
     }]));
     setShowFeedbackModal(false);
-    setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", message: "" });
+    setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", department: "er", serviceArea: "nursing", rating: 3, visitType: "", message: "" });
     alert("Thank you! Your feedback has been submitted.");
   };
 
@@ -345,7 +354,7 @@ export default function LandingPage() {
 
       {showFeedbackModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Patient Feedback</h3>
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
               <div>
@@ -358,15 +367,66 @@ export default function LandingPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Feedback Type</label>
-                <select value={feedbackForm.feedbackType} onChange={(e) => setFeedbackForm({...feedbackForm, feedbackType: e.target.value})} className="w-full px-3 py-2 border rounded-lg">
+                <select value={feedbackForm.feedbackType} onChange={(e) => setFeedbackForm({...feedbackForm, feedbackType: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
                   <option value="complaint">Complaint</option>
                   <option value="suggestion">Suggestion</option>
                   <option value="compliment">Compliment</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Message *</label>
-                <textarea required value={feedbackForm.message} onChange={(e) => setFeedbackForm({...feedbackForm, message: e.target.value})} className="w-full h-32 px-3 py-2 border rounded-lg" placeholder="Your feedback..." />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                <select value={feedbackForm.department} onChange={(e) => setFeedbackForm({...feedbackForm, department: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="er">Emergency Room (ER)</option>
+                  <option value="opd">Outpatient Department (OPD)</option>
+                  <option value="general-ward">General Ward</option>
+                  <option value="icu">ICU</option>
+                  <option value="others">Others</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Service Area</label>
+                <select value={feedbackForm.serviceArea} onChange={(e) => setFeedbackForm({...feedbackForm, serviceArea: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="nursing">Nursing Care</option>
+                  <option value="doctor">Doctor Service</option>
+                  <option value="waiting-time">Waiting Time</option>
+                  <option value="facilities">Facilities</option>
+                  <option value="cleanliness">Cleanliness</option>
+                  <option value="staff-attitude">Staff Attitude</option>
+                  <option value="billing">Billing</option>
+                  <option value="others">Others</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Rating * (Required)</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setFeedbackForm({...feedbackForm, rating: star as 1|2|3|4|5})}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        star <= feedbackForm.rating 
+                          ? star <= 2 ? 'bg-red-500 text-white' : star <= 3 ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'
+                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                      }`}
+                    >
+                      {star} {star === 1 ? 'Poor' : star === 2 ? 'Poor' : star === 3 ? 'Fair' : star === 4 ? 'Good' : 'Excellent'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Visit Type (Optional)</label>
+                <select value={feedbackForm.visitType} onChange={(e) => setFeedbackForm({...feedbackForm, visitType: e.target.value as any})} className="w-full px-3 py-2 border rounded-lg">
+                  <option value="">Select visit type...</option>
+                  <option value="er">ER Visit</option>
+                  <option value="opd">OPD Visit</option>
+                  <option value="admission">Admission (Ward)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message (Optional)</label>
+                <textarea value={feedbackForm.message} onChange={(e) => setFeedbackForm({...feedbackForm, message: e.target.value})} className="w-full h-24 px-3 py-2 border rounded-lg" placeholder="Additional details..." />
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowFeedbackModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useEHR } from "@/lib/ehr-context";
-import { Nurse, ShiftType, Department } from "@/lib/ehr-data";
+import { Nurse, ShiftType, Department, PatientFeedback } from "@/lib/ehr-data";
 import { useAuth } from "@/lib/auth-context";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -49,6 +49,56 @@ export function NursingAdmin() {
   const [censusDepartmentFilter, setCensusDepartmentFilter] = useState<'all' | 'er' | 'opd' | 'triage' | 'general-ward'>('all');
   const [censusEsiFilter, setCensusEsiFilter] = useState<'all' | 'critical' | 'stable'>('all');
   const [censusDateRange, setCensusDateRange] = useState<'today' | 'week' | 'month' | 'year'>('month');
+
+  // Feedback data from localStorage (initialized once)
+  const [feedbackData, setFeedbackData] = useState<PatientFeedback[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('patientFeedback');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse feedback data:', e);
+      }
+    }
+    return [];
+  });
+
+  // Feedback statistics
+  const feedbackStats = useMemo(() => {
+    if (feedbackData.length === 0) return null;
+    
+    const total = feedbackData.length;
+    const avgRating = feedbackData.reduce((sum, f) => sum + f.rating, 0) / total;
+    const complaints = feedbackData.filter(f => f.feedbackType === 'complaint').length;
+    const suggestions = feedbackData.filter(f => f.feedbackType === 'suggestion').length;
+    const compliments = feedbackData.filter(f => f.feedbackType === 'compliment').length;
+    
+    const byType = { complaint: complaints, suggestion: suggestions, compliment: compliments };
+    
+    const byDepartment = feedbackData.reduce((acc, f) => {
+      acc[f.department] = (acc[f.department] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byServiceArea = feedbackData.reduce((acc, f) => {
+      acc[f.serviceArea] = (acc[f.serviceArea] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const avgRatingByDept = feedbackData.reduce((acc, f) => {
+      if (!acc[f.department]) acc[f.department] = [];
+      acc[f.department].push(f.rating);
+      return acc;
+    }, {} as Record<string, number[]>);
+    
+    const avgRatingByDeptFinal = Object.entries(avgRatingByDept).reduce((acc, [dept, ratings]) => {
+      acc[dept] = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return { total, avgRating, byType, byDepartment, byServiceArea, avgRatingByDept: avgRatingByDeptFinal };
+  }, [feedbackData]);
 
   const pendingVerificationCharts = patients.filter(p => 
     p.workflowStatus === 'doctor-completed' && p.chartVerificationStatus === 'pending'
@@ -1229,6 +1279,193 @@ export function NursingAdmin() {
               })()}
             </div>
           </div>
+
+          {/* PATIENT FEEDBACK SECTION */}
+          {feedbackStats && feedbackData.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-slate-800">Patient Feedback</h3>
+                <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                  {feedbackStats.total} submissions
+                </span>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                  <p className="text-3xl font-bold text-blue-600">{feedbackStats.total}</p>
+                  <p className="text-sm text-slate-600 font-medium">Total Feedback</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+                  <p className="text-3xl font-bold text-green-600">{feedbackStats.avgRating.toFixed(1)}</p>
+                  <p className="text-sm text-slate-600 font-medium">Avg Rating</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200">
+                  <p className="text-3xl font-bold text-red-600">{feedbackStats.byType.complaint}</p>
+                  <p className="text-sm text-slate-600 font-medium">Complaints</p>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg border border-emerald-200">
+                  <p className="text-3xl font-bold text-emerald-600">{feedbackStats.byType.compliment}</p>
+                  <p className="text-sm text-slate-600 font-medium">Compliments</p>
+                </div>
+              </div>
+
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Feedback Type Distribution - Pie */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Feedback Type Distribution</h4>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-40 h-40">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {(() => {
+                          const total = feedbackStats.total;
+                          const compPct = feedbackStats.byType.complaint / total * 100;
+                          const suggPct = feedbackStats.byType.suggestion / total * 100;
+                          const compsPct = feedbackStats.byType.compliment / total * 100;
+                          const circumference = 2 * Math.PI * 40;
+                          return (
+                            <>
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#fee2e2" strokeWidth="20" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compPct / 100} ${circumference}`} 
+                                strokeDashoffset="0" transform="rotate(-90 50 50)" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="20" 
+                                strokeDasharray={`${circumference * suggPct / 100} ${circumference}`} 
+                                strokeDashoffset={`${-circumference * compPct / 100}`} transform="rotate(-90 50 50)" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compsPct / 100} ${circumference}`} 
+                                strokeDashoffset={`${-circumference * (compPct + suggPct) / 100}`} transform="rotate(-90 50 50)" />
+                            </>
+                          );
+                        })()}
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-bold">{feedbackStats.total}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded"></div>
+                        <span className="text-sm">Complaints: {feedbackStats.byType.complaint}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-amber-500 rounded"></div>
+                        <span className="text-sm">Suggestions: {feedbackStats.byType.suggestion}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded"></div>
+                        <span className="text-sm">Compliments: {feedbackStats.byType.compliment}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Average Rating by Department - Bar */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Average Rating by Department</h4>
+                  <div className="space-y-3">
+                    {Object.entries(feedbackStats.avgRatingByDept).map(([dept, rating]) => {
+                      const deptLabel = dept === 'er' ? 'ER' : dept === 'opd' ? 'OPD' : dept === 'general-ward' ? 'Ward' : dept === 'icu' ? 'ICU' : 'Others';
+                      const ratingPct = (rating / 5) * 100;
+                      const barColor = rating >= 4 ? 'bg-green-500' : rating >= 3 ? 'bg-yellow-500' : 'bg-red-500';
+                      return (
+                        <div key={dept}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600">{deptLabel}</span>
+                            <span className="text-sm font-semibold">{rating.toFixed(1)}/5</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className={`${barColor} h-4 rounded-full`} style={{ width: `${ratingPct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Feedback by Service Area - Bar */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Feedback by Service Area</h4>
+                  <div className="space-y-3">
+                    {Object.entries(feedbackStats.byServiceArea)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 6)
+                      .map(([area, count]) => {
+                      const areaLabel = area === 'nursing' ? 'Nursing Care' : 
+                        area === 'doctor' ? 'Doctor Service' : 
+                        area === 'waiting-time' ? 'Waiting Time' : 
+                        area === 'facilities' ? 'Facilities' : 
+                        area === 'cleanliness' ? 'Cleanliness' : 
+                        area === 'staff-attitude' ? 'Staff Attitude' : 
+                        area === 'billing' ? 'Billing' : 'Others';
+                      const maxCount = Math.max(...Object.values(feedbackStats.byServiceArea));
+                      const pct = (count / maxCount) * 100;
+                      return (
+                        <div key={area}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600">{areaLabel}</span>
+                            <span className="text-sm font-semibold">{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className="bg-violet-500 h-4 rounded-full" style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Complaints vs Compliments - Pie */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Complaints vs Compliments</h4>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-40 h-40">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {(() => {
+                          const total = feedbackStats.byType.complaint + feedbackStats.byType.compliment || 1;
+                          const compPct = feedbackStats.byType.complaint / total * 100;
+                          const compsPct = feedbackStats.byType.compliment / total * 100;
+                          const circumference = 2 * Math.PI * 40;
+                          return (
+                            <>
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#fee2e2" strokeWidth="20" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compPct / 100} ${circumference}`} 
+                                strokeDashoffset="0" transform="rotate(-90 50 50)" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compsPct / 100} ${circumference}`} 
+                                strokeDashoffset={`${-circumference * compPct / 100}`} transform="rotate(-90 50 50)" />
+                            </>
+                          );
+                        })()}
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-bold">{feedbackStats.byType.complaint + feedbackStats.byType.compliment}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded"></div>
+                        <span className="text-sm">Complaints: {feedbackStats.byType.complaint}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded"></div>
+                        <span className="text-sm">Compliments: {feedbackStats.byType.compliment}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(!feedbackStats || feedbackData.length === 0) && (
+            <div className="card p-8 text-center">
+              <p className="text-slate-500">No patient feedback submitted yet.</p>
+              <p className="text-sm text-slate-400 mt-2">Patients can submit feedback from the main page.</p>
+            </div>
+          )}
         </div>
       )}
 

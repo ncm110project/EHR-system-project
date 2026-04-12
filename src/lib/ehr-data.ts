@@ -967,3 +967,16 @@ export const DIAGNOSIS_LIST = {
 };
 
 export const ALL_DIAGNOSES = Object.values(DIAGNOSIS_LIST).flat();
+
+export interface PatientFeedback {
+  id: string;
+  patientName?: string;
+  contactInfo?: string;
+  feedbackType: 'complaint' | 'suggestion' | 'compliment';
+  department: 'er' | 'opd' | 'general-ward' | 'icu' | 'others';
+  serviceArea: 'nursing' | 'doctor' | 'waiting-time' | 'facilities' | 'cleanliness' | 'staff-attitude' | 'billing' | 'others';
+  rating: 1 | 2 | 3 | 4 | 5;
+  visitType?: 'er' | 'opd' | 'admission';
+  message?: string;
+  dateSubmitted: string;
+}
