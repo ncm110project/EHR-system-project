@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
+type LoginTab = "employee" | "patient";
+
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user, isAuthenticated } = useAuth();
+  const { login, user, isAuthenticated, loginAsPatient } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<LoginTab>("employee");
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -52,6 +55,22 @@ export default function LoginPage() {
     }, 300);
   };
 
+  const handlePatientLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    setTimeout(() => {
+      const success = loginAsPatient(username, password);
+      if (success) {
+        router.push("/patient-portal");
+      } else {
+        setError("Invalid credentials. Make sure you have a patient account created by the hospital.");
+      }
+      setLoading(false);
+    }, 500);
+  };
+
   if (isAuthenticated) {
     return null;
   }
@@ -74,45 +93,112 @@ export default function LoginPage() {
           <p className="text-slate-400 mt-2">Electronic Health Record System</p>
         </div>
 
+        <div className="flex mb-6">
+          <button
+            onClick={() => setActiveTab("employee")}
+            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === "employee" 
+                ? "bg-teal-600 text-white" 
+                : "bg-white/10 text-slate-300 hover:bg-white/20"
+            }`}
+          >
+            Employee Portal
+          </button>
+          <button
+            onClick={() => setActiveTab("patient")}
+            className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === "patient" 
+                ? "bg-teal-600 text-white" 
+                : "bg-white/10 text-slate-300 hover:bg-white/20"
+            }`}
+          >
+            Patient Portal
+          </button>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-8">
           <div className="card p-8">
-            <h2 className="text-xl font-semibold mb-6">Sign In</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full"
-                  placeholder="Enter username"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full"
-                  placeholder="Enter password"
-                  required
-                />
-              </div>
-              {error && (
-                <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full btn btn-primary py-3 disabled:opacity-50"
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
-            </form>
+            {activeTab === "employee" ? (
+              <>
+                <h2 className="text-xl font-semibold mb-6">Employee Sign In</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full"
+                      placeholder="Enter username"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full"
+                      placeholder="Enter password"
+                      required
+                    />
+                  </div>
+                  {error && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn btn-primary py-3 disabled:opacity-50"
+                  >
+                    {loading ? "Signing in..." : "Sign In"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold mb-6">Patient Portal</h2>
+                <p className="text-sm text-slate-500 mb-4">Sign in with the account credentials provided by the hospital after your visit.</p>
+                <form onSubmit={handlePatientLogin} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full"
+                      placeholder="Enter your username"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full"
+                      placeholder="Enter your password"
+                      required
+                    />
+                  </div>
+                  {error && (
+                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn btn-primary py-3 disabled:opacity-50"
+                  >
+                    {loading ? "Signing in..." : "Sign In to Patient Portal"}
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
+          {activeTab === "employee" && (
           <div className="space-y-4">
             <div className="card p-6">
               <h3 className="font-semibold mb-4 text-slate-700">Quick Login - Demo Accounts</h3>
@@ -260,6 +346,7 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isPatient: boolean;
   login: (username: string, password: string) => boolean;
+  loginAsPatient: (username: string, password: string) => boolean;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -67,6 +68,23 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
     return false;
   }, [patientList]);
 
+  const loginAsPatient = useCallback((username: string, password: string): boolean => {
+    const pendingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
+    const allPatients = [...(patientList || []), ...pendingPatients];
+    
+    const patientWithAccount = allPatients.find(
+      p => p.hasPatientAccount && p.username === username && p.password === password
+    );
+    
+    if (patientWithAccount) {
+      const permissions = rolePermissions['patient'] || [];
+      setUser({ ...patientWithAccount, role: 'patient', permissions } as unknown as User);
+      return true;
+    }
+    
+    return false;
+  }, [patientList]);
+
   const logout = useCallback(() => {
     setUser(null);
   }, []);
@@ -109,6 +127,7 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
       isAuthenticated: !!user,
       isPatient,
       login,
+      loginAsPatient,
       logout,
       changePassword,
       hasPermission
