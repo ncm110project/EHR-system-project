@@ -1220,9 +1220,9 @@ export function NursingAdmin() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { dept: 'General Ward', occupied: 32, total: 40 },
-                { dept: 'ICU', occupied: 9, total: 10 },
                 { dept: 'ER Beds', occupied: 15, total: 20 },
-                { dept: 'Pediatric', occupied: 8, total: 15 },
+                { dept: 'Outpatient', occupied: 45, total: 50 },
+                { dept: 'Triage', occupied: 8, total: 15 },
               ].map((bed) => {
                 const pct = Math.round((bed.occupied / bed.total) * 100);
                 const statusColor = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600';
