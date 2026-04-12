@@ -35,16 +35,21 @@ export function TriageDepartment() {
     emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
     hypertension: false, diabetes: false, asthma: false, heartDisease: false,
     kidneyDisease: false, stroke: false, tuberculosis: false, cancer: false,
-    arthritis: false, thyroidDisorder: false, conditionsOther: "",
+    arthritis: false, thyroidDisorder: false, conditionsOther: false,
+    conditionsOtherText: "",
     allergyPenicillin: false, allergySulfa: false, allergyAspirin: false, allergyNsaids: false,
     allergySeafood: false, allergyNuts: false, allergyEggs: false, allergyMilk: false,
-    allergyDust: false, allergyPollen: false, allergiesOther: "",
+    allergyDust: false, allergyPollen: false, allergiesOther: false,
+    allergiesOtherText: "",
     currentMedications: "", pastSurgeries: "",
     smoking: "Non-smoker", alcoholUse: "None", occupation: "",
     hasInsurance: false, insuranceProvider: "", policyNumber: "", memberId: "",
     gender: "Male" as "Male" | "Female",
-    height: "", weight: "", chiefComplaint: "",
-    bloodType: "Unknown"
+    height: 0, weight: 0, chiefComplaint: "",
+    bloodType: "Unknown",
+    vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
+    vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
+    vitalsPainScore: 0
   });
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -208,7 +213,7 @@ export function TriageDepartment() {
     if (newPatientForm.cancer) medicalConditions.push("Cancer");
     if (newPatientForm.arthritis) medicalConditions.push("Arthritis");
     if (newPatientForm.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
-    if (newPatientForm.conditionsOther) medicalConditions.push(newPatientForm.conditionsOther);
+    if (newPatientForm.conditionsOther) medicalConditions.push(newPatientForm.conditionsOtherText || "Other");
 
     const allergiesList: string[] = [];
     if (newPatientForm.allergyPenicillin) allergiesList.push("Penicillin");
@@ -221,7 +226,7 @@ export function TriageDepartment() {
     if (newPatientForm.allergyMilk) allergiesList.push("Milk");
     if (newPatientForm.allergyDust) allergiesList.push("Dust");
     if (newPatientForm.allergyPollen) allergiesList.push("Pollen");
-    if (newPatientForm.allergiesOther) allergiesList.push(newPatientForm.allergiesOther);
+    if (newPatientForm.allergiesOther) allergiesList.push(newPatientForm.allergiesOtherText || "Other");
 
     const fullName = `${newPatientForm.firstName} ${newPatientForm.middleName} ${newPatientForm.lastName}`.trim();
     
@@ -243,14 +248,38 @@ export function TriageDepartment() {
       chiefComplaint: newPatientForm.chiefComplaint,
       workflowStatus: 'registered',
       registrationSource: 'TRIAGE',
-      height: newPatientForm.height ? parseFloat(newPatientForm.height) : undefined,
-      weight: newPatientForm.weight ? parseFloat(newPatientForm.weight) : undefined,
+      height: newPatientForm.height || undefined,
+      weight: newPatientForm.weight || undefined,
       religion: newPatientForm.religion === 'Other' ? newPatientForm.religionOther : newPatientForm.religion,
       email: newPatientForm.email,
       emergencyContact: `${newPatientForm.emergencyName} (${newPatientForm.emergencyRelationship}) - ${newPatientForm.emergencyPhone}`,
       emergencyPhone: newPatientForm.emergencyPhone,
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: now },
-      vitalSignsHistory: [],
+      vitalSigns: { 
+        bloodPressure: newPatientForm.vitalsBpSystolic && newPatientForm.vitalsBpDiastolic 
+          ? `${newPatientForm.vitalsBpSystolic}/${newPatientForm.vitalsBpDiastolic}` 
+          : '-', 
+        heartRate: newPatientForm.vitalsHeartRate, 
+        temperature: newPatientForm.vitalsTemperature, 
+        respiratoryRate: newPatientForm.vitalsRespiratoryRate, 
+        oxygenSaturation: newPatientForm.vitalsOxygenSaturation,
+        painScore: newPatientForm.vitalsPainScore,
+        recordedAt: now 
+      },
+      vitalSignsHistory: [{
+        vitals: {
+          bloodPressure: newPatientForm.vitalsBpSystolic && newPatientForm.vitalsBpDiastolic 
+            ? `${newPatientForm.vitalsBpSystolic}/${newPatientForm.vitalsBpDiastolic}` 
+            : '-',
+          heartRate: newPatientForm.vitalsHeartRate,
+          temperature: newPatientForm.vitalsTemperature,
+          respiratoryRate: newPatientForm.vitalsRespiratoryRate,
+          oxygenSaturation: newPatientForm.vitalsOxygenSaturation,
+          painScore: newPatientForm.vitalsPainScore,
+          recordedAt: now
+        },
+        timestamp: now,
+        recordedBy: user?.name || 'Triage Nurse'
+      }],
       notesHistory: [],
       diagnosisHistory: []
     };
@@ -273,16 +302,21 @@ export function TriageDepartment() {
       emergencyName: "", emergencyRelationship: "", emergencyPhone: "",
       hypertension: false, diabetes: false, asthma: false, heartDisease: false,
       kidneyDisease: false, stroke: false, tuberculosis: false, cancer: false,
-      arthritis: false, thyroidDisorder: false, conditionsOther: "",
+      arthritis: false, thyroidDisorder: false, conditionsOther: false,
+      conditionsOtherText: "",
       allergyPenicillin: false, allergySulfa: false, allergyAspirin: false, allergyNsaids: false,
       allergySeafood: false, allergyNuts: false, allergyEggs: false, allergyMilk: false,
-      allergyDust: false, allergyPollen: false, allergiesOther: "",
+      allergyDust: false, allergyPollen: false, allergiesOther: false,
+      allergiesOtherText: "",
       currentMedications: "", pastSurgeries: "",
       smoking: "Non-smoker", alcoholUse: "None", occupation: "",
       hasInsurance: false, insuranceProvider: "", policyNumber: "", memberId: "",
       gender: "Male",
-      height: "", weight: "", chiefComplaint: "",
-      bloodType: "Unknown"
+      height: 0, weight: 0, chiefComplaint: "",
+      bloodType: "Unknown",
+      vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
+      vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
+      vitalsPainScore: 0
     });
   };
 
@@ -867,7 +901,18 @@ export function TriageDepartment() {
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.stroke} onChange={(e) => setNewPatientForm({...newPatientForm, stroke: e.target.checked})} /> Stroke</label>
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.tuberculosis} onChange={(e) => setNewPatientForm({...newPatientForm, tuberculosis: e.target.checked})} /> TB</label>
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.cancer} onChange={(e) => setNewPatientForm({...newPatientForm, cancer: e.target.checked})} /> Cancer</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.arthritis} onChange={(e) => setNewPatientForm({...newPatientForm, arthritis: e.target.checked})} /> Arthritis</label>
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.thyroidDisorder} onChange={(e) => setNewPatientForm({...newPatientForm, thyroidDisorder: e.target.checked})} /> Thyroid Disorder</label>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={newPatientForm.conditionsOther} onChange={(e) => setNewPatientForm({...newPatientForm, conditionsOther: e.target.checked})} />
+                      Other
+                    </label>
                   </div>
+                  {newPatientForm.conditionsOther && (
+                    <div className="mt-2">
+                      <input type="text" value={newPatientForm.conditionsOtherText} onChange={(e) => setNewPatientForm({...newPatientForm, conditionsOtherText: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Specify other condition(s)" />
+                    </div>
+                  )}
                 </div>
                 <div className="mb-3">
                   <label className="block text-xs font-medium text-slate-600 mb-2">Allergies</label>
@@ -880,7 +925,16 @@ export function TriageDepartment() {
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyNuts} onChange={(e) => setNewPatientForm({...newPatientForm, allergyNuts: e.target.checked})} /> Nuts</label>
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyEggs} onChange={(e) => setNewPatientForm({...newPatientForm, allergyEggs: e.target.checked})} /> Eggs</label>
                     <label className="flex items-center gap-1"><input type="checkbox" checked={newPatientForm.allergyMilk} onChange={(e) => setNewPatientForm({...newPatientForm, allergyMilk: e.target.checked})} /> Milk</label>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={newPatientForm.allergiesOther} onChange={(e) => setNewPatientForm({...newPatientForm, allergiesOther: e.target.checked})} />
+                      Other
+                    </label>
                   </div>
+                  {newPatientForm.allergiesOther && (
+                    <div className="mt-2">
+                      <input type="text" value={newPatientForm.allergiesOtherText} onChange={(e) => setNewPatientForm({...newPatientForm, allergiesOtherText: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Specify other allergen(s)" />
+                    </div>
+                  )}
                 </div>
                 <div className="mt-3">
                   <label className="block text-xs font-medium text-slate-600 mb-1">Current Medications</label>
@@ -888,17 +942,45 @@ export function TriageDepartment() {
                 </div>
               </div>
 
-              {/* Vitals & Chief Complaint - Keep from original */}
+              {/* Vital Signs */}
               <div>
-                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Triage Information</h4>
-                <div className="grid grid-cols-2 gap-3">
+                <h4 className="font-medium text-slate-800 mb-3 pb-2 border-b">Vital Signs</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">BP Systolic (mmHg)</label>
+                    <input type="number" value={newPatientForm.vitalsBpSystolic || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsBpSystolic: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 120" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">BP Diastolic (mmHg)</label>
+                    <input type="number" value={newPatientForm.vitalsBpDiastolic || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsBpDiastolic: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 80" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Heart Rate (bpm)</label>
+                    <input type="number" value={newPatientForm.vitalsHeartRate || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsHeartRate: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 72" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Temperature (°C)</label>
+                    <input type="number" step="0.1" value={newPatientForm.vitalsTemperature || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsTemperature: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 36.5" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">SpO2 (%)</label>
+                    <input type="number" min="0" max="100" value={newPatientForm.vitalsOxygenSaturation || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsOxygenSaturation: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 98" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Resp. Rate (breaths/min)</label>
+                    <input type="number" value={newPatientForm.vitalsRespiratoryRate || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsRespiratoryRate: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 16" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Pain Score (0-10)</label>
+                    <input type="number" min="0" max="10" value={newPatientForm.vitalsPainScore || ''} onChange={(e) => setNewPatientForm({...newPatientForm, vitalsPainScore: parseInt(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="0-10" />
+                  </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Height (cm)</label>
-                    <input type="number" value={newPatientForm.height} onChange={(e) => setNewPatientForm({...newPatientForm, height: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 170" />
+                    <input type="number" value={newPatientForm.height || ''} onChange={(e) => setNewPatientForm({...newPatientForm, height: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 170" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Weight (kg)</label>
-                    <input type="number" value={newPatientForm.weight} onChange={(e) => setNewPatientForm({...newPatientForm, weight: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 70" />
+                    <input type="number" value={newPatientForm.weight || ''} onChange={(e) => setNewPatientForm({...newPatientForm, weight: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 70" />
                   </div>
                 </div>
                 <div className="mt-3">
