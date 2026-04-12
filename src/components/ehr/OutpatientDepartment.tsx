@@ -1292,7 +1292,7 @@ function PatientDetailModal({
             </div>
           )}
 
-          {isDoctor && patient.workflowStatus !== 'doctor-completed' && patient.workflowStatus !== 'completed' && (
+          {isDoctor && (
             <>
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="font-semibold mb-3">Doctor&apos;s Actions</h4>
@@ -1476,7 +1476,7 @@ function PatientDetailModal({
             </>
           )}
 
-          {isDoctor && patient.workflowStatus !== 'doctor-completed' && patient.workflowStatus !== 'completed' && onScheduleAppointment && (
+          {isDoctor && onScheduleAppointment && (
             <div className="border-t border-slate-200 pt-4">
               <button 
                 className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50 flex items-center gap-2"
