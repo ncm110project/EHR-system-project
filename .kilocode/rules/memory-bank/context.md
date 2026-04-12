@@ -121,6 +121,7 @@ bun dev
 | Apr 12 2026 | Update OPD Nurse Create Account: moved inside patient chart modal, auto-fills patient info, marks original patient as having account |
 | Apr 12 2026 | Add expanded demographics to OPD patient chart: Date of Birth, Email, Address, Religion, Civil Status, Emergency Contact, Medical Conditions, Current Medications, Past Surgeries, Smoking, Alcohol Use |
 | Apr 12 2026 | Fix OPD permissions: nurses cannot transfer patients, doctors see "For Admission" (only General Ward) instead of "Transfer" |
+| Apr 12 2026 | Enhance landing page with better visuals: hero section, animated badges, gradient department cards with hover effects, instruction box; rename "Employee Login" to "Employee/Patient Portal" |
 
 ## Pending Improvements
 
