@@ -232,6 +232,27 @@ const storedAppointments: Appointment[] = typeof window !== 'undefined' ? JSON.p
                             )}
                           </div>
                         )}
+                        {lab.attachments && lab.attachments.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium mb-2">Attached Files:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {lab.attachments.map((url: string, fileIdx: number) => (
+                                <a
+                                  key={fileIdx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-2 bg-white border border-green-200 rounded text-sm text-green-700 hover:bg-green-50"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                  </svg>
+                                  View File {fileIdx + 1}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

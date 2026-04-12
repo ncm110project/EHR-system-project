@@ -1302,7 +1302,7 @@ export function GeneralWard() {
                         <thead className="bg-slate-50">
                           <tr>
                             <th className="px-3 py-2 text-left text-slate-600 font-medium">Test Name</th>
-                            <th className="px-3 py-2 text-left text-slate-600 font-medium">Result</th>
+                            <th className="px-3 py-2 text-left text-slate-600 font-medium">Result / Files</th>
                             <th className="px-3 py-2 text-left text-slate-600 font-medium">Status</th>
                             <th className="px-3 py-2 text-left text-slate-600 font-medium">Ordered By</th>
                           </tr>
@@ -1311,8 +1311,28 @@ export function GeneralWard() {
                           {labOrders.filter(o => o.patientId === selectedPatient.id).map(order => (
                             <tr key={order.id} className="border-t border-slate-200">
                               <td className="px-3 py-2 font-medium text-slate-800">{order.testName}</td>
-                              <td className="px-3 py-2 text-slate-600">
-                                {order.results || <span className="text-slate-400 italic">Pending</span>}
+                              <td className="px-3 py-2 text-slate-600 max-w-xs">
+                                <div className="flex flex-col">
+                                  {order.results && <span className="truncate">{order.results}</span>}
+                                  {order.attachments && order.attachments.length > 0 && (
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {order.attachments.map((url, idx) => (
+                                        <a
+                                          key={idx}
+                                          href={url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-teal-600 hover:underline flex items-center gap-1"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                          </svg>
+                                          File {idx + 1}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-3 py-2">
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -2566,6 +2586,27 @@ Doctor&apos;s Notes
                           <div className="mt-3 p-3 bg-white rounded border">
                             <p className="text-sm font-medium text-slate-700">Results:</p>
                             <pre className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{order.results}</pre>
+                          </div>
+                        )}
+                        {order.attachments && order.attachments.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-sm font-medium text-slate-700 mb-2">Attached Files:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {order.attachments.map((url, fileIdx) => (
+                                <a
+                                  key={fileIdx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-2 bg-white border border-green-200 rounded text-sm text-green-700 hover:bg-green-50"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                  </svg>
+                                  View File {fileIdx + 1}
+                                </a>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>

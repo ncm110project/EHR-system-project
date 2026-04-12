@@ -779,6 +779,7 @@ export function OutpatientDepartment() {
           isNurse={isNurse}
           isDoctor={isDoctor}
           medications={medications}
+          labOrders={labOrders}
           onClose={() => {
             setSelectedPatient(null);
             setShowCreateAccount(false);
@@ -922,6 +923,7 @@ function PatientDetailModal({
   isNurse, 
   isDoctor,
   medications,
+  labOrders,
   onClose, 
   onSaveNurseNotes,
   onSendToDoctor,
@@ -946,6 +948,7 @@ function PatientDetailModal({
   isNurse: boolean;
   isDoctor: boolean;
   medications: any[];
+  labOrders?: any[];
   onClose: () => void;
   onSaveNurseNotes: (patient: Patient, vitals: VitalSigns, notes: string) => void;
   onSendToDoctor: (patient: Patient) => void;
@@ -1619,6 +1622,48 @@ function PatientDetailModal({
                         <p className="text-xs text-slate-500">
                           {formatDateTime(entry.timestamp || '')} by {entry.recordedBy}
                         </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {labOrders && labOrders.filter((o: any) => o.patientId === patient.id).length > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Lab Orders</h4>
+                  <div className="space-y-2">
+                    {labOrders.filter((o: any) => o.patientId === patient.id).map((order: any, idx: number) => (
+                      <div key={idx} className={`p-3 rounded-lg ${order.status === 'completed' ? 'bg-green-50 border border-green-200' : order.status === 'in-progress' ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50'}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{order.testName}</p>
+                            <p className="text-xs text-slate-500">{order.date} by {order.orderedBy}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${order.status === 'completed' ? 'bg-green-100 text-green-700' : order.status === 'in-progress' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-600'}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        {order.results && (
+                          <p className="text-sm mt-2 text-slate-600">{order.results}</p>
+                        )}
+                        {order.attachments && order.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {order.attachments.map((url: string, fileIdx: number) => (
+                              <a
+                                key={fileIdx}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-2 py-1 bg-white border border-green-200 rounded text-xs text-green-700 hover:bg-green-50"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                </svg>
+                                File {fileIdx + 1}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -373,8 +373,13 @@ export function Laboratory() {
                         accept="image/*,.pdf,.doc,.docx"
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
-                          const fileUrls = files.map(file => URL.createObjectURL(file));
-                          setAttachments([...attachments, ...fileUrls]);
+                          files.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setAttachments(prev => [...prev, reader.result as string]);
+                            };
+                            reader.readAsDataURL(file);
+                          });
                         }}
                         className="hidden"
                       />
