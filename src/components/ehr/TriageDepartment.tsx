@@ -249,7 +249,7 @@ const pendingTriagePatients = patients.filter(p =>
       bloodType: newPatientForm.bloodType,
       allergies: allergiesList,
       status: 'waiting',
-      department: newPatientForm.departmentAssigned as 'er' | 'opd',
+      department: (newPatientForm.departmentAssigned as 'er' | 'opd').toLowerCase() as 'er' | 'opd',
       triageStatus: 'triaged',
       esiLevel: newPatientForm.esiLevel,
       registrationStatus: 'confirmed',
