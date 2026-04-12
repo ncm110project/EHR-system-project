@@ -179,7 +179,7 @@ export function OutpatientDepartment() {
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
 
-  const opdPatients = patients.filter(p => p.department === 'opd' && p.registrationStatus === 'confirmed');
+  const opdPatients = patients.filter(p => p.department === 'opd' && (p.registrationStatus === 'confirmed' || p.registrationStatus === 'pending'));
   
   const getQueuePatients = () => {
     if (isNurse) {
