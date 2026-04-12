@@ -258,6 +258,32 @@ export function EmergencyRoom() {
     frequency: '',
     duration: ''
   });
+  
+  const [showNurseNotes, setShowNurseNotes] = useState(false);
+  const [showPainAssessment, setShowPainAssessment] = useState(false);
+  const [showFDARForm, setShowFDARForm] = useState(false);
+  const [showDoctorOrders, setShowDoctorOrders] = useState(false);
+  const [showDoctorNotes, setShowDoctorNotes] = useState(false);
+  const [nurseNoteText, setNurseNoteText] = useState('');
+  const [painFormData, setPainFormData] = useState({
+    score: 0,
+    location: '',
+    locationOther: '',
+    type: '',
+    typeOther: ''
+  });
+  const [fdarFormData, setFdarFormData] = useState({
+    focus: '',
+    data: '',
+    action: '',
+    response: ''
+  });
+  const [doctorOrderData, setDoctorOrderData] = useState({
+    order: '',
+    priority: 'routine' as 'routine' | 'urgent' | 'stat',
+    instructions: ''
+  });
+  const [doctorNoteText, setDoctorNoteText] = useState('');
 
   const getTriageClass = (priority?: TriagePriority) => {
     if (!priority) return '';
@@ -516,6 +542,148 @@ export function EmergencyRoom() {
         : bed
     ));
     addToast(`Bed ${bedId} released`, "success");
+  };
+
+  const handleAddNurseNote = (patient: Patient) => {
+    if (!isNurse || !nurseNoteText.trim()) return;
+    const now = new Date().toISOString();
+    const noteEntry: NotesEntry = {
+      notes: nurseNoteText,
+      noteType: 'nurse',
+      recordedBy: user?.name || 'ER Nurse',
+      timestamp: now
+    };
+    updatePatient({
+      ...patient,
+      notesHistory: [...(patient.notesHistory || []), noteEntry]
+    });
+    addActivity({
+      id: generateId(),
+      type: 'notes',
+      department: 'er',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Nurse note added`,
+      timestamp: now
+    });
+    setNurseNoteText('');
+    setShowNurseNotes(false);
+    addToast("Nurse note saved", "success");
+  };
+
+  const handleAddPainAssessment = (patient: Patient) => {
+    if (!isNurse) return;
+    const now = new Date().toISOString();
+    const painEntry = {
+      painScore: painFormData.score,
+      painLocation: painFormData.location === 'Other' ? painFormData.locationOther : painFormData.location,
+      painType: painFormData.type === 'Other' ? painFormData.typeOther : painFormData.type,
+      recordedBy: user?.name || 'ER Nurse',
+      recordedAt: now
+    };
+    updatePatient({
+      ...patient,
+      vitalSigns: { ...patient.vitalSigns!, painScore: painFormData.score },
+      vitalSignsHistory: [...(patient.vitalSignsHistory || []), {
+        vitals: { ...patient.vitalSigns!, painScore: painFormData.score, recordedAt: now },
+        timestamp: now,
+        recordedBy: user?.name || 'ER Nurse'
+      }]
+    });
+    addActivity({
+      id: generateId(),
+      type: 'notes',
+      department: 'er',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Pain assessment: ${painFormData.score}/10, ${painFormData.location}, ${painFormData.type}`,
+      timestamp: now
+    });
+    setPainFormData({ score: 0, location: '', locationOther: '', type: '', typeOther: '' });
+    setShowPainAssessment(false);
+    addToast("Pain assessment saved", "success");
+  };
+
+  const handleAddFDARNote = (patient: Patient) => {
+    if (!isNurse || !fdarFormData.focus.trim()) return;
+    const now = new Date().toISOString();
+    const fdarEntry: NotesEntry = {
+      notes: `F: ${fdarFormData.focus}\nD: ${fdarFormData.data}\nA: ${fdarFormData.action}\nR: ${fdarFormData.response}`,
+      noteType: 'FDAR',
+      recordedBy: user?.name || 'ER Nurse',
+      timestamp: now
+    };
+    updatePatient({
+      ...patient,
+      nursingNotesHistory: [...(patient.nursingNotesHistory || []), fdarEntry],
+      notesHistory: [...(patient.notesHistory || []), fdarEntry]
+    });
+    addActivity({
+      id: generateId(),
+      type: 'notes',
+      department: 'er',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `FDAR note added`,
+      timestamp: now
+    });
+    setFdarFormData({ focus: '', data: '', action: '', response: '' });
+    setShowFDARForm(false);
+    addToast("FDAR note saved", "success");
+  };
+
+  const handleAddDoctorOrder = (patient: Patient) => {
+    if (!isDoctor || !doctorOrderData.order.trim()) return;
+    const now = new Date().toISOString();
+    const orderEntry: NotesEntry = {
+      notes: `ORDER: ${doctorOrderData.order}\nPriority: ${doctorOrderData.priority}\nInstructions: ${doctorOrderData.instructions || 'None'}`,
+      noteType: 'order',
+      recordedBy: user?.name || 'ER Doctor',
+      timestamp: now
+    };
+    updatePatient({
+      ...patient,
+      notesHistory: [...(patient.notesHistory || []), orderEntry]
+    });
+    addActivity({
+      id: generateId(),
+      type: 'notes',
+      department: 'er',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Doctor order: ${doctorOrderData.order}`,
+      timestamp: now
+    });
+    setDoctorOrderData({ order: '', priority: 'routine', instructions: '' });
+    setShowDoctorOrders(false);
+    addToast("Doctor order added", "success");
+  };
+
+  const handleAddDoctorNote = (patient: Patient) => {
+    if (!isDoctor || !doctorNoteText.trim()) return;
+    const now = new Date().toISOString();
+    const noteEntry: NotesEntry = {
+      notes: doctorNoteText,
+      noteType: 'doctor',
+      recordedBy: user?.name || 'ER Doctor',
+      timestamp: now
+    };
+    updatePatient({
+      ...patient,
+      notesHistory: [...(patient.notesHistory || []), noteEntry]
+    });
+    addActivity({
+      id: generateId(),
+      type: 'notes',
+      department: 'er',
+      patientId: patient.id,
+      patientName: patient.name,
+      description: `Doctor note added`,
+      timestamp: now
+    });
+    setDoctorNoteText('');
+    setShowDoctorNotes(false);
+    addToast("Doctor note saved", "success");
   };
 
   const confirmDischarge = () => {
@@ -1093,18 +1261,69 @@ export function EmergencyRoom() {
                 </div>
               )}
 
-              {selectedPatient.notesHistory && selectedPatient.notesHistory.length > 0 && (
+              {(selectedPatient.notesHistory || selectedPatient.nursingNotesHistory) && (
                 <div>
-                  <h4 className="font-semibold mb-3">Notes History</h4>
-                  <div className="space-y-2">
-                    {selectedPatient.notesHistory.map((entry, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
-                        <p className="text-sm">{entry.notes}</p>
-                        <p className="text-xs text-slate-500">
-                          {formatDateTime(entry.timestamp || '')} by {entry.recordedBy}
-                        </p>
+                  <h4 className="font-semibold mb-3">Clinical Notes</h4>
+                  <div className="space-y-4">
+                    {(selectedPatient.nursingNotesHistory || []).filter(n => n.noteType === 'FDAR').length > 0 && (
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <h5 className="font-medium text-blue-800 mb-2">FDAR Notes</h5>
+                        {selectedPatient.nursingNotesHistory?.filter(n => n.noteType === 'FDAR').map((entry, idx) => (
+                          <div key={idx} className="border-b border-blue-100 pb-2 mb-2 last:border-0">
+                            <p className="text-sm whitespace-pre-wrap">{entry.notes}</p>
+                            <p className="text-xs text-blue-600">{formatDateTime(entry.timestamp || '')} by {entry.recordedBy} (Nurse)</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    
+                    {(selectedPatient.notesHistory || []).filter(n => n.noteType === 'nurse').length > 0 && (
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <h5 className="font-medium text-green-800 mb-2">Nurse&apos;s Notes</h5>
+                        {selectedPatient.notesHistory?.filter(n => n.noteType === 'nurse').map((entry, idx) => (
+                          <div key={idx} className="border-b border-green-100 pb-2 mb-2 last:border-0">
+                            <p className="text-sm">{entry.notes}</p>
+                            <p className="text-xs text-green-600">{formatDateTime(entry.timestamp || '')} by {entry.recordedBy}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {(selectedPatient.notesHistory || []).filter(n => n.noteType === 'order').length > 0 && (
+                      <div className="p-3 bg-purple-50 rounded-lg">
+                        <h5 className="font-medium text-purple-800 mb-2">Doctor&apos;s Orders</h5>
+                        {selectedPatient.notesHistory?.filter(n => n.noteType === 'order').map((entry, idx) => (
+                          <div key={idx} className="border-b border-purple-100 pb-2 mb-2 last:border-0">
+                            <p className="text-sm whitespace-pre-wrap">{entry.notes}</p>
+                            <p className="text-xs text-purple-600">{formatDateTime(entry.timestamp || '')} by {entry.recordedBy} (Doctor)</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {(selectedPatient.notesHistory || []).filter(n => n.noteType === 'doctor').length > 0 && (
+                      <div className="p-3 bg-amber-50 rounded-lg">
+                        <h5 className="font-medium text-amber-800 mb-2">Doctor&apos;s Notes</h5>
+                        {selectedPatient.notesHistory?.filter(n => n.noteType === 'doctor').map((entry, idx) => (
+                          <div key={idx} className="border-b border-amber-100 pb-2 mb-2 last:border-0">
+                            <p className="text-sm">{entry.notes}</p>
+                            <p className="text-xs text-amber-600">{formatDateTime(entry.timestamp || '')} by {entry.recordedBy}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {(selectedPatient.notesHistory || []).filter(n => !n.noteType || n.noteType === 'progress').length > 0 && (
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <h5 className="font-medium text-slate-800 mb-2">Other Notes</h5>
+                        {selectedPatient.notesHistory?.filter(n => !n.noteType || n.noteType === 'progress').map((entry, idx) => (
+                          <div key={idx} className="border-b border-slate-200 pb-2 mb-2 last:border-0">
+                            <p className="text-sm">{entry.notes}</p>
+                            <p className="text-xs text-slate-500">{formatDateTime(entry.timestamp || '')} by {entry.recordedBy}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1356,11 +1575,111 @@ export function EmergencyRoom() {
                                 className="px-3 py-2 border border-slate-300 rounded-lg"
                               />
                             </div>
-                            <button 
-                              className="btn btn-primary"
-                              onClick={() => handleUpdateVitals(selectedPatient)}
-                            >
-                              Save Vitals
+<button 
+                          className="btn btn-primary"
+                          onClick={() => handleUpdateVitals(selectedPatient)}
+                        >
+                          Save Vitals
+                        </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowNurseNotes(!showNurseNotes)}
+                        >
+                          <span className="font-medium">Add Nurse&apos;s Notes</span>
+                          <p className="text-sm text-slate-500">Document observations and care</p>
+                        </button>
+                        {showNurseNotes && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <textarea
+                              value={nurseNoteText}
+                              onChange={(e) => setNurseNoteText(e.target.value)}
+                              placeholder="Enter nurse notes..."
+                              className="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                            <button className="btn btn-primary" onClick={() => handleAddNurseNote(selectedPatient)}>
+                              Save Nurse Note
+                            </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowPainAssessment(!showPainAssessment)}
+                        >
+                          <span className="font-medium">Pain Assessment</span>
+                          <p className="text-sm text-slate-500">Record pain score and details</p>
+                        </button>
+                        {showPainAssessment && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 mb-1">Pain Score (0-10)</label>
+                              <div className="flex gap-1">
+                                {[0,1,2,3,4,5,6,7,8,9,10].map(score => (
+                                  <button
+                                    key={score}
+                                    type="button"
+                                    onClick={() => setPainFormData({...painFormData, score})}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded border ${
+                                      painFormData.score === score ? 'bg-red-500 text-white border-red-500' : 'bg-white text-slate-600 border-slate-300'
+                                    }`}
+                                  >{score}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 mb-1">Pain Location</label>
+                              <select value={painFormData.location} onChange={(e) => setPainFormData({...painFormData, location: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="">Select location</option>
+                                <option value="Head">Head</option>
+                                <option value="Chest">Chest</option>
+                                <option value="Abdomen">Abdomen</option>
+                                <option value="Back">Back</option>
+                                <option value="Arm">Arm</option>
+                                <option value="Leg">Leg</option>
+                                <option value="Other">Other</option>
+                              </select>
+                              {painFormData.location === 'Other' && (
+                                <input type="text" value={painFormData.locationOther} onChange={(e) => setPainFormData({...painFormData, locationOther: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg mt-2" placeholder="Specify location" />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-slate-700 mb-1">Pain Type</label>
+                              <select value={painFormData.type} onChange={(e) => setPainFormData({...painFormData, type: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="">Select type</option>
+                                <option value="Sharp">Sharp</option>
+                                <option value="Dull">Dull</option>
+                                <option value="Throbbing">Throbbing</option>
+                                <option value="Burning">Burning</option>
+                                <option value="Other">Other</option>
+                              </select>
+                              {painFormData.type === 'Other' && (
+                                <input type="text" value={painFormData.typeOther} onChange={(e) => setPainFormData({...painFormData, typeOther: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg mt-2" placeholder="Specify type" />
+                              )}
+                            </div>
+                            <button className="btn btn-primary" onClick={() => handleAddPainAssessment(selectedPatient)}>
+                              Save Pain Assessment
+                            </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowFDARForm(!showFDARForm)}
+                        >
+                          <span className="font-medium">FDAR Notes</span>
+                          <p className="text-sm text-slate-500">Focus, Data, Action, Response</p>
+                        </button>
+                        {showFDARForm && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <input type="text" value={fdarFormData.focus} onChange={(e) => setFdarFormData({...fdarFormData, focus: e.target.value})} placeholder="Focus (e.g., Pain management)" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                            <textarea value={fdarFormData.data} onChange={(e) => setFdarFormData({...fdarFormData, data: e.target.value})} placeholder="Data (Assessment findings)" className="w-full h-16 px-3 py-2 border border-slate-300 rounded-lg" />
+                            <textarea value={fdarFormData.action} onChange={(e) => setFdarFormData({...fdarFormData, action: e.target.value})} placeholder="Action (Interventions performed)" className="w-full h-16 px-3 py-2 border border-slate-300 rounded-lg" />
+                            <textarea value={fdarFormData.response} onChange={(e) => setFdarFormData({...fdarFormData, response: e.target.value})} placeholder="Response (Patient response)" className="w-full h-16 px-3 py-2 border border-slate-300 rounded-lg" />
+                            <button className="btn btn-primary" onClick={() => handleAddFDARNote(selectedPatient)}>
+                              Save FDAR Note
                             </button>
                           </div>
                         )}
@@ -1453,6 +1772,60 @@ export function EmergencyRoom() {
                               onClick={() => handlePrescribe(selectedPatient)}
                             >
                               Submit Prescription
+                            </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowDoctorOrders(!showDoctorOrders)}
+                        >
+                          <span className="font-medium">Doctor&apos;s Orders</span>
+                          <p className="text-sm text-slate-500">Create orders for nurses</p>
+                        </button>
+                        {showDoctorOrders && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <textarea
+                              value={doctorOrderData.order}
+                              onChange={(e) => setDoctorOrderData({...doctorOrderData, order: e.target.value})}
+                              placeholder="Enter order details..."
+                              className="w-full h-20 px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                            <select value={doctorOrderData.priority} onChange={(e) => setDoctorOrderData({...doctorOrderData, priority: e.target.value as any})} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                              <option value="routine">Routine</option>
+                              <option value="urgent">Urgent</option>
+                              <option value="stat">STAT</option>
+                            </select>
+                            <input
+                              type="text"
+                              placeholder="Special instructions (e.g., oral, IV, PRN)"
+                              value={doctorOrderData.instructions}
+                              onChange={(e) => setDoctorOrderData({...doctorOrderData, instructions: e.target.value})}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                            <button className="btn btn-primary" onClick={() => handleAddDoctorOrder(selectedPatient)}>
+                              Save Order
+                            </button>
+                          </div>
+                        )}
+
+                        <button 
+                          className="w-full p-3 border border-slate-200 rounded-lg text-left hover:bg-slate-50"
+                          onClick={() => setShowDoctorNotes(!showDoctorNotes)}
+                        >
+                          <span className="font-medium">Doctor&apos;s Notes</span>
+                          <p className="text-sm text-slate-500">Add clinical notes</p>
+                        </button>
+                        {showDoctorNotes && (
+                          <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                            <textarea
+                              value={doctorNoteText}
+                              onChange={(e) => setDoctorNoteText(e.target.value)}
+                              placeholder="Enter doctor notes..."
+                              className="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg"
+                            />
+                            <button className="btn btn-primary" onClick={() => handleAddDoctorNote(selectedPatient)}>
+                              Save Doctor Note
                             </button>
                           </div>
                         )}

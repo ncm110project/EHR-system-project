@@ -471,7 +471,7 @@ export interface NotesEntry {
   timestamp?: string;
   recordedAt?: string;
   recordedBy: string;
-  noteType?: 'FDAR' | 'progress' | 'doctor';
+  noteType?: 'FDAR' | 'progress' | 'doctor' | 'nurse' | 'order';
   focus?: string;
   data?: string;
   action?: string;
