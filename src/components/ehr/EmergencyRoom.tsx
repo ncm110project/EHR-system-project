@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
-import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry } from "@/lib/ehr-data";
+import { Patient, TriagePriority, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, ALL_DIAGNOSES } from "@/lib/ehr-data";
 import { DepartmentTransfer } from "./DepartmentTransfer";
 import { VitalSignsChart } from "./VitalSignsChart";
 import { ConfirmDialog } from "../providers/ConfirmDialog";
@@ -745,12 +745,13 @@ export function EmergencyRoom() {
     });
   };
 
-  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string) => {
+  const handleAddDiagnosisForCompleted = (patient: Patient, diagnosis: string, diagnosisNotes?: string) => {
     const now = new Date().toISOString();
     const doctorName = user?.name || 'Doctor';
     
     const diagnosisEntry: DiagnosisEntry = {
       diagnosis,
+      diagnosisNotes,
       timestamp: now,
       diagnosedBy: doctorName
     };
@@ -772,6 +773,24 @@ export function EmergencyRoom() {
     });
   };
 
+  const handleDiagnosisSearch = (query: string) => {
+    setNewDiagnosisInput(query);
+    if (query.length > 0) {
+      const filtered = ALL_DIAGNOSES.filter(d => 
+        d.toLowerCase().includes(query.toLowerCase())
+      );
+      setDiagnosisSuggestions(filtered);
+      setShowDiagnosisSuggestions(true);
+    } else {
+      setShowDiagnosisSuggestions(false);
+    }
+  };
+
+  const handleDiagnosisSelect = (diagnosis: string) => {
+    setNewDiagnosisInput(diagnosis);
+    setShowDiagnosisSuggestions(false);
+  };
+
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleString();
@@ -784,6 +803,9 @@ export function EmergencyRoom() {
   const [showAddDiagnosis, setShowAddDiagnosis] = useState(false);
   const [newNotes, setNewNotes] = useState('');
   const [newDiagnosisInput, setNewDiagnosisInput] = useState('');
+  const [newDiagnosisNotes, setNewDiagnosisNotes] = useState('');
+  const [diagnosisSuggestions, setDiagnosisSuggestions] = useState<string[]>([]);
+  const [showDiagnosisSuggestions, setShowDiagnosisSuggestions] = useState(false);
 
   const triageCounts = {
     1: erPatients.filter(p => p.triagePriority === 1).length,
@@ -1603,19 +1625,49 @@ export function EmergencyRoom() {
                     </button>
                     {showAddDiagnosis && (
                       <div className="p-4 bg-slate-50 rounded-lg space-y-3">
-                        <textarea
-                          value={newDiagnosisInput}
-                          onChange={(e) => setNewDiagnosisInput(e.target.value)}
-                          placeholder="Enter new diagnosis..."
-                          className="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg"
-                        />
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Primary Diagnosis (Search)</label>
+                          <input
+                            type="text"
+                            value={newDiagnosisInput}
+                            onChange={(e) => handleDiagnosisSearch(e.target.value)}
+                            onFocus={() => newDiagnosisInput && setShowDiagnosisSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowDiagnosisSuggestions(false), 200)}
+                            placeholder="Type to search diagnosis..."
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                          {showDiagnosisSuggestions && diagnosisSuggestions.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {diagnosisSuggestions.map((suggestion, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => handleDiagnosisSelect(suggestion)}
+                                  className="w-full px-3 py-2 text-left hover:bg-slate-50 text-sm"
+                                >
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Diagnosis Notes (Optional)</label>
+                          <textarea
+                            value={newDiagnosisNotes}
+                            onChange={(e) => setNewDiagnosisNotes(e.target.value)}
+                            placeholder="Detailed clinical explanation..."
+                            className="w-full h-20 px-3 py-2 border border-slate-300 rounded-lg"
+                          />
+                        </div>
                         <button 
                           className="btn btn-primary"
                           onClick={() => {
                             if (newDiagnosisInput.trim()) {
-                              handleAddDiagnosisForCompleted(selectedPatient, newDiagnosisInput);
+                              handleAddDiagnosisForCompleted(selectedPatient, newDiagnosisInput, newDiagnosisNotes || undefined);
                               setShowAddDiagnosis(false);
                               setNewDiagnosisInput('');
+                              setNewDiagnosisNotes('');
                             }
                           }}
                         >

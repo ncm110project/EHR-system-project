@@ -476,6 +476,7 @@ export interface VitalSignsEntry {
 
 export interface DiagnosisEntry {
   diagnosis: string;
+  diagnosisNotes?: string;
   timestamp: string;
   diagnosedBy: string;
 }
@@ -864,3 +865,101 @@ export interface EMTNotification {
   reservedBy?: string;
   arrivalTime?: string;
 }
+
+export const DIAGNOSIS_LIST = {
+  CARDIOVASCULAR: [
+    'Hypertension',
+    'Hypotension',
+    'Acute Myocardial Infarction',
+    'Angina Pectoris',
+    'Heart Failure',
+    'Cardiac Arrhythmia',
+    'Cardiac Arrest',
+    'Stroke (CVA)',
+    'Transient Ischemic Attack (TIA)',
+    'Deep Vein Thrombosis (DVT)'
+  ],
+  RESPIRATORY: [
+    'Pneumonia',
+    'Bronchitis',
+    'Asthma Exacerbation',
+    'Chronic Obstructive Pulmonary Disease (COPD)',
+    'Tuberculosis',
+    'Upper Respiratory Tract Infection (URTI)',
+    'COVID-19',
+    'Pleural Effusion',
+    'Pneumothorax',
+    'Respiratory Failure'
+  ],
+  GASTROINTESTINAL: [
+    'Gastroenteritis',
+    'Gastritis',
+    'Peptic Ulcer Disease',
+    'Appendicitis',
+    'Cholecystitis',
+    'Pancreatitis',
+    'Hepatitis',
+    'Liver Cirrhosis',
+    'Constipation',
+    'Diarrhea'
+  ],
+  GENITOURINARY: [
+    'Urinary Tract Infection (UTI)',
+    'Pyelonephritis',
+    'Kidney Stones (Nephrolithiasis)',
+    'Acute Kidney Injury',
+    'Chronic Kidney Disease'
+  ],
+  NEUROLOGICAL: [
+    'Seizure Disorder',
+    'Epilepsy',
+    'Migraine',
+    'Tension Headache',
+    'Meningitis',
+    'Encephalopathy'
+  ],
+  ENDOCRINE_METABOLIC: [
+    'Diabetes Mellitus',
+    'Diabetic Ketoacidosis (DKA)',
+    'Hyperglycemia',
+    'Hypoglycemia',
+    'Thyroid Disorder'
+  ],
+  INFECTIOUS_DISEASES: [
+    'Sepsis',
+    'Dengue Fever',
+    'Typhoid Fever',
+    'Malaria',
+    'Viral Infection'
+  ],
+  TRAUMA_INJURY: [
+    'Head Injury',
+    'Fracture',
+    'Dislocation',
+    'Soft Tissue Injury',
+    'Laceration',
+    'Burn Injury'
+  ],
+  MUSCULOSKELETAL: [
+    'Arthritis',
+    'Back Pain',
+    'Muscle Strain',
+    'Joint Pain'
+  ],
+  OB_GYNE: [
+    'Pregnancy',
+    'Ectopic Pregnancy',
+    'Miscarriage',
+    'Vaginal Bleeding'
+  ],
+  GENERAL_OTHER: [
+    'Fever of Unknown Origin',
+    'Dehydration',
+    'Allergic Reaction',
+    'Anaphylaxis',
+    'Poisoning / Toxic Exposure',
+    'Other'
+  ]
+};
+
+export const ALL_DIAGNOSES = Object.values(DIAGNOSIS_LIST).flat();
