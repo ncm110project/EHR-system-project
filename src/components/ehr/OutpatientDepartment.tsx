@@ -751,12 +751,12 @@ export function OutpatientDepartment() {
                     >
                       {isNurse ? 'Open Chart' : 'Examine'}
                     </button>
-                    {(isDoctor || isNurse) && (
+                    {isDoctor && (
                       <button 
                         className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                         onClick={() => setShowTransferModal(patient)}
                       >
-                        Transfer
+                        For Admission
                       </button>
                     )}
                   </div>
@@ -814,7 +814,8 @@ export function OutpatientDepartment() {
       {showTransferModal && (
         <DepartmentTransfer 
           patient={showTransferModal} 
-          onClose={() => setShowTransferModal(null)} 
+          onClose={() => setShowTransferModal(null)}
+          isForAdmission={true}
         />
       )}
 

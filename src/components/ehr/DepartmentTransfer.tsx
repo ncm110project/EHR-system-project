@@ -8,6 +8,7 @@ import { Patient, Department, mockUsers } from "@/lib/ehr-data";
 interface DepartmentTransferProps {
   patient: Patient;
   onClose: () => void;
+  isForAdmission?: boolean;
 }
 
 const departments: { id: Department; name: string; color: string }[] = [
@@ -23,15 +24,18 @@ const getDoctorsByDepartment = (dept: Department) => {
   return mockUsers.filter(u => u.role === 'doctor' && u.department === dept);
 };
 
-export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps) {
+export function DepartmentTransfer({ patient, onClose, isForAdmission = false }: DepartmentTransferProps) {
   const { transferPatient } = useEHR();
   const { user } = useAuth();
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | "">("");
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | "">(isForAdmission ? 'general-ward' : "");
   const [admittingDiagnosis, setAdmittingDiagnosis] = useState("");
   const [receivingDoctor, setReceivingDoctor] = useState("");
   const [reason, setReason] = useState("");
 
   const availableDoctors = selectedDepartment ? getDoctorsByDepartment(selectedDepartment) : [];
+  const admissionDepartments = isForAdmission 
+    ? departments.filter(d => d.id === 'general-ward')
+    : departments.filter(d => d.id !== patient.department);
 
   const handleTransfer = () => {
     if (!selectedDepartment || !admittingDiagnosis || !receivingDoctor) return;
@@ -46,7 +50,9 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Create Transfer Order</h3>
+          <h3 className="text-lg font-semibold text-slate-800">
+            {isForAdmission ? 'Create Admission Order' : 'Create Transfer Order'}
+          </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -61,17 +67,25 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Transfer To <span className="text-red-500">*</span></label>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => { setSelectedDepartment(e.target.value as Department); setReceivingDoctor(""); }}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            >
-              <option value="">Select department</option>
-              {departments.filter(d => d.id !== patient.department).map((dept) => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              {isForAdmission ? 'Admit To' : 'Transfer To'} <span className="text-red-500">*</span>
+            </label>
+            {isForAdmission ? (
+              <div className="px-3 py-2 bg-slate-100 rounded-lg text-slate-800 font-medium">
+                General Ward
+              </div>
+            ) : (
+              <select
+                value={selectedDepartment}
+                onChange={(e) => { setSelectedDepartment(e.target.value as Department); setReceivingDoctor(""); }}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              >
+                <option value="">Select department</option>
+                {departments.filter(d => d.id !== patient.department).map((dept) => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
@@ -125,7 +139,7 @@ export function DepartmentTransfer({ patient, onClose }: DepartmentTransferProps
               disabled={!selectedDepartment || !admittingDiagnosis || !receivingDoctor}
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              Send Transfer Order
+              {isForAdmission ? 'Send Admission Order' : 'Send Transfer Order'}
             </button>
           </div>
         </div>
