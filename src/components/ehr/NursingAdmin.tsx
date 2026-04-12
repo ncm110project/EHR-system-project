@@ -1218,25 +1218,32 @@ export function NursingAdmin() {
           <div className="card p-6">
             <h4 className="font-semibold text-slate-800 mb-4">Bed Occupancy</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { dept: 'General Ward', occupied: 32, total: 40 },
-                { dept: 'ER Beds', occupied: 15, total: 20 },
-              ].map((bed) => {
-                const pct = Math.round((bed.occupied / bed.total) * 100);
-                const statusColor = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600';
-                return (
-                  <div key={bed.dept} className="p-4 bg-slate-50 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-slate-700">{bed.dept}</span>
-                      <span className={`font-bold ${statusColor}`}>{pct}%</span>
+              {(() => {
+                const erOccupied = censusPatients.filter(p => p.department === 'er' && p.bedNumber).length;
+                const wardOccupied = censusPatients.filter(p => p.department === 'general-ward' && p.bedNumber).length;
+                const erTotal = 10;
+                const wardTotal = 10;
+                const beds = [
+                  { dept: 'ER Beds', occupied: erOccupied, total: erTotal },
+                  { dept: 'General Ward', occupied: wardOccupied, total: wardTotal },
+                ];
+                return beds.map((bed) => {
+                  const pct = Math.round((bed.occupied / bed.total) * 100);
+                  const statusColor = pct >= 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600';
+                  return (
+                    <div key={bed.dept} className="p-4 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-slate-700">{bed.dept}</span>
+                        <span className={`font-bold ${statusColor}`}>{pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
+                        <div className={`h-3 rounded-full ${pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <p className="text-xs text-slate-500">{bed.occupied} / {bed.total} beds occupied</p>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
-                      <div className={`h-3 rounded-full ${pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }}></div>
-                    </div>
-                    <p className="text-xs text-slate-500">{bed.occupied} / {bed.total} beds occupied</p>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
