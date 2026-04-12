@@ -70,6 +70,33 @@ export function Pharmacy() {
     return interactions;
   };
 
+  const checkPatientAllergies = (medicationName: string, patientId: string): string | null => {
+    const patient = patients.find(p => p.id === patientId);
+    if (!patient || !patient.allergies || patient.allergies.length === 0) return null;
+    
+    const allergyWarnings: string[] = [];
+    const allergyLower = patient.allergies.map(a => a.toLowerCase());
+    
+    const medication = medications.find(m => m.name === medicationName);
+    if (medication) {
+      const category = medication.category.toLowerCase();
+      if (allergyLower.some(a => category.includes(a) || a.includes(category))) {
+        allergyWarnings.push(`Patient allergic to ${medication.category} medications`);
+      }
+      
+      const classification = medication.classification.toLowerCase();
+      if (allergyLower.some(a => classification.includes(a) || a.includes(classification))) {
+        allergyWarnings.push(`Patient allergic to ${medication.classification} class`);
+      }
+      
+      if (allergyLower.includes(medicationName.toLowerCase())) {
+        allergyWarnings.push(`Patient explicitly allergic to ${medicationName}`);
+      }
+    }
+    
+    return allergyWarnings.length > 0 ? allergyWarnings.join('; ') : null;
+  };
+
   const handleDispense = (prescription: Prescription) => {
     const medication = medications.find(m => m.name === prescription.medication);
     
@@ -80,6 +107,15 @@ export function Pharmacy() {
     
     if (medication.stock <= 0) {
       setDispenseWarning({ prescription, message: `Insufficient stock: ${medication.name} is out of stock` });
+      return;
+    }
+
+    const allergyWarning = checkPatientAllergies(prescription.medication, prescription.patientId);
+    if (allergyWarning) {
+      setDispenseWarning({ 
+        prescription, 
+        message: `⚠ ALLERGY ALERT: ${allergyWarning}` 
+      });
       return;
     }
 
