@@ -113,13 +113,19 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => voi
   const store = useSyncExternalStore(subscribe, getServerSnapshot, getServerSnapshot);
   const [value, setValue] = useState<T>(() => {
     if (typeof window === 'undefined') return initialValue;
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : initialValue;
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch {
+      return initialValue;
+    }
   });
 
   const setStoredValue = useCallback((newValue: T) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(newValue));
+    }
     setValue(newValue);
-    localStorage.setItem(key, JSON.stringify(newValue));
   }, [key]);
 
   return [value, setStoredValue];
