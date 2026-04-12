@@ -85,6 +85,7 @@ The EHR system is complete. Latest changes include:
 - Fixed TypeScript errors in TriageDepartment.tsx
 - Fixed lint errors in page.tsx, GeneralWard.tsx, TriageDepartment.tsx
 - Moved useState hooks to component top level to fix rules-of-hooks
+- Added role-based permissions for ER patient chart (Apr 12 2026)
 
 ## Quick Start
 
@@ -102,6 +103,7 @@ bun dev
 | Mar 16 2026 | Patient self-registration form with 8 sections |
 | Mar 17 2026 | Incident report forms, statistics dashboard with bar graphs and time filtering |
 | Apr 11 2026 | Fix registration to OPD, add triage registration, feedback form, Doctor's Notes, transfer approval workflow |
+| Apr 12 2026 | Add ER role-based permissions: nurses can create/view Nurse's Notes, Pain Assessment, FDAR Notes; doctors can create Doctor's Orders, Doctor's Notes; separate display sections with timestamps |
 
 ## Pending Improvements
 
