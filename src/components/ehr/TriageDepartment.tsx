@@ -50,7 +50,8 @@ export function TriageDepartment() {
     vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
     vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
     vitalsPainScore: 0, painLocation: "", painLocationOther: "",
-    painType: "", painTypeOther: ""
+    painType: "", painTypeOther: "",
+    esiLevel: "", departmentAssigned: ""
   });
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -68,14 +69,14 @@ export function TriageDepartment() {
     return age;
   };
 
-  const pendingTriagePatients = patients.filter(p => 
+const pendingTriagePatients = patients.filter(p => 
     p.department === 'triage' && p.triageStatus !== 'triaged'
   );
   
   const triagedPatients = patients.filter(p => 
-    p.triageStatus === 'triaged'
-  );
-
+    p.triageStatus === 'triaged' && p.registrationSource === 'TRIAGE'
+  ).sort((a, b) => new Date(b.admissionDate).getTime() - new Date(a.admissionDate).getTime());
+  
   const sortedByArrival = [...pendingTriagePatients].sort((a, b) => 
     new Date(a.admissionDate).getTime() - new Date(b.admissionDate).getTime()
   );
@@ -199,7 +200,10 @@ export function TriageDepartment() {
   };
 
   const handleRegisterPatient = () => {
-    if (!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone) return;
+    if (!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone || !newPatientForm.esiLevel || !newPatientForm.departmentAssigned || !newPatientForm.chiefComplaint) {
+      alert("Please fill in all required fields: Patient Name, DOB, Phone, Chief Complaint, ESI Level, and Department Assignment");
+      return;
+    }
     const now = new Date().toISOString();
     const calculatedAge = calculateAge(newPatientForm.dob);
     
@@ -242,9 +246,10 @@ export function TriageDepartment() {
       bloodType: newPatientForm.bloodType,
       allergies: allergiesList,
       status: 'waiting',
-      department: 'triage',
-      triageStatus: 'pending',
-      registrationStatus: 'pending',
+      department: newPatientForm.departmentAssigned as 'er' | 'opd',
+      triageStatus: 'triaged',
+      esiLevel: newPatientForm.esiLevel,
+      registrationStatus: 'confirmed',
       admissionDate: now.split('T')[0],
       chiefComplaint: newPatientForm.chiefComplaint,
       workflowStatus: 'registered',
@@ -322,7 +327,8 @@ export function TriageDepartment() {
       vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
       vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
       vitalsPainScore: 0, painLocation: "", painLocationOther: "",
-      painType: "", painTypeOther: ""
+      painType: "", painTypeOther: "",
+      esiLevel: "", departmentAssigned: ""
     });
   };
 
@@ -400,13 +406,13 @@ export function TriageDepartment() {
           <p className="text-slate-500">Assess patients and assign priority</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-            <span className="text-amber-700 font-semibold">{pendingTriagePatients.length}</span>
-            <span className="text-amber-600 ml-1">Pending Triage</span>
+          <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-blue-700 font-semibold">{triagedPatients.length}</span>
+            <span className="text-blue-600 ml-1">Triage Records</span>
           </div>
           <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-            <span className="text-green-700 font-semibold">{triagedPatients.length}</span>
-            <span className="text-green-600 ml-1">Triaged Today</span>
+            <span className="text-green-700 font-semibold">{pendingTriagePatients.length}</span>
+            <span className="text-green-600 ml-1">Pending Registration</span>
           </div>
           {isNurse && (
             <button 
@@ -422,13 +428,13 @@ export function TriageDepartment() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           <div className="card">
-            <div className="p-4 border-b border-slate-200 bg-amber-50">
-              <h3 className="font-semibold text-amber-800">Pending Triage Queue</h3>
+            <div className="p-4 border-b border-slate-200 bg-blue-50">
+              <h3 className="font-semibold text-blue-800">Triage History</h3>
             </div>
             <div className="divide-y divide-slate-200">
-              {sortedByArrival.length > 0 ? (
-                sortedByArrival.map((patient) => (
-                  <div key={patient.id} className="p-4 hover:bg-slate-50 transition-colors">
+              {triagedPatients.length > 0 ? (
+                triagedPatients.map((patient) => (
+                  <div key={patient.id} className="p-4 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setSelectedPatient(patient)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center">
@@ -442,27 +448,33 @@ export function TriageDepartment() {
                             {patient.age}y • {patient.gender} • {patient.id}
                           </p>
                           <p className="text-xs text-slate-400">
-                            Arrived: {getWaitTime(patient.admissionDate)} ago
+                            Triaged: {patient.admissionDate}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-slate-700">
-                          {patient.chiefComplaint || 'No complaint'}
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                          patient.esiLevel === 'ESI-1' ? 'bg-red-100 text-red-800' :
+                          patient.esiLevel === 'ESI-2' ? 'bg-orange-100 text-orange-800' :
+                          patient.esiLevel === 'ESI-3' ? 'bg-yellow-100 text-yellow-800' :
+                          patient.esiLevel === 'ESI-4' ? 'bg-green-100 text-green-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {patient.esiLevel || 'N/A'}
+                        </span>
+                        <p className="text-sm text-slate-600 mt-1">
+                          → {patient.department === 'er' ? 'ER' : patient.department === 'opd' ? 'OPD' : patient.department}
                         </p>
-                        <button 
-                          className="mt-2 btn btn-primary text-sm"
-                          onClick={() => handleSelectPatient(patient)}
-                        >
-                          Start Triage
-                        </button>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {patient.chiefComplaint?.slice(0, 30) || 'No complaint'}{patient.chiefComplaint && patient.chiefComplaint.length > 30 ? '...' : ''}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="p-8 text-center text-slate-500">
-                  No patients pending triage
+                  No triage records yet
                 </div>
               )}
             </div>
@@ -471,35 +483,42 @@ export function TriageDepartment() {
 
         <div className="space-y-4">
           <div className="card p-4">
-            <h3 className="font-semibold mb-3">Triage Stats</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-600">Avg Wait Time</span>
-                <span className="font-semibold text-slate-800">
-                  {pendingTriagePatients.length > 0 
-                    ? `${Math.floor(pendingTriagePatients.length * 3)} min`
-                    : '0 min'}
-                </span>
-              </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: '30%' }}></div>
-              </div>
+            <h3 className="font-semibold mb-3">ESI Distribution</h3>
+            <div className="space-y-2">
+              {[
+                { level: 'ESI-1', label: 'Resuscitation', color: 'bg-red-600' },
+                { level: 'ESI-2', label: 'Emergency', color: 'bg-orange-500' },
+                { level: 'ESI-3', label: 'Urgent', color: 'bg-yellow-500' },
+                { level: 'ESI-4', label: 'Less Urgent', color: 'bg-green-500' },
+                { level: 'ESI-5', label: 'Non-Urgent', color: 'bg-blue-500' },
+              ].map(({ level, label, color }) => {
+                const count = triagedPatients.filter(p => p.esiLevel === level).length;
+                return (
+                  <div key={level} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded ${color}`}></div>
+                      <span className="text-sm">{level}</span>
+                    </div>
+                    <span className="text-sm font-medium">{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           <div className="card p-4">
-            <h3 className="font-semibold mb-3">Priority Legend</h3>
+            <h3 className="font-semibold mb-3">ESI Legend</h3>
             <div className="space-y-2">
               {[
-                { p: 1, label: 'Resuscitation', color: 'bg-red-600' },
-                { p: 2, label: 'Emergency', color: 'bg-orange-500' },
-                { p: 3, label: 'Urgent', color: 'bg-yellow-500' },
-                { p: 4, label: 'Less Urgent', color: 'bg-green-500' },
-                { p: 5, label: 'Non-Urgent', color: 'bg-blue-500' },
-              ].map(({ p, label, color }) => (
-                <div key={p} className="flex items-center gap-2">
+                { level: 'ESI-1', label: 'Resuscitation', color: 'bg-red-600' },
+                { level: 'ESI-2', label: 'Emergency', color: 'bg-orange-500' },
+                { level: 'ESI-3', label: 'Urgent', color: 'bg-yellow-500' },
+                { level: 'ESI-4', label: 'Less Urgent', color: 'bg-green-500' },
+                { level: 'ESI-5', label: 'Non-Urgent', color: 'bg-blue-500' },
+              ].map(({ level, label, color }) => (
+                <div key={level} className="flex items-center gap-2">
                   <div className={`w-4 h-4 rounded ${color}`}></div>
-                  <span className="text-sm">Priority {p}: {label}</span>
+                  <span className="text-sm">{level}: {label}</span>
                 </div>
               ))}
             </div>
@@ -1119,6 +1138,27 @@ export function TriageDepartment() {
                   <label className="block text-xs font-medium text-slate-600 mb-1">Chief Complaint / Reason for Visit</label>
                   <textarea value={newPatientForm.chiefComplaint} onChange={(e) => setNewPatientForm({...newPatientForm, chiefComplaint: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm h-20" placeholder="Describe the patient's condition..." />
                 </div>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">ESI Level <span className="text-red-500">*</span></label>
+                    <select value={newPatientForm.esiLevel} onChange={(e) => setNewPatientForm({...newPatientForm, esiLevel: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select ESI level</option>
+                      <option value="ESI-1">ESI-1 (Resuscitation)</option>
+                      <option value="ESI-2">ESI-2 (Emergency)</option>
+                      <option value="ESI-3">ESI-3 (Urgent)</option>
+                      <option value="ESI-4">ESI-4 (Less Urgent)</option>
+                      <option value="ESI-5">ESI-5 (Non-Urgent)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Department Assignment <span className="text-red-500">*</span></label>
+                    <select value={newPatientForm.departmentAssigned} onChange={(e) => setNewPatientForm({...newPatientForm, departmentAssigned: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select department</option>
+                      <option value="ER">Emergency Room (ER)</option>
+                      <option value="OPD">Outpatient Department (OPD)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Insurance */}
@@ -1158,7 +1198,7 @@ export function TriageDepartment() {
                 <button onClick={() => setShowRegistrationForm(false)} className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
                   Cancel
                 </button>
-                <button onClick={handleRegisterPatient} disabled={!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">
+                <button onClick={handleRegisterPatient} disabled={!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone || !newPatientForm.esiLevel || !newPatientForm.departmentAssigned || !newPatientForm.chiefComplaint} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50">
                   Register Patient
                 </button>
               </div>

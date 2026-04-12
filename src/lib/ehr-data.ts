@@ -239,6 +239,7 @@ export interface Patient {
   registrationStatus?: RegistrationStatus;
   triagePriority?: TriagePriority;
   triageStatus?: 'pending' | 'triaged';
+  esiLevel?: string;
   arrivalMode?: 'walk-in' | 'ambulance' | 'referral';
   chiefComplaint?: string;
   diagnosis?: string;
