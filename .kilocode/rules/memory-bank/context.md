@@ -87,6 +87,7 @@ The EHR system is complete. Latest changes include:
 - Moved useState hooks to component top level to fix rules-of-hooks
 - Added role-based permissions for ER patient chart (Apr 12 2026)
 - Enhanced Patient Chart with complete patient profile from triage registration (Apr 12 2026)
+- Fixed department routing from Triage to ER/OPD (Apr 12 2026)
 
 ## Quick Start
 
@@ -106,6 +107,7 @@ bun dev
 | Apr 11 2026 | Fix registration to OPD, add triage registration, feedback form, Doctor's Notes, transfer approval workflow |
 | Apr 12 2026 | Add ER role-based permissions: nurses can create/view Nurse's Notes, Pain Assessment, FDAR Notes; doctors can create Doctor's Orders, Doctor's Notes; separate display sections with timestamps |
 | Apr 12 2026 | Enhance Patient Chart with complete patient profile: Personal/Contact/Emergency Contact/Medical Background/Lifestyle/Insurance/Triage Information sections |
+| Apr 12 2026 | Fix department routing: Triage nurse registration now properly sends patients to ER or OPD using lowercase department codes |
 
 ## Pending Improvements
 
