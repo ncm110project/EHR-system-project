@@ -1124,12 +1124,56 @@ function PatientDetailModal({
               <p className="font-semibold">{patient.phone}</p>
             </div>
             <div>
+              <p className="text-sm text-slate-500">Date of Birth</p>
+              <p className="font-semibold">{patient.dob || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Email</p>
+              <p className="font-semibold">{patient.email || '-'}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-sm text-slate-500">Address</p>
+              <p className="font-semibold">{patient.address || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Religion</p>
+              <p className="font-semibold">{patient.religion || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Civil Status</p>
+              <p className="font-semibold">{patient.civilStatus || '-'}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-sm text-slate-500">Emergency Contact</p>
+              <p className="font-semibold">{patient.emergencyContact || '-'}</p>
+            </div>
+            <div>
               <p className="text-sm text-slate-500">Allergies</p>
               <p className="font-semibold">{patient.allergies?.join(', ') || 'None'}</p>
             </div>
             <div>
               <p className="text-sm text-slate-500">Chief Complaint</p>
               <p className="font-semibold">{patient.chiefComplaint || 'Not specified'}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-sm text-slate-500">Medical Conditions</p>
+              <p className="font-semibold text-sm">{patient.medicalConditions?.join(', ') || 'None recorded'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Current Medications</p>
+              <p className="font-semibold text-sm">{patient.currentMedications || 'None'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Past Surgeries</p>
+              <p className="font-semibold text-sm">{patient.pastSurgeries || 'None'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Smoking</p>
+              <p className="font-semibold">{patient.smoking || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Alcohol Use</p>
+              <p className="font-semibold">{patient.alcoholUse || '-'}</p>
             </div>
           </div>
 
