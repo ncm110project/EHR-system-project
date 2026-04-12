@@ -37,7 +37,7 @@ export function NursingAdmin() {
   const { nurses, patients, updateNurse, addActivity, incidentReports, updateIncidentReport, prescriptions, labOrders, updatePatient, appointments, updateAppointment, addNotification } = useEHR();
   const { user } = useAuth();
   const [selectedNurse, setSelectedNurse] = useState<Nurse | null>(null);
-  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'statistics' | 'patients' | 'followups' | 'appointments'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'schedule' | 'incidents' | 'census' | 'patients' | 'followups' | 'appointments'>('roster');
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -500,10 +500,10 @@ export function NursingAdmin() {
           )}
         </button>
         <button
-          onClick={() => setActiveTab('statistics')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'statistics' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          onClick={() => setActiveTab('census')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'census' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Statistics
+          Census
         </button>
         <button
           onClick={() => setActiveTab('patients')}
@@ -848,10 +848,10 @@ export function NursingAdmin() {
         </div>
       )}
 
-      {activeTab === 'statistics' && (
+      {activeTab === 'census' && (
         <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Hospital Statistics</h3>
+            <h3 className="text-lg font-semibold">Patient Census Dashboard</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-500">View:</span>
@@ -907,392 +907,174 @@ export function NursingAdmin() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">
-                Patient Registrations - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
-              </h4>
-              <div className="relative h-64 border-b border-l border-slate-300">
-                {(() => {
-                  const maxCount = Math.max(...timelineData.patientTimeline.map(i => i.count), 1);
-                  const chartHeight = 224;
-                  const chartWidth = 100;
-                  const gridLines = 5;
-                  const barWidth = `${100 / timelineData.patientTimeline.length - 2}%`;
-                  const barGap = '1%';
-                  return (
-                    <>
-                      {[...Array(gridLines)].map((_, i) => (
-                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
-                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
-                        </div>
-                      ))}
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
-                        {timelineData.patientTimeline.map((item, idx) => (
-                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
-                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
-                            <div
-                              className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
-                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
-                            ></div>
-                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">
-                Incident Reports - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
-              </h4>
-              <div className="relative h-64 border-b border-l border-slate-300">
-                {(() => {
-                  const maxCount = Math.max(...timelineData.incidentTimeline.map(i => i.count), 1);
-                  const chartHeight = 224;
-                  const gridLines = 5;
-                  const barWidth = `${100 / timelineData.incidentTimeline.length - 2}%`;
-                  const barGap = '1%';
-                  return (
-                    <>
-                      {[...Array(gridLines)].map((_, i) => (
-                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
-                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
-                        </div>
-                      ))}
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
-                        {timelineData.incidentTimeline.map((item, idx) => (
-                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
-                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
-                            <div
-                              className="w-full bg-red-500 rounded-t hover:bg-red-600 transition-colors"
-                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
-                            ></div>
-                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">
-                Patients with Allergies - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
-              </h4>
-              <div className="relative h-64 border-b border-l border-slate-300">
-                {(() => {
-                  const maxCount = Math.max(...timelineData.allergyTimeline.map(i => i.count), 1);
-                  const chartHeight = 224;
-                  const gridLines = 5;
-                  const barWidth = `${100 / timelineData.allergyTimeline.length - 2}%`;
-                  const barGap = '1%';
-                  return (
-                    <>
-                      {[...Array(gridLines)].map((_, i) => (
-                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
-                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
-                        </div>
-                      ))}
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
-                        {timelineData.allergyTimeline.map((item, idx) => (
-                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
-                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
-                            <div
-                              className="w-full bg-amber-500 rounded-t hover:bg-amber-600 transition-colors"
-                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
-                            ></div>
-                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">
-                Patients with Conditions - {timePeriod === 'yearly' ? 'Monthly' : timePeriod === 'monthly' ? 'Weekly' : 'Daily'} Timeline
-              </h4>
-              <div className="relative h-64 border-b border-l border-slate-300">
-                {(() => {
-                  const maxCount = Math.max(...timelineData.conditionTimeline.map(i => i.count), 1);
-                  const chartHeight = 224;
-                  const gridLines = 5;
-                  const barWidth = `${100 / timelineData.conditionTimeline.length - 2}%`;
-                  const barGap = '1%';
-                  return (
-                    <>
-                      {[...Array(gridLines)].map((_, i) => (
-                        <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / (gridLines - 1)) * 100}%` }}>
-                          <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / (gridLines - 1)) * i)}</span>
-                        </div>
-                      ))}
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
-                        {timelineData.conditionTimeline.map((item, idx) => (
-                          <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
-                            <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
-                            <div
-                              className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors"
-                              style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}
-                            ></div>
-                            <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Outpatient Department (OPD)</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Visits', value: filteredPatients.filter(p => p.department === 'opd').length, color: 'bg-blue-500' },
-                  { label: 'Waiting', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'waiting').length, color: 'bg-amber-500' },
-                  { label: 'In Treatment', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'in-treatment').length, color: 'bg-blue-400' },
-                  { label: 'Completed', value: filteredPatients.filter(p => p.department === 'opd' && p.status === 'discharged').length, color: 'bg-green-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(filteredPatients.filter(p => p.department === 'opd').length, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Emergency Room (ER)</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Visits', value: filteredPatients.filter(p => p.department === 'er').length, color: 'bg-red-500' },
-                  { label: 'Critical', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'critical').length, color: 'bg-red-700' },
-                  { label: 'Stable', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'stable').length, color: 'bg-green-500' },
-                  { label: 'Waiting', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'waiting').length, color: 'bg-amber-500' },
-                  { label: 'In Treatment', value: filteredPatients.filter(p => p.department === 'er' && p.status === 'in-treatment').length, color: 'bg-blue-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(filteredPatients.filter(p => p.department === 'er').length, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 p-4 bg-red-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-red-800">Mortality Rate</span>
-                  <span className="text-xl font-bold text-red-600">{censusData.er.mortality}%</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Pharmacy</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Prescriptions', value: filteredPatients.reduce((acc, p) => acc + (p.prescriptions?.length || 0), 0), color: 'bg-purple-500' },
-                  { label: 'Pending', value: prescriptions.filter(p => p.status === 'pending').length, color: 'bg-amber-500' },
-                  { label: 'Dispensed', value: prescriptions.filter(p => p.status === 'dispensed').length, color: 'bg-green-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(prescriptions.length, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Laboratory</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Total Orders', value: filteredPatients.reduce((acc, p) => acc + (p.labOrders?.length || 0), 0), color: 'bg-amber-500' },
-                  { label: 'Pending', value: labOrders.filter(o => o.status === 'pending').length, color: 'bg-amber-600' },
-                  { label: 'In Progress', value: labOrders.filter(o => o.status === 'in-progress').length, color: 'bg-blue-500' },
-                  { label: 'Completed', value: labOrders.filter(o => o.status === 'completed').length, color: 'bg-green-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(labOrders.length, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
+          {/* SECTION A: Patient Census Overview */}
           <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Allergy Distribution</h4>
-            <div className="space-y-3">
-              {allergyCounts.filter(a => a.count > 0).sort((a, b) => b.count - a.count).map((item) => (
-                <div key={item.name}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm text-slate-600">{item.name}</span>
-                    <span className="text-sm font-semibold">{item.count} patients</span>
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-2 h-8 bg-teal-500 rounded"></span>
+              Patient Census Overview
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-3xl font-bold text-blue-600">{patients.length}</p>
+                <p className="text-sm text-slate-600">Total Patients</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <p className="text-3xl font-bold text-green-600">{patients.filter(p => p.department === 'opd').length}</p>
+                <p className="text-sm text-slate-600">OPD</p>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <p className="text-3xl font-bold text-red-600">{patients.filter(p => p.department === 'er').length}</p>
+                <p className="text-sm text-slate-600">ER</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <p className="text-3xl font-bold text-purple-600">{patients.filter(p => p.department === 'triage').length}</p>
+                <p className="text-sm text-slate-600">Triage</p>
+              </div>
+              <div className="text-center p-4 bg-amber-50 rounded-lg">
+                <p className="text-3xl font-bold text-amber-600">{patients.filter(p => p.status === 'discharged').length}</p>
+                <p className="text-sm text-slate-600">Discharged</p>
+              </div>
+              <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                <p className="text-3xl font-bold text-indigo-600">{patients.filter(p => p.status === 'waiting').length}</p>
+                <p className="text-sm text-slate-600">Waiting</p>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION B: Patient Flow & Movement */}
+          <div className="card p-6">
+            <h4 className="font-semibold text-slate-800 mb-6 flex items-center gap-2">
+              <span className="w-2 h-8 bg-blue-500 rounded"></span>
+              Patient Flow & Movement
+            </h4>
+            <div className="relative h-64 border-b border-l border-slate-300">
+              {(() => {
+                const maxCount = Math.max(...timelineData.patientTimeline.map(i => i.count), 1);
+                const chartHeight = 224;
+                const barWidth = `${100 / timelineData.patientTimeline.length - 2}%`;
+                const barGap = '1%';
+                return (
+                  <>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} className="absolute w-full border-t border-slate-200" style={{ bottom: `${(i / 4) * 100}%` }}>
+                        <span className="absolute -left-8 -top-2 text-xs text-slate-400">{Math.round((maxCount / 4) * i)}</span>
+                      </div>
+                    ))}
+                    <div className="absolute bottom-0 left-0 right-0 flex justify-around items-end h-full px-4">
+                      {timelineData.patientTimeline.map((item, idx) => (
+                        <div key={idx} className="flex flex-col items-center" style={{ width: barWidth, marginLeft: barGap, marginRight: barGap }}>
+                          <span className="text-xs font-semibold text-slate-700 mb-1">{item.count}</span>
+                          <div className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors" style={{ height: `${Math.max((item.count / maxCount) * chartHeight, 2)}px` }}></div>
+                          <span className="text-xs text-slate-500 mt-2 truncate">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* SECTION C: Clinical Indicators */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <span className="w-2 h-8 bg-red-500 rounded"></span>
+                ESI Level Distribution
+              </h4>
+              <div className="space-y-3">
+                {[
+                  { level: 'ESI-1', label: 'Resuscitation', count: patients.filter(p => p.esiLevel === 'ESI-1').length, color: 'bg-red-600' },
+                  { level: 'ESI-2', label: 'Emergency', count: patients.filter(p => p.esiLevel === 'ESI-2').length, color: 'bg-orange-500' },
+                  { level: 'ESI-3', label: 'Urgent', count: patients.filter(p => p.esiLevel === 'ESI-3').length, color: 'bg-yellow-500' },
+                  { level: 'ESI-4', label: 'Less Urgent', count: patients.filter(p => p.esiLevel === 'ESI-4').length, color: 'bg-green-500' },
+                  { level: 'ESI-5', label: 'Non-Urgent', count: patients.filter(p => p.esiLevel === 'ESI-5').length, color: 'bg-blue-500' },
+                ].map((item) => (
+                  <div key={item.level}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.level} - {item.label}</span>
+                      <span className="text-sm font-semibold">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.count / Math.max(patients.filter(p => p.esiLevel).length, 1)) * 100, 5)}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-4">
-                    <div className="bg-red-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...allergyCounts.map(a => a.count), 1)) * 100, 5)}%` }}></div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <span className="w-2 h-8 bg-amber-500 rounded"></span>
+                Allergy Distribution
+              </h4>
+              <div className="space-y-3">
+                {allergyCounts.filter(a => a.count > 0).sort((a, b) => b.count - a.count).slice(0, 8).map((item) => (
+                  <div key={item.name}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-slate-600">{item.name}</span>
+                      <span className="text-sm font-semibold">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div className="bg-amber-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...allergyCounts.map(a => a.count), 1)) * 100, 5)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Medical Conditions */}
+          <div className="card p-6">
+            <h4 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-2 h-8 bg-purple-500 rounded"></span>
+              Top Medical Conditions
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {conditionCounts.filter(c => c.count > 0).sort((a, b) => b.count - a.count).slice(0, 6).map((item) => (
+                <div key={item.name} className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">{item.name}</span>
+                    <span className="text-lg font-bold text-purple-600">{item.count}</span>
                   </div>
                 </div>
               ))}
-              {allergyCounts.filter(a => a.count > 0).length === 0 && (
-                <p className="text-sm text-slate-500 text-center py-4">No allergy data for selected period</p>
-              )}
             </div>
           </div>
 
-          <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Medical Conditions</h4>
-            <div className="space-y-3">
-              {conditionCounts.filter(c => c.count > 0).sort((a, b) => b.count - a.count).map((item) => (
-                <div key={item.name}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm text-slate-600">{item.name}</span>
-                    <span className="text-sm font-semibold">{item.count} patients</span>
+          {/* SECTION D: Department Workload */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { dept: 'opd', label: 'Outpatient (OPD)', patients: patients.filter(p => p.department === 'opd'), color: 'bg-blue-500' },
+              { dept: 'er', label: 'Emergency (ER)', patients: patients.filter(p => p.department === 'er'), color: 'bg-red-500' },
+              { dept: 'triage', label: 'Triage', patients: patients.filter(p => p.department === 'triage'), color: 'bg-amber-500' },
+              { dept: 'general-ward', label: 'General Ward', patients: patients.filter(p => p.department === 'general-ward'), color: 'bg-purple-500' },
+            ].map(({ dept, label, patients: deptPatients }) => (
+              <div key={dept} className="card p-4">
+                <h5 className="font-semibold text-slate-800 mb-3">{label}</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Total</span>
+                    <span className="text-sm font-semibold">{deptPatients.length}</span>
                   </div>
-                  <div className="w-full bg-slate-200 rounded-full h-4">
-                    <div className="bg-amber-500 h-4 rounded-full" style={{ width: `${Math.max((item.count / Math.max(...conditionCounts.map(c => c.count), 1)) * 100, 5)}%` }}></div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Waiting</span>
+                    <span className="text-sm font-semibold text-amber-600">{deptPatients.filter(p => p.status === 'waiting').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">In Treatment</span>
+                    <span className="text-sm font-semibold text-blue-600">{deptPatients.filter(p => p.status === 'in-treatment').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Discharged</span>
+                    <span className="text-sm font-semibold text-green-600">{deptPatients.filter(p => p.status === 'discharged').length}</span>
                   </div>
                 </div>
-              ))}
-              {conditionCounts.filter(c => c.count > 0).length === 0 && (
-                <p className="text-sm text-slate-500 text-center py-4">No medical condition data for selected period</p>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Patient Registration - Insurance Status</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Insured', value: insuredCount, color: 'bg-green-500' },
-                  { label: 'Self-Pay', value: selfPayCount, color: 'bg-slate-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value} patients</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(insuredCount + selfPayCount, 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">{Math.round((insuredCount / Math.max(insuredCount + selfPayCount, 1)) * 100)}%</p>
-                  <p className="text-xs text-slate-500">Insured Rate</p>
-                </div>
-                <div className="text-center p-3 bg-slate-50 rounded-lg">
-                  <p className="text-2xl font-bold text-slate-600">{filteredPatients.length}</p>
-                  <p className="text-xs text-slate-500">Total Patients</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="card p-6">
-              <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Type</h4>
-              <div className="space-y-4">
-                {[
-                  { label: 'Medication Error', value: incidentTypeCounts['medication-error'], color: 'bg-orange-500' },
-                  { label: 'Patient Fall', value: incidentTypeCounts['patient-fall'], color: 'bg-red-500' },
-                  { label: 'Equipment Failure', value: incidentTypeCounts['equipment-failure'], color: 'bg-amber-500' },
-                  { label: 'Needle Stick Injury', value: incidentTypeCounts['needle-stick-injury'], color: 'bg-blue-500' },
-                  { label: 'Adverse Drug Reaction', value: incidentTypeCounts['adverse-drug-reaction'], color: 'bg-purple-500' },
-                  { label: 'Other', value: incidentTypeCounts['other'], color: 'bg-slate-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(...Object.values(incidentTypeCounts), 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="card p-6">
-            <h4 className="font-semibold text-slate-800 mb-6">Incident Reports - By Location</h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                {[
-                  { label: 'Emergency Room', value: incidentByDept.er, color: 'bg-red-500' },
-                  { label: 'Outpatient (OPD)', value: incidentByDept.opd, color: 'bg-blue-500' },
-                  { label: 'Laboratory', value: incidentByDept.lab, color: 'bg-amber-500' },
-                  { label: 'Pharmacy', value: incidentByDept.pharmacy, color: 'bg-purple-500' },
-                  { label: 'Ward', value: incidentByDept.ward, color: 'bg-teal-500' },
-                  { label: 'ICU', value: incidentByDept.icu, color: 'bg-pink-500' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <span className="text-sm font-semibold">{item.value}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-4">
-                      <div className={`${item.color} h-4 rounded-full`} style={{ width: `${Math.max((item.value / Math.max(...Object.values(incidentByDept), 1)) * 100, 5)}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col justify-center">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-slate-50 rounded-lg">
-                    <p className="text-3xl font-bold text-slate-800">{filteredIncidents.length}</p>
-                    <p className="text-sm text-slate-500">Total Incidents</p>
-                  </div>
-                  <div className="text-center p-4 bg-amber-50 rounded-lg">
-                    <p className="text-3xl font-bold text-amber-600">{filteredIncidents.filter(r => r.status === 'pending').length}</p>
-                    <p className="text-sm text-slate-500">Pending Review</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-3xl font-bold text-blue-600">{filteredIncidents.filter(r => r.status === 'reviewed').length}</p>
-                    <p className="text-sm text-slate-500">Reviewed</p>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-3xl font-bold text-green-600">{filteredIncidents.filter(r => r.status === 'resolved').length}</p>
-                    <p className="text-sm text-slate-500">Resolved</p>
-                  </div>
-                </div>
-              </div>
-</div>
-            </div>
-          </div>
-        )}
+        </div>
+      )}
 
         {activeTab === 'patients' && (
           <div className="space-y-6">
