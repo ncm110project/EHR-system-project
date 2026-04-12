@@ -90,6 +90,7 @@ The EHR system is complete. Latest changes include:
 - Fixed department routing from Triage to ER/OPD (Apr 12 2026)
 - Fixed EMT notification persistence: charge nurse logged calls now visible to ER nurses/doctors (Apr 12 2026)
 - Enhanced Diagnosis input with searchable autocomplete (55+ diagnoses) and diagnosis notes field (Apr 12 2026)
+- Redesigned Nursing Admin Census dashboard with proper visualizations and filters (Apr 12 2026)
 
 ## Quick Start
 
@@ -112,6 +113,7 @@ bun dev
 | Apr 12 2026 | Fix department routing: Triage nurse registration now properly sends patients to ER or OPD using lowercase department codes |
 | Apr 12 2026 | Fix EMT notification persistence: charge nurse logged calls now visible to all ER nurses and doctors via context/localStorage |
 | Apr 12 2026 | Enhance Diagnosis input with searchable autocomplete dropdown (55+ common diagnoses) and diagnosis notes field |
+| Apr 12 2026 | Redesign Nursing Admin Census dashboard with proper data visualization, filters, charts by data type |
 
 ## Pending Improvements
 
