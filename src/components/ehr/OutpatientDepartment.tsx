@@ -1292,7 +1292,7 @@ function PatientDetailModal({
             </div>
           )}
 
-          {isDoctor && patient.workflowStatus === 'nurse-completed' && (
+          {isDoctor && patient.workflowStatus !== 'doctor-completed' && patient.workflowStatus !== 'completed' && (
             <>
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="font-semibold mb-3">Doctor&apos;s Actions</h4>
