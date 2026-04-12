@@ -445,6 +445,8 @@ export interface VitalSigns {
   respiratoryRate: number;
   oxygenSaturation: number;
   painScore?: number;
+  painLocation?: string;
+  painType?: string;
   recordedAt: string;
   recordedBy?: string;
 }

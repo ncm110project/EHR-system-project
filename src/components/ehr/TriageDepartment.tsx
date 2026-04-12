@@ -49,7 +49,8 @@ export function TriageDepartment() {
     bloodType: "Unknown",
     vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
     vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
-    vitalsPainScore: 0
+    vitalsPainScore: 0, painLocation: "", painLocationOther: "",
+    painType: "", painTypeOther: ""
   });
   
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
@@ -263,6 +264,8 @@ export function TriageDepartment() {
         respiratoryRate: newPatientForm.vitalsRespiratoryRate, 
         oxygenSaturation: newPatientForm.vitalsOxygenSaturation,
         painScore: newPatientForm.vitalsPainScore,
+        painLocation: newPatientForm.painLocation === 'Other' ? newPatientForm.painLocationOther : newPatientForm.painLocation,
+        painType: newPatientForm.painType === 'Other' ? newPatientForm.painTypeOther : newPatientForm.painType,
         recordedAt: now 
       },
       vitalSignsHistory: [{
@@ -275,6 +278,8 @@ export function TriageDepartment() {
           respiratoryRate: newPatientForm.vitalsRespiratoryRate,
           oxygenSaturation: newPatientForm.vitalsOxygenSaturation,
           painScore: newPatientForm.vitalsPainScore,
+          painLocation: newPatientForm.painLocation === 'Other' ? newPatientForm.painLocationOther : newPatientForm.painLocation,
+          painType: newPatientForm.painType === 'Other' ? newPatientForm.painTypeOther : newPatientForm.painType,
           recordedAt: now
         },
         timestamp: now,
@@ -316,7 +321,8 @@ export function TriageDepartment() {
       bloodType: "Unknown",
       vitalsBpSystolic: 0, vitalsBpDiastolic: 0, vitalsHeartRate: 0,
       vitalsTemperature: 0, vitalsOxygenSaturation: 0, vitalsRespiratoryRate: 0,
-      vitalsPainScore: 0
+      vitalsPainScore: 0, painLocation: "", painLocationOther: "",
+      painType: "", painTypeOther: ""
     });
   };
 
@@ -988,6 +994,117 @@ export function TriageDepartment() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Pain Location</label>
+                    <select value={newPatientForm.painLocation} onChange={(e) => setNewPatientForm({...newPatientForm, painLocation: e.target.value, painLocationOther: e.target.value !== 'Other' ? '' : newPatientForm.painLocationOther})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select location</option>
+                      <optgroup label="Head & Face">
+                        <option value="Head (general)">Head (general)</option>
+                        <option value="Forehead">Forehead</option>
+                        <option value="Temple (left)">Temple (left)</option>
+                        <option value="Temple (right)">Temple (right)</option>
+                        <option value="Eye (left)">Eye (left)</option>
+                        <option value="Eye (right)">Eye (right)</option>
+                        <option value="Ear (left)">Ear (left)</option>
+                        <option value="Ear (right)">Ear (right)</option>
+                        <option value="Nose">Nose</option>
+                        <option value="Jaw">Jaw</option>
+                        <option value="Mouth / Teeth">Mouth / Teeth</option>
+                      </optgroup>
+                      <optgroup label="Neck">
+                        <option value="Front of neck">Front of neck</option>
+                        <option value="Back of neck">Back of neck</option>
+                      </optgroup>
+                      <optgroup label="Chest">
+                        <option value="Left chest">Left chest</option>
+                        <option value="Right chest">Right chest</option>
+                        <option value="Center chest (sternum)">Center chest (sternum)</option>
+                        <option value="Rib area (left)">Rib area (left)</option>
+                        <option value="Rib area (right)">Rib area (right)</option>
+                      </optgroup>
+                      <optgroup label="Abdomen">
+                        <option value="Upper abdomen (epigastric)">Upper abdomen (epigastric)</option>
+                        <option value="Right upper abdomen">Right upper abdomen</option>
+                        <option value="Left upper abdomen">Left upper abdomen</option>
+                        <option value="Lower abdomen (general)">Lower abdomen (general)</option>
+                        <option value="Right lower abdomen">Right lower abdomen</option>
+                        <option value="Left lower abdomen">Left lower abdomen</option>
+                        <option value="Pelvic area">Pelvic area</option>
+                      </optgroup>
+                      <optgroup label="Back">
+                        <option value="Upper back">Upper back</option>
+                        <option value="Middle back">Middle back</option>
+                        <option value="Lower back (lumbar)">Lower back (lumbar)</option>
+                        <option value="Tailbone (coccyx)">Tailbone (coccyx)</option>
+                      </optgroup>
+                      <optgroup label="Upper Extremities">
+                        <option value="Shoulder (left)">Shoulder (left)</option>
+                        <option value="Shoulder (right)">Shoulder (right)</option>
+                        <option value="Upper arm (left)">Upper arm (left)</option>
+                        <option value="Upper arm (right)">Upper arm (right)</option>
+                        <option value="Elbow (left)">Elbow (left)</option>
+                        <option value="Elbow (right)">Elbow (right)</option>
+                        <option value="Forearm (left)">Forearm (left)</option>
+                        <option value="Forearm (right)">Forearm (right)</option>
+                        <option value="Wrist (left)">Wrist (left)</option>
+                        <option value="Wrist (right)">Wrist (right)</option>
+                        <option value="Hand (left)">Hand (left)</option>
+                        <option value="Hand (right)">Hand (right)</option>
+                        <option value="Fingers (left)">Fingers (left)</option>
+                        <option value="Fingers (right)">Fingers (right)</option>
+                      </optgroup>
+                      <optgroup label="Lower Extremities">
+                        <option value="Hip (left)">Hip (left)</option>
+                        <option value="Hip (right)">Hip (right)</option>
+                        <option value="Thigh (left)">Thigh (left)</option>
+                        <option value="Thigh (right)">Thigh (right)</option>
+                        <option value="Knee (left)">Knee (left)</option>
+                        <option value="Knee (right)">Knee (right)</option>
+                        <option value="Leg (left)">Leg (left)</option>
+                        <option value="Leg (right)">Leg (right)</option>
+                        <option value="Ankle (left)">Ankle (left)</option>
+                        <option value="Ankle (right)">Ankle (right)</option>
+                        <option value="Foot (left)">Foot (left)</option>
+                        <option value="Foot (right)">Foot (right)</option>
+                        <option value="Toes (left)">Toes (left)</option>
+                        <option value="Toes (right)">Toes (right)</option>
+                      </optgroup>
+                      <optgroup label="General / Other">
+                        <option value="Whole body pain">Whole body pain</option>
+                        <option value="Multiple locations">Multiple locations</option>
+                        <option value="Other">Other</option>
+                      </optgroup>
+                    </select>
+                    {newPatientForm.painLocation === 'Other' && (
+                      <input type="text" value={newPatientForm.painLocationOther} onChange={(e) => setNewPatientForm({...newPatientForm, painLocationOther: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm mt-1" placeholder="Specify location" />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Pain Type</label>
+                    <select value={newPatientForm.painType} onChange={(e) => setNewPatientForm({...newPatientForm, painType: e.target.value, painTypeOther: e.target.value !== 'Other' ? '' : newPatientForm.painTypeOther})} className="w-full px-2 py-1.5 border rounded text-sm">
+                      <option value="">Select pain type</option>
+                      <option value="Sharp">Sharp</option>
+                      <option value="Dull">Dull</option>
+                      <option value="Throbbing">Throbbing</option>
+                      <option value="Stabbing">Stabbing</option>
+                      <option value="Burning">Burning</option>
+                      <option value="Aching">Aching</option>
+                      <option value="Cramping">Cramping</option>
+                      <option value="Shooting">Shooting</option>
+                      <option value="Radiating">Radiating</option>
+                      <option value="Tingling (pins and needles)">Tingling (pins and needles)</option>
+                      <option value="Pressure-like">Pressure-like</option>
+                      <option value="Tightness">Tightness</option>
+                      <option value="Electric shock-like">Electric shock-like</option>
+                      <option value="Pulsating">Pulsating</option>
+                      <option value="Constant">Constant</option>
+                      <option value="Intermittent">Intermittent</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {newPatientForm.painType === 'Other' && (
+                      <input type="text" value={newPatientForm.painTypeOther} onChange={(e) => setNewPatientForm({...newPatientForm, painTypeOther: e.target.value})} className="w-full px-2 py-1.5 border rounded text-sm mt-1" placeholder="Specify pain type" />
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Height (cm)</label>
