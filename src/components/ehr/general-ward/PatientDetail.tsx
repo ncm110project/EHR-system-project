@@ -153,7 +153,7 @@ export function PatientDetail({
                     <td className="py-2">{formatVitalTime(v.timestamp)}</td>
                     <td>{v.vitals.bloodPressure}</td>
                     <td>{v.vitals.heartRate}</td>
-                    <td>{v.vitals.temperature}°F</td>
+                    <td>{v.vitals.temperature}°C</td>
                     <td>{v.vitals.respiratoryRate}</td>
                     <td>{v.vitals.oxygenSaturation}%</td>
                     <td className="text-slate-500">{v.recordedBy}</td>

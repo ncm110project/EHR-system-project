@@ -14,6 +14,11 @@ export function Pharmacy() {
   const [newStock, setNewStock] = useState(0);
   const [selectedClassification, setSelectedClassification] = useState<string>('all');
   const [dispenseWarning, setDispenseWarning] = useState<{ prescription: Prescription; message: string } | null>(null);
+  const [showPartialDispense, setShowPartialDispense] = useState<Prescription | null>(null);
+  const [partialQuantity, setPartialQuantity] = useState(1);
+
+  const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending' || p.status === 'partial');
+  const dispensedPrescriptions = prescriptions.filter(p => p.status === 'dispensed');
 
   const filteredMeds = medications.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -30,9 +35,6 @@ export function Pharmacy() {
     }
     return acc;
   }, {} as Record<string, Medication[]>);
-
-  const pendingPrescriptions = prescriptions.filter(p => p.status === 'pending');
-  const dispensedPrescriptions = prescriptions.filter(p => p.status === 'dispensed');
 
   const getPatientName = (patientId: string) => {
     const patient = patients.find(p => p.id === patientId);

@@ -1350,7 +1350,7 @@ export function EmergencyRoom() {
                     </div>
                     <div className="p-3 bg-slate-50 rounded-lg text-center">
                       <p className="text-xs text-slate-500">Temp</p>
-                      <p className="font-semibold">{selectedPatient.vitalSigns.temperature}°F</p>
+                      <p className="font-semibold">{selectedPatient.vitalSigns.temperature}°C</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-lg text-center">
                       <p className="text-xs text-slate-500">RR</p>
@@ -1711,7 +1711,7 @@ export function EmergencyRoom() {
                               <input
                                 type="number"
                                 step="0.1"
-                                placeholder="Temperature (e.g., 98.6)"
+                                placeholder="Temperature (e.g., 36.5)"
                                 value={vitalsData.temperature || ''}
                                 onChange={(e) => setVitalsData({...vitalsData, temperature: parseFloat(e.target.value) || 0})}
                                 className="px-3 py-2 border border-slate-300 rounded-lg"

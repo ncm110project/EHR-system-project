@@ -2207,7 +2207,7 @@ Doctor&apos;s Notes
                   <div className="grid grid-cols-5 gap-2 text-sm text-center">
                     <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">BP</p><p className="font-medium">{selectedPatient.vitalSigns.bloodPressure}</p></div>
                     <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">HR</p><p className="font-medium">{selectedPatient.vitalSigns.heartRate} bpm</p></div>
-                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">Temp</p><p className="font-medium">{selectedPatient.vitalSigns.temperature}°F</p></div>
+                    <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">Temp</p><p className="font-medium">{selectedPatient.vitalSigns.temperature}°C</p></div>
                     <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">RR</p><p className="font-medium">{selectedPatient.vitalSigns.respiratoryRate}/min</p></div>
                     <div className="p-2 bg-slate-50 rounded"><p className="text-slate-500">SpO2</p><p className="font-medium">{selectedPatient.vitalSigns.oxygenSaturation}%</p></div>
                   </div>

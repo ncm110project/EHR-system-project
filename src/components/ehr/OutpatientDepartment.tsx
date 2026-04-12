@@ -1159,11 +1159,11 @@ function PatientDetailModal({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500">Temperature (°F)</label>
+                    <label className="text-xs text-slate-500">Temperature (°C)</label>
                     <input
                       type="number"
                       step="0.1"
-                      placeholder="98.6"
+                      placeholder="36.5"
                       value={vitals.temperature || ''}
                       onChange={(e) => setVitals({...vitals, temperature: parseFloat(e.target.value) || 0})}
                       className="w-full"
@@ -1551,7 +1551,7 @@ function PatientDetailModal({
                         <div className="grid grid-cols-5 gap-2 text-sm mb-1">
                           <div><span className="text-xs text-slate-500">BP:</span> {entry.vitals.bloodPressure}</div>
                           <div><span className="text-xs text-slate-500">HR:</span> {entry.vitals.heartRate}</div>
-                          <div><span className="text-xs text-slate-500">Temp:</span> {entry.vitals.temperature}°F</div>
+                          <div><span className="text-xs text-slate-500">Temp:</span> {entry.vitals.temperature}°C</div>
                           <div><span className="text-xs text-slate-500">RR:</span> {entry.vitals.respiratoryRate}</div>
                           <div><span className="text-xs text-slate-500">SpO2:</span> {entry.vitals.oxygenSaturation}%</div>
                         </div>
@@ -1614,11 +1614,11 @@ function PatientDetailModal({
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-500">Temperature (°F)</label>
+                        <label className="text-xs text-slate-500">Temperature (°C)</label>
                         <input
                           type="number"
                           step="0.1"
-                          placeholder="98.6"
+                          placeholder="36.5"
                           value={vitals.temperature || ''}
                           onChange={(e) => setVitals({...vitals, temperature: parseFloat(e.target.value) || 0})}
                           className="w-full"

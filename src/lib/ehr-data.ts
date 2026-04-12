@@ -433,9 +433,11 @@ export interface Prescription {
   frequency: string;
   route?: string;
   duration: string;
+  quantity?: number;
+  dispensedQuantity?: number;
   instructions?: string;
   prescribedBy: string;
-  status: 'pending' | 'dispensed' | 'active';
+  status: 'pending' | 'dispensed' | 'partial' | 'active';
   prescribedAt?: string;
   date?: string;
 }

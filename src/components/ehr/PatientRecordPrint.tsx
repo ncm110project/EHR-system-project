@@ -112,7 +112,7 @@ export function PatientRecordPrint({ patient, onClose }: PatientRecordPrintProps
                 </div>
                 <div className="text-center p-3 bg-slate-50 rounded">
                   <p className="text-xs text-slate-500">Temperature</p>
-                  <p className="font-semibold">{patient.vitalSigns.temperature}°F</p>
+                  <p className="font-semibold">{patient.vitalSigns.temperature}°C</p>
                 </div>
                 <div className="text-center p-3 bg-slate-50 rounded">
                   <p className="text-xs text-slate-500">Resp. Rate</p>
