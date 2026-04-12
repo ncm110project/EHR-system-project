@@ -295,7 +295,7 @@ export interface Patient {
   visitorLog?: VisitorRecord[];
   assignedNurse?: string;
   assignedNurseId?: string;
-  registrationSource?: 'OPD' | 'TRIAGE';
+  registrationSource?: 'OPD' | 'TRIAGE' | 'OPD_NURSE_ACCOUNT' | 'SELF_REGISTRATION';
   codeStatus?: 'full' | 'dnr' | 'comfort' | 'dna';
   transferApproved?: boolean;
   transferApprovedBy?: string;
@@ -316,6 +316,8 @@ export interface Patient {
   memberId?: string;
   triageTimestamp?: string;
   triagedBy?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface WardBed {

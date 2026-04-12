@@ -147,7 +147,7 @@ const allLabTests = labTestsByCategory.flatMap(cat => cat.tests);
 
 export function OutpatientDepartment() {
   const { user } = useAuth();
-  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, addAppointment } = useEHR();
+  const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, addAppointment, createPatientAccount, checkUsernameExists } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -158,6 +158,22 @@ export function OutpatientDepartment() {
   const [activeTab, setActiveTab] = useState<'queue' | 'ongoing' | 'completed'>('queue');
   const [showPrintPreview, setShowPrintPreview] = useState<Patient | null>(null);
   const [showTransferModal, setShowTransferModal] = useState<Patient | null>(null);
+  const [showCreateAccount, setShowCreateAccount] = useState(false);
+  const [createdPatient, setCreatedPatient] = useState<Patient | null>(null);
+  const [accountForm, setAccountForm] = useState({
+    firstName: '',
+    lastName: '',
+    dob: '',
+    gender: 'Male' as 'Male' | 'Female',
+    phone: '',
+    email: '',
+    address: '',
+    emergencyName: '',
+    emergencyPhone: '',
+    username: '',
+    password: '',
+    confirmPassword: ''
+  });
 
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
@@ -546,6 +562,61 @@ export function OutpatientDepartment() {
     });
   };
 
+  const handleCreatePatientAccount = () => {
+    if (!accountForm.firstName || !accountForm.lastName || !accountForm.dob || !accountForm.phone || !accountForm.username || !accountForm.password) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    if (accountForm.password !== accountForm.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    if (checkUsernameExists(accountForm.username)) {
+      alert('Username already exists. Please choose a different username.');
+      return;
+    }
+    
+    const newPatient = createPatientAccount({
+      firstName: accountForm.firstName,
+      lastName: accountForm.lastName,
+      dob: accountForm.dob,
+      gender: accountForm.gender,
+      phone: accountForm.phone,
+      email: accountForm.email,
+      address: accountForm.address,
+      emergencyName: accountForm.emergencyName,
+      emergencyPhone: accountForm.emergencyPhone,
+      username: accountForm.username,
+      password: accountForm.password,
+      createdBy: user?.name || 'OPD Nurse'
+    });
+    
+    if (newPatient) {
+      setCreatedPatient(newPatient);
+      addActivity({
+        id: generateId(),
+        type: 'admission' as const,
+        department: 'opd' as const,
+        patientId: newPatient.id,
+        patientName: newPatient.name,
+        description: `Patient account created by OPD Nurse`,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      alert('Failed to create account. Username may already exist.');
+    }
+  };
+
+  const handleCloseAccountModal = () => {
+    setShowCreateAccount(false);
+    setCreatedPatient(null);
+    setAccountForm({
+      firstName: '', lastName: '', dob: '', gender: 'Male' as 'Male' | 'Female',
+      phone: '', email: '', address: '', emergencyName: '', emergencyPhone: '',
+      username: '', password: '', confirmPassword: ''
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -557,6 +628,17 @@ export function OutpatientDepartment() {
             {isNurse ? 'Review patient charts, record vitals and notes' : 'Consult patients and prescribe treatment'}
           </p>
         </div>
+        {isNurse && (
+          <button onClick={() => setShowCreateAccount(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            Create Patient Account
+          </button>
+        )}
       </div>
 
       {!isNurse && (
@@ -704,6 +786,101 @@ export function OutpatientDepartment() {
           patient={showTransferModal} 
           onClose={() => setShowTransferModal(null)} 
         />
+      )}
+
+      {showCreateAccount && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseAccountModal}>
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Create Patient Account</h3>
+              <button onClick={handleCloseAccountModal} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            
+            {createdPatient ? (
+              <div className="p-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-green-800 mb-2">Account Created!</h4>
+                  <p className="text-sm text-green-700">Patient ID: {createdPatient.id}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-slate-500">Username: <span className="font-semibold">{createdPatient.username}</span></p>
+                  <p className="text-sm text-slate-500">Password: <span className="font-semibold">{'entered_password'}</span></p>
+                </div>
+                <p className="text-sm text-amber-600 mb-4">Please provide these credentials to the patient.</p>
+                <button onClick={handleCloseAccountModal} className="btn btn-primary w-full">Close</button>
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">First Name *</label>
+                    <input type="text" value={accountForm.firstName} onChange={e => setAccountForm({...accountForm, firstName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Last Name *</label>
+                    <input type="text" value={accountForm.lastName} onChange={e => setAccountForm({...accountForm, lastName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Date of Birth *</label>
+                    <input type="date" value={accountForm.dob} onChange={e => setAccountForm({...accountForm, dob: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Sex *</label>
+                    <select value={accountForm.gender} onChange={e => setAccountForm({...accountForm, gender: e.target.value as 'Male' | 'Female'})} className="w-full px-3 py-2 border rounded-lg">
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Phone *</label>
+                    <input type="tel" value={accountForm.phone} onChange={e => setAccountForm({...accountForm, phone: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" value={accountForm.email} onChange={e => setAccountForm({...accountForm, email: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Address</label>
+                  <input type="text" value={accountForm.address} onChange={e => setAccountForm({...accountForm, address: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Emergency Contact</label>
+                    <input type="text" value={accountForm.emergencyName} onChange={e => setAccountForm({...accountForm, emergencyName: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Emergency Phone</label>
+                    <input type="tel" value={accountForm.emergencyPhone} onChange={e => setAccountForm({...accountForm, emergencyPhone: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                </div>
+                <hr className="border-slate-200" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Username *</label>
+                    <input type="text" value={accountForm.username} onChange={e => setAccountForm({...accountForm, username: e.target.value.toLowerCase().replace(/\s/g, '')})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Password *</label>
+                    <input type="password" value={accountForm.password} onChange={e => setAccountForm({...accountForm, password: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+                  <input type="password" value={accountForm.confirmPassword} onChange={e => setAccountForm({...accountForm, confirmPassword: e.target.value})} className="w-full px-3 py-2 border rounded-lg" />
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={handleCloseAccountModal} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
+                  <button onClick={handleCreatePatientAccount} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Create Account</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -71,6 +71,21 @@ interface EHRContextType {
   emtNotifications: EMTNotification[];
   addEmtNotification: (notification: EMTNotification) => void;
   updateEmtNotification: (notification: EMTNotification) => void;
+  createPatientAccount: (patientData: {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: 'Male' | 'Female';
+    phone: string;
+    email: string;
+    address?: string;
+    emergencyName?: string;
+    emergencyPhone?: string;
+    username: string;
+    password: string;
+    createdBy: string;
+  }) => Patient | null;
+  checkUsernameExists: (username: string) => boolean;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -384,6 +399,70 @@ export function EHRProvider({ children }: EHRProviderProps) {
     }
   }, []);
 
+  const checkUsernameExists = useCallback((username: string): boolean => {
+    const existsInPatients = patients.some(p => p.username === username);
+    const mockUserNames = ['nurse_opd', 'doctor_opd', 'nurse_er', 'doctor_er', 'pharmacy', 'nursing_admin', 'lab', 'charge_nurse', 'staff_nurse_1', 'doctor_ward', 'staff_nurse_2', 'charge_nurse_er', 'doctor_er2', 'nurse_triage', 'triage_nurse', 'admin'];
+    return existsInPatients || mockUserNames.includes(username);
+  }, [patients]);
+
+  const createPatientAccount = useCallback((patientData: {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    gender: 'Male' | 'Female';
+    phone: string;
+    email: string;
+    address?: string;
+    emergencyName?: string;
+    emergencyPhone?: string;
+    username: string;
+    password: string;
+    createdBy: string;
+  }): Patient | null => {
+    if (checkUsernameExists(patientData.username)) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    const calculateAge = (dob: string) => {
+      const birth = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    const newPatient: Patient = {
+      id: `P${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+      name: `${patientData.firstName} ${patientData.lastName}`,
+      firstName: patientData.firstName,
+      lastName: patientData.lastName,
+      age: calculateAge(patientData.dob),
+      gender: patientData.gender,
+      dob: patientData.dob,
+      phone: patientData.phone,
+      email: patientData.email,
+      address: patientData.address || '',
+      bloodType: 'Unknown',
+      allergies: [],
+      status: 'waiting',
+      department: 'opd',
+      admissionDate: now.split('T')[0],
+      hasPatientAccount: true,
+      username: patientData.username,
+      password: patientData.password,
+      registrationSource: 'OPD_NURSE_ACCOUNT',
+      createdBy: patientData.createdBy,
+      createdAt: now
+    };
+
+    addPatient(newPatient);
+    return newPatient;
+  }, [checkUsernameExists, addPatient]);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -428,7 +507,9 @@ export function EHRProvider({ children }: EHRProviderProps) {
       updateMedicationOrder,
       emtNotifications,
       addEmtNotification,
-      updateEmtNotification
+      updateEmtNotification,
+      createPatientAccount,
+      checkUsernameExists
     }}>
       {children}
     </EHRContext.Provider>
