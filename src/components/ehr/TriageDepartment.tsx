@@ -238,6 +238,9 @@ const pendingTriagePatients = patients.filter(p =>
     const patient: Patient = {
       id: generateId(),
       name: fullName,
+      firstName: newPatientForm.firstName,
+      middleName: newPatientForm.middleName,
+      lastName: newPatientForm.lastName,
       age: calculatedAge,
       gender: newPatientForm.gender,
       dob: newPatientForm.dob,
@@ -257,9 +260,22 @@ const pendingTriagePatients = patients.filter(p =>
       height: newPatientForm.height || undefined,
       weight: newPatientForm.weight || undefined,
       religion: newPatientForm.religion === 'Other' ? newPatientForm.religionOther : newPatientForm.religion,
+      civilStatus: newPatientForm.civilStatus,
       email: newPatientForm.email,
       emergencyContact: `${newPatientForm.emergencyName} (${newPatientForm.emergencyRelationship}) - ${newPatientForm.emergencyPhone}`,
       emergencyPhone: newPatientForm.emergencyPhone,
+      medicalConditions: medicalConditions,
+      currentMedications: newPatientForm.currentMedications || undefined,
+      pastSurgeries: newPatientForm.pastSurgeries || undefined,
+      smoking: newPatientForm.smoking,
+      alcoholUse: newPatientForm.alcoholUse,
+      occupation: newPatientForm.occupation || undefined,
+      insuranceStatus: newPatientForm.hasInsurance || undefined,
+      insuranceProvider: newPatientForm.insuranceProvider || undefined,
+      policyNumber: newPatientForm.policyNumber || undefined,
+      memberId: newPatientForm.memberId || undefined,
+      triageTimestamp: now,
+      triagedBy: user?.name || 'Triage Nurse',
       vitalSigns: { 
         bloodPressure: newPatientForm.vitalsBpSystolic && newPatientForm.vitalsBpDiastolic 
           ? `${newPatientForm.vitalsBpSystolic}/${newPatientForm.vitalsBpDiastolic}` 

@@ -1185,29 +1185,151 @@ export function EmergencyRoom() {
               </div>
             </div>
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-slate-500">Blood Type</p>
-                  <p className="font-semibold">{selectedPatient.bloodType}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Allergies</p>
-                  <p className="font-semibold">{selectedPatient.allergies.join(', ') || 'None'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Chief Complaint</p>
-                  <p className="font-semibold">{selectedPatient.chiefComplaint || 'Not recorded'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Status</p>
-                  <p className="font-semibold capitalize">{selectedPatient.status}</p>
-                </div>
-                {selectedPatient.diagnosis && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-slate-500">Diagnosis</p>
-                    <p className="font-semibold">{selectedPatient.diagnosis}</p>
+              <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 mb-4">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">Patient Overview</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Patient ID</p>
+                    <p className="font-semibold text-sm">{selectedPatient.id}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-xs text-slate-500">Age / Gender</p>
+                    <p className="font-semibold text-sm">{selectedPatient.age} yrs / {selectedPatient.gender}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Blood Type</p>
+                    <p className="font-semibold text-sm">{selectedPatient.bloodType}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Status</p>
+                    <p className="font-semibold text-sm capitalize">{selectedPatient.status}</p>
+                  </div>
+                  {selectedPatient.chiefComplaint && (
+                    <div className="col-span-2 md:col-span-4">
+                      <p className="text-xs text-slate-500">Chief Complaint</p>
+                      <p className="font-semibold text-sm">{selectedPatient.chiefComplaint}</p>
+                    </div>
+                  )}
+                  {selectedPatient.diagnosis && (
+                    <div className="col-span-2 md:col-span-4">
+                      <p className="text-xs text-slate-500">Current Diagnosis</p>
+                      <p className="font-semibold text-sm">{selectedPatient.diagnosis}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Personal Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Full Name:</span><span className="font-medium">{selectedPatient.name}</span></div>
+                    {selectedPatient.firstName && <div className="flex justify-between"><span className="text-slate-500">First Name:</span><span className="font-medium">{selectedPatient.firstName}</span></div>}
+                    {selectedPatient.middleName && <div className="flex justify-between"><span className="text-slate-500">Middle Name:</span><span className="font-medium">{selectedPatient.middleName}</span></div>}
+                    {selectedPatient.lastName && <div className="flex justify-between"><span className="text-slate-500">Last Name:</span><span className="font-medium">{selectedPatient.lastName}</span></div>}
+                    <div className="flex justify-between"><span className="text-slate-500">Date of Birth:</span><span className="font-medium">{selectedPatient.dob || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Age:</span><span className="font-medium">{selectedPatient.age} years</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Sex:</span><span className="font-medium">{selectedPatient.gender}</span></div>
+                    {selectedPatient.civilStatus && <div className="flex justify-between"><span className="text-slate-500">Civil Status:</span><span className="font-medium">{selectedPatient.civilStatus}</span></div>}
+                    {selectedPatient.religion && <div className="flex justify-between"><span className="text-slate-500">Religion:</span><span className="font-medium">{selectedPatient.religion}</span></div>}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Contact Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Phone:</span><span className="font-medium">{selectedPatient.phone || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-medium">{selectedPatient.email || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Address:</span><span className="font-medium">{selectedPatient.address || '-'}</span></div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Emergency Contact</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium">{selectedPatient.emergencyContact || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Phone:</span><span className="font-medium">{selectedPatient.emergencyPhone || '-'}</span></div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Medical Background</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <p className="text-slate-500">Medical Conditions:</p>
+                      <p className="font-medium">{(selectedPatient.medicalConditions || []).length > 0 ? selectedPatient.medicalConditions?.join(', ') : 'None recorded'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Allergies:</p>
+                      <p className="font-medium">{(selectedPatient.allergies || []).length > 0 ? selectedPatient.allergies?.join(', ') : 'None'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Current Medications:</p>
+                      <p className="font-medium">{selectedPatient.currentMedications || 'None recorded'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Past Surgeries:</p>
+                      <p className="font-medium">{selectedPatient.pastSurgeries || 'None recorded'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Lifestyle Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Smoking:</span><span className="font-medium">{selectedPatient.smoking || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Alcohol Use:</span><span className="font-medium">{selectedPatient.alcoholUse || '-'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Occupation:</span><span className="font-medium">{selectedPatient.occupation || '-'}</span></div>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Insurance Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Insurance Status:</span><span className="font-medium">{selectedPatient.insuranceStatus ? 'Insured' : 'Self-Pay'}</span></div>
+                    {selectedPatient.insuranceProvider && <div className="flex justify-between"><span className="text-slate-500">Provider:</span><span className="font-medium">{selectedPatient.insuranceProvider}</span></div>}
+                    {selectedPatient.policyNumber && <div className="flex justify-between"><span className="text-slate-500">Policy #:</span><span className="font-medium">{selectedPatient.policyNumber}</span></div>}
+                    {selectedPatient.memberId && <div className="flex justify-between"><span className="text-slate-500">Member ID:</span><span className="font-medium">{selectedPatient.memberId}</span></div>}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg p-4 md:col-span-2">
+                  <h4 className="font-semibold text-slate-800 mb-3 border-b pb-2">Triage Information</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-slate-500">ESI Level</p>
+                      <p className="font-semibold">{selectedPatient.esiLevel || 'Not assigned'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Department</p>
+                      <p className="font-semibold capitalize">{selectedPatient.department}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Arrival Mode</p>
+                      <p className="font-semibold capitalize">{selectedPatient.arrivalMode || 'Walk-in'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Triage Time</p>
+                      <p className="font-semibold">{selectedPatient.triageTimestamp ? formatDateTime(selectedPatient.triageTimestamp) : selectedPatient.admissionDate || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Triaged By</p>
+                      <p className="font-semibold">{selectedPatient.triagedBy || 'Triage Nurse'}</p>
+                    </div>
+                    {selectedPatient.height && (
+                      <div>
+                        <p className="text-slate-500">Height</p>
+                        <p className="font-semibold">{selectedPatient.height} cm</p>
+                      </div>
+                    )}
+                    {selectedPatient.weight && (
+                      <div>
+                        <p className="text-slate-500">Weight</p>
+                        <p className="font-semibold">{selectedPatient.weight} kg</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {selectedPatient.vitalSigns && (

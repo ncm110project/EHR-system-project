@@ -300,6 +300,22 @@ export interface Patient {
   transferApproved?: boolean;
   transferApprovedBy?: string;
   transferApprovedAt?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  civilStatus?: string;
+  medicalConditions?: string[];
+  currentMedications?: string;
+  pastSurgeries?: string;
+  smoking?: string;
+  alcoholUse?: string;
+  occupation?: string;
+  insuranceStatus?: boolean;
+  insuranceProvider?: string;
+  policyNumber?: string;
+  memberId?: string;
+  triageTimestamp?: string;
+  triagedBy?: string;
 }
 
 export interface WardBed {
