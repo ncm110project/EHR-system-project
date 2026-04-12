@@ -836,5 +836,31 @@ export const departments: { id: Department; name: string; icon: string; color: s
   { id: 'pharmacy', icon: 'pill', name: 'Pharmacy', color: '#8B5CF6' },
   { id: 'lab', name: 'Laboratory', icon: 'flask', color: '#F59E0B' },
   { id: 'imaging', name: 'Imaging', icon: 'scan', color: '#06B6D4' },
-  { id: 'nursing', name: 'Nursing Admin', icon: 'clipboard', color: '#10B981' }
+  { id: 'nursing', name: 'Nursing Admin', icon: 'clipboard', color: '#10B981' },
+  { id: 'triage', name: 'Triage', icon: 'alert', color: '#F97316' }
 ];
+
+export interface EMTNotification {
+  id: string;
+  patientName: string;
+  age: number;
+  gender: string;
+  chiefComplaint: string;
+  eventNotes?: string;
+  eta: string;
+  priority: TriagePriority;
+  ambulanceId: string;
+  receivedAt: string;
+  status: 'pending' | 'acknowledged' | 'arrived';
+  source: 'emt' | 'walk-in';
+  vitalSigns?: {
+    bloodPressure?: string;
+    heartRate?: number;
+    oxygenSaturation?: number;
+  };
+  consciousness?: 'Alert' | 'Verbal' | 'Pain' | 'Unresponsive';
+  esiLevel?: string;
+  bedId?: number;
+  reservedBy?: string;
+  arrivalTime?: string;
+}

@@ -2,20 +2,19 @@
 
 import React, { createContext, useContext, useState, useCallback, useSyncExternalStore, useEffect, ReactNode } from 'react';
 import { 
-  Patient, 
-  Department, 
-  Medication, 
-  Prescription, 
-  LabOrder, 
-  Nurse, 
+  Patient,
+  Medication,
+  Prescription,
+  LabOrder,
+  Nurse,
   Activity,
   IncidentReport,
   Message,
   Appointment,
   AuditLog,
-  TransferRecord,
-  FollowUp,
   Notification,
+  FollowUp,
+  Department,
   NurseTask,
   MedicationOrder,
   mockPatients,
@@ -23,7 +22,9 @@ import {
   mockPrescriptions,
   mockLabOrders,
   mockNurses,
-  mockActivities
+  mockActivities,
+  EMTNotification,
+  TransferRecord
 } from '@/lib/ehr-data';
 
 interface EHRContextType {
@@ -67,6 +68,9 @@ interface EHRContextType {
   updateNurseTask: (task: NurseTask) => void;
   addMedicationOrder: (order: MedicationOrder) => void;
   updateMedicationOrder: (order: MedicationOrder) => void;
+  emtNotifications: EMTNotification[];
+  addEmtNotification: (notification: EMTNotification) => void;
+  updateEmtNotification: (notification: EMTNotification) => void;
 }
 
 const EHRContext = createContext<EHRContextType | null>(null);
@@ -125,6 +129,8 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(localAppointments);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(localAuditLogs);
   const [notifications, setNotifications] = useState<Notification[]>(localNotifications);
+  const [localEmtNotifications, setLocalEmtNotifications] = useLocalStorage<EMTNotification[]>('emtNotifications', []);
+  const [emtNotifications, setEmtNotifications] = useState<EMTNotification[]>(localEmtNotifications);
   const [nurseTasks, setNurseTasks] = useState<NurseTask[]>([]);
   const [medicationOrders, setMedicationOrders] = useState<MedicationOrder[]>([]);
   const [currentDepartment, setCurrentDepartment] = useState<Department>('dashboard');
@@ -152,6 +158,10 @@ export function EHRProvider({ children }: EHRProviderProps) {
   useEffect(() => {
     setNotifications(localNotifications);
   }, [localNotifications]);
+
+  useEffect(() => {
+    setEmtNotifications(localEmtNotifications);
+  }, [localEmtNotifications]);
 
   const loadPendingPatients = useCallback(() => {
     const savedPatients = localStorage.getItem('pendingPatients');
@@ -357,6 +367,23 @@ export function EHRProvider({ children }: EHRProviderProps) {
     setMedicationOrders(prev => prev.map(o => o.id === order.id ? order : o));
   }, []);
 
+  const addEmtNotification = useCallback((notification: EMTNotification) => {
+    setEmtNotifications(prev => [...prev, notification]);
+    const saved = localStorage.getItem('emtNotifications');
+    const existing: EMTNotification[] = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('emtNotifications', JSON.stringify([...existing, notification]));
+  }, []);
+
+  const updateEmtNotification = useCallback((notification: EMTNotification) => {
+    setEmtNotifications(prev => prev.map(n => n.id === notification.id ? notification : n));
+    const saved = localStorage.getItem('emtNotifications');
+    if (saved) {
+      const existing: EMTNotification[] = JSON.parse(saved);
+      const updated = existing.map((n: EMTNotification) => n.id === notification.id ? notification : n);
+      localStorage.setItem('emtNotifications', JSON.stringify(updated));
+    }
+  }, []);
+
   return (
     <EHRContext.Provider value={{
       patients,
@@ -398,7 +425,10 @@ export function EHRProvider({ children }: EHRProviderProps) {
       addNurseTask,
       updateNurseTask,
       addMedicationOrder,
-      updateMedicationOrder
+      updateMedicationOrder,
+      emtNotifications,
+      addEmtNotification,
+      updateEmtNotification
     }}>
       {children}
     </EHRContext.Provider>

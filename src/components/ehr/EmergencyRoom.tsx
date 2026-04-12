@@ -174,7 +174,7 @@ interface EMTNotification {
 
 export function EmergencyRoom() {
   const { user } = useAuth();
-  const { patients, updatePatient, addActivity, setCurrentDepartment, medications, addLabOrder, addPrescription, labOrders, prescriptions } = useEHR();
+  const { patients, updatePatient, addActivity, setCurrentDepartment, medications, addLabOrder, addPrescription, labOrders, prescriptions, emtNotifications, addEmtNotification, updateEmtNotification } = useEHR();
   const { addToast } = useToast();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -197,23 +197,6 @@ export function EmergencyRoom() {
     const patient = patients.find(p => p.id === rx.patientId);
     return patient?.department === 'er';
   });
-
-  const [emtNotifications, setEmtNotifications] = useState<EMTNotification[]>([
-    {
-      id: 'EMT001',
-      patientName: 'Unknown Male',
-      age: 45,
-      gender: 'Male',
-      chiefComplaint: 'Chest pain, difficulty breathing',
-      eventNotes: 'Collapsed at home, wife called emergency',
-      eta: '5 mins',
-      priority: 2,
-      ambulanceId: 'AMB-201',
-      receivedAt: new Date().toISOString(),
-      status: 'pending',
-      source: 'emt'
-    }
-  ]);
 
   const [showVitalsForm, setShowVitalsForm] = useState(false);
   const [showLabOrderForm, setShowLabOrderForm] = useState(false);
@@ -409,9 +392,10 @@ export function EmergencyRoom() {
 
   const handleAcknowledgeEMT = (notificationId: string) => {
     if (!isNurse) return;
-    setEmtNotifications(prev => prev.map(n => 
-      n.id === notificationId ? { ...n, status: 'acknowledged' as const } : n
-    ));
+    const notification = emtNotifications.find(n => n.id === notificationId);
+    if (notification) {
+      updateEmtNotification({ ...notification, status: 'acknowledged' });
+    }
     addActivity({
       id: generateId(),
       type: 'admission',
@@ -459,9 +443,7 @@ export function EmergencyRoom() {
       ));
     }
     
-    setEmtNotifications(prev => prev.map(n => 
-      n.id === notification.id ? { ...n, status: 'arrived' as const, arrivalTime: new Date().toISOString() } : n
-    ));
+    updateEmtNotification({ ...notification, status: 'arrived', arrivalTime: new Date().toISOString() });
     addActivity({
       id: generateId(),
       type: 'admission',
@@ -513,7 +495,7 @@ export function EmergencyRoom() {
       ));
     }
     
-    setEmtNotifications(prev => [...prev, newEmt]);
+    addEmtNotification(newEmt);
     setShowEmtForm(false);
     setEmtFormData({
       patientName: '',
