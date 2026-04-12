@@ -28,6 +28,9 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 - [x] **Access control** - staff nurses see only assigned patients
 - [x] **TypeScript and lint fixes**
 - [x] **OPD Nurse Create Account workflow** - Search for existing patient → Open their chart → Click "Create Account" (auto-fills their info)
+- [x] **Temperature standardized to Celsius** across all departments
+- [x] **Triage patient search bar** added
+- [x] **Nursing Admin cleanup** - Removed Follow-ups and Appointments tabs
 
 ## EHR System Features
 
