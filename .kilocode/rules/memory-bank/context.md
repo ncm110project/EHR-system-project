@@ -122,6 +122,7 @@ bun dev
 | Apr 12 2026 | Add expanded demographics to OPD patient chart: Date of Birth, Email, Address, Religion, Civil Status, Emergency Contact, Medical Conditions, Current Medications, Past Surgeries, Smoking, Alcohol Use |
 | Apr 12 2026 | Fix OPD permissions: nurses cannot transfer patients, doctors see "For Admission" (only General Ward) instead of "Transfer" |
 | Apr 12 2026 | Enhance landing page with better visuals: hero section, animated badges, gradient department cards with hover effects, instruction box; rename "Employee Login" to "Employee/Patient Portal" |
+| Apr 12 2026 | Fix OPD appointment scheduling: show "Schedule Follow-up" button for any non-completed workflow status |
 
 ## Pending Improvements
 
