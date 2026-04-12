@@ -26,7 +26,10 @@ export default function PatientPortalPage() {
     return null;
   }
   const patientId = user && 'id' in user ? (user as any).id : '';
-  const appointments = storedAppointments.filter((a: Appointment) => a.patientId === patientId);
+  const patientName = user && 'name' in user ? (user as any).name : '';
+  const appointments = storedAppointments.filter((a: Appointment) => 
+    a.patientId === patientId || a.patientName === patientName
+  );
   const upcomingAppointments = appointments
     .filter((a: Appointment) => a.status === 'scheduled' && a.date >= new Date().toISOString().split('T')[0])
     .sort((a: Appointment, b: Appointment) => a.date.localeCompare(b.date));
