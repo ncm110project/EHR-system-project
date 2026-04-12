@@ -58,7 +58,7 @@ export default function PatientPortalPage() {
               <p className="text-xs text-teal-200">Welcome, {patient?.name || 'Patient'}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors text-sm">
+          <button onClick={handleLogout} className="px-4 py-2 bg-white text-teal-700 font-medium rounded-lg hover:bg-teal-50 transition-colors text-sm">
             Sign Out
           </button>
         </div>
