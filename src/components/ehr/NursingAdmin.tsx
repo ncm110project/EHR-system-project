@@ -100,6 +100,52 @@ export function NursingAdmin() {
     return { total, avgRating, byType, byDepartment, byServiceArea, avgRatingByDept: avgRatingByDeptFinal };
   }, [feedbackData]);
 
+  // Incident Reports statistics
+  const incidentStats = useMemo(() => {
+    if (incidentReports.length === 0) return null;
+    
+    const total = incidentReports.length;
+    const byType = incidentReports.reduce((acc, ir) => {
+      acc[ir.incidentType] = (acc[ir.incidentType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const bySeverity = incidentReports.reduce((acc, ir) => {
+      acc[ir.severity] = (acc[ir.severity] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byDepartment = incidentReports.reduce((acc, ir) => {
+      acc[ir.reporterDepartment] = (acc[ir.reporterDepartment] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byContributingFactor = incidentReports.reduce((acc, ir) => {
+      ir.contributingFactors.forEach(factor => {
+        acc[factor] = (acc[factor] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byStatus = incidentReports.reduce((acc, ir) => {
+      acc[ir.status] = (acc[ir.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byMonth = incidentReports.reduce((acc, ir) => {
+      const month = ir.incidentDate.slice(0, 7);
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byOutcome = incidentReports.reduce((acc, ir) => {
+      acc[ir.outcome] = (acc[ir.outcome] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return { total, byType, bySeverity, byDepartment, byContributingFactor, byStatus, byMonth, byOutcome };
+  }, [incidentReports]);
+
   const pendingVerificationCharts = patients.filter(p => 
     p.workflowStatus === 'doctor-completed' && p.chartVerificationStatus === 'pending'
   );
@@ -1466,6 +1512,256 @@ export function NursingAdmin() {
               <p className="text-sm text-slate-400 mt-2">Patients can submit feedback from the main page.</p>
             </div>
           )}
+
+          {/* QUALITY & SAFETY INSIGHTS SECTION */}
+          <div className="mt-8 pt-8 border-t border-slate-200">
+            <h3 className="text-xl font-bold text-slate-800 mb-6">Quality & Safety Insights</h3>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {incidentStats && (
+                <>
+                  <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+                    <p className="text-3xl font-bold text-orange-600">{incidentStats.total}</p>
+                    <p className="text-sm text-slate-600 font-medium">Total Incidents</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200">
+                    <p className="text-3xl font-bold text-red-600">{incidentStats.bySeverity.sentinel || 0}</p>
+                    <p className="text-sm text-slate-600 font-medium">Sentinel Events</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200">
+                    <p className="text-3xl font-bold text-amber-600">{incidentStats.bySeverity.severe || 0}</p>
+                    <p className="text-sm text-slate-600 font-medium">Severe</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+                    <p className="text-3xl font-bold text-green-600">{incidentStats.byStatus.resolved || 0}</p>
+                    <p className="text-sm text-slate-600 font-medium">Resolved</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Incident Reports Charts */}
+            {incidentStats && incidentStats.total > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Incident Type Distribution - Pie */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Incident Type Distribution</h4>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-40 h-40">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {(() => {
+                          const typeColors: Record<string, string> = {
+                            'medication-error': '#ef4444',
+                            'patient-fall': '#f97316',
+                            'equipment-failure': '#eab308',
+                            'needle-stick-injury': '#8b5cf6',
+                            'misidentification': '#ec4899',
+                            'documentation-error': '#06b6d4',
+                            'delay-in-treatment': '#14b8a6',
+                            'adverse-drug-reaction': '#f43f5e',
+                            'infection-control-issue': '#10b981',
+                            'other': '#6b7280'
+                          };
+                          const total = incidentStats.total;
+                          let offset = 0;
+                          const circumference = 2 * Math.PI * 40;
+                          return (
+                            <>
+                              {Object.entries(incidentStats.byType).slice(0, 6).map(([type, count]) => {
+                                const pct = count / total * 100;
+                                const dashArray = `${circumference * pct / 100} ${circumference}`;
+                                const dashOffset = -offset;
+                                const color = typeColors[type] || '#6b7280';
+                                offset += circumference * pct / 100;
+                                return (
+                                  <circle key={type} cx="50" cy="50" r="40" fill="none" stroke={color} strokeWidth="20" 
+                                    strokeDasharray={dashArray} strokeDashoffset={dashOffset} transform="rotate(-90 50 50)" />
+                                );
+                              })}
+                            </>
+                          );
+                        })()}
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-bold">{incidentStats.total}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6 space-y-2 max-h-40 overflow-y-auto">
+                      {Object.entries(incidentStats.byType).slice(0, 6).map(([type, count]) => {
+                        const label = type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        return (
+                          <div key={type} className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded`} style={{ 
+                              background: ['#ef4444','#f97316','#eab308','#8b5cf6','#ec4899','#06b6d4','#14b8a6','#f43f5e','#10b981','#6b7280'][['medication-error','patient-fall','equipment-failure','needle-stick-injury','misidentification','documentation-error','delay-in-treatment','adverse-drug-reaction','infection-control-issue','other'].indexOf(type) % 10] 
+                            }}></div>
+                            <span className="text-xs">{label}: {count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Severity Level - Bar */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Severity Level Distribution</h4>
+                  <div className="space-y-3">
+                    {Object.entries(incidentStats.bySeverity).map(([severity, count]) => {
+                      const maxCount = Math.max(...Object.values(incidentStats.bySeverity));
+                      const pct = (count / maxCount) * 100;
+                      const color = severity === 'sentinel-event' ? 'bg-red-600' : severity === 'severe' ? 'bg-red-500' : severity === 'moderate' ? 'bg-yellow-500' : 'bg-green-500';
+                      return (
+                        <div key={severity}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600 capitalize">{severity.replace(/-/g, ' ')}</span>
+                            <span className="text-sm font-semibold">{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className={`${color} h-4 rounded-full`} style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Incidents by Department - Bar */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Incidents by Department</h4>
+                  <div className="space-y-3">
+                    {Object.entries(incidentStats.byDepartment).slice(0, 5).map(([dept, count]) => {
+                      const maxCount = Math.max(...Object.values(incidentStats.byDepartment));
+                      const pct = (count / maxCount) * 100;
+                      return (
+                        <div key={dept}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600 uppercase">{dept}</span>
+                            <span className="text-sm font-semibold">{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className="bg-violet-500 h-4 rounded-full" style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Contributing Factors - Bar */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Top Contributing Factors</h4>
+                  <div className="space-y-3">
+                    {Object.entries(incidentStats.byContributingFactor)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 5)
+                      .map(([factor, count]) => {
+                      const maxCount = Math.max(...Object.values(incidentStats.byContributingFactor));
+                      const pct = (count / maxCount) * 100;
+                      return (
+                        <div key={factor}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600 capitalize">{factor.replace(/-/g, ' ')}</span>
+                            <span className="text-sm font-semibold">{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className="bg-cyan-500 h-4 rounded-full" style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Feedback Charts in Quality Section */}
+            {feedbackStats && feedbackData.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                {/* Rating Distribution */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Rating Distribution (1-5)</h4>
+                  <div className="space-y-3">
+                    {[1,2,3,4,5].map(rating => {
+                      const count = feedbackData.filter(f => f.rating === rating).length;
+                      const maxCount = Math.max(...[1,2,3,4,5].map(r => feedbackData.filter(f => f.rating === r).length));
+                      const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                      const color = rating <= 2 ? 'bg-red-500' : rating === 3 ? 'bg-yellow-500' : 'bg-green-500';
+                      const label = rating === 1 ? 'Very Poor' : rating === 2 ? 'Poor' : rating === 3 ? 'Fair' : rating === 4 ? 'Good' : 'Excellent';
+                      return (
+                        <div key={rating}>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm text-slate-600">{rating} - {label}</span>
+                            <span className="text-sm font-semibold">{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-4">
+                            <div className={`${color} h-4 rounded-full`} style={{ width: `${pct}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Feedback Type Summary */}
+                <div className="card p-6">
+                  <h4 className="font-semibold text-slate-800 mb-4">Feedback Composition</h4>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-40 h-40">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {(() => {
+                          const total = feedbackStats.total;
+                          const compPct = feedbackStats.byType.complaint / total * 100;
+                          const suggPct = feedbackStats.byType.suggestion / total * 100;
+                          const compsPct = feedbackStats.byType.compliment / total * 100;
+                          const circumference = 2 * Math.PI * 40;
+                          return (
+                            <>
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#fee2e2" strokeWidth="20" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compPct / 100} ${circumference}`} 
+                                strokeDashoffset="0" transform="rotate(-90 50 50)" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="20" 
+                                strokeDasharray={`${circumference * suggPct / 100} ${circumference}`} 
+                                strokeDashoffset={`${-circumference * compPct / 100}`} transform="rotate(-90 50 50)" />
+                              <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="20" 
+                                strokeDasharray={`${circumference * compsPct / 100} ${circumference}`} 
+                                strokeDashoffset={`${-circumference * (compPct + suggPct) / 100}`} transform="rotate(-90 50 50)" />
+                            </>
+                          );
+                        })()}
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-bold">{feedbackStats.total}</span>
+                      </div>
+                    </div>
+                    <div className="ml-6 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded"></div>
+                        <span className="text-sm">Complaints: {feedbackStats.byType.complaint}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-amber-500 rounded"></div>
+                        <span className="text-sm">Suggestions: {feedbackStats.byType.suggestion}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded"></div>
+                        <span className="text-sm">Compliments: {feedbackStats.byType.compliment}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Data State */}
+            {(!incidentStats || incidentStats.total === 0) && (!feedbackStats || feedbackData.length === 0) && (
+              <div className="card p-8 text-center">
+                <p className="text-slate-500">No quality and safety data available.</p>
+                <p className="text-sm text-slate-400 mt-2">Incident reports and patient feedback will appear here.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
