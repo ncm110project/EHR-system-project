@@ -160,6 +160,7 @@ export function OutpatientDepartment() {
   const [showTransferModal, setShowTransferModal] = useState<Patient | null>(null);
   const [showCreateAccount, setShowCreateAccount] = useState(false);
   const [createdPatient, setCreatedPatient] = useState<Patient | null>(null);
+  const [chartCreateAccount, setChartCreateAccount] = useState(false);
   const [accountForm, setAccountForm] = useState({
     firstName: '',
     lastName: '',
