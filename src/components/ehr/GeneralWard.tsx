@@ -217,11 +217,12 @@ export function GeneralWard() {
 
   const [showTransferApprovalModal, setShowTransferApprovalModal] = useState(false);
 
-  const handleApproveTransfer = () => {
+  const handleAcceptTransfer = () => {
     if (!selectedPatient) return;
     
     const updatedPatient: Patient = {
       ...selectedPatient,
+      wardWorkflowStatus: 'admitted',
       transferApproved: true,
       transferApprovedBy: user?.name,
       transferApprovedAt: new Date().toISOString()
@@ -234,12 +235,13 @@ export function GeneralWard() {
       department: 'general-ward',
       patientId: selectedPatient.id,
       patientName: selectedPatient.name,
-      description: `Transfer to General Ward approved by ${user?.name}`,
+      description: `Transfer to General Ward accepted by ${user?.name}`,
       timestamp: new Date().toISOString()
     });
     
     setShowTransferApprovalModal(false);
-    addToast("Transfer approved successfully", "success");
+    setSelectedPatient(null);
+    addToast("Transfer accepted. Charge Nurse can now assign bed.", "success");
   };
 
   const handleAdmitPatient = () => {
@@ -1855,10 +1857,10 @@ Doctor&apos;s Notes
                 <p className="font-medium">{selectedPatient.department || 'OPD/ER'}</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600 mb-4">Do you approve this transfer to the General Ward?</p>
+            <p className="text-sm text-slate-600 mb-4">Accept this patient transfer to General Ward?</p>
             <div className="flex gap-3 pt-3">
               <button onClick={() => setShowTransferApprovalModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
-              <button onClick={handleApproveTransfer} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Approve Transfer</button>
+              <button onClick={handleAcceptTransfer} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Accept Transfer</button>
             </div>
           </div>
         </div>
