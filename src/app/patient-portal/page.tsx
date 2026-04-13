@@ -141,7 +141,7 @@ export default function PatientPortalPage() {
               <div className="space-y-4">
                 <div className="card p-6">
                   <h2 className="text-xl font-bold mb-4">Upcoming Appointments</h2>
-                  <p className="text-xs text-slate-500 mb-2">Debug: Patient ID = "{patientId}" | Name = "{patientName}"</p>
+                  <p className="text-xs text-slate-500 mb-2">Debug: Patient ID = {patientId || '(none)'} | Name = {patientName || '(none)'}</p>
                   {upcomingAppointments.length === 0 ? (
                     <p className="text-slate-500">No upcoming appointments.</p>
                   ) : (

@@ -198,7 +198,8 @@ export function GeneralWard() {
   });
   const [assignNurseForTask, setAssignNurseForTask] = useState("");
 
-  const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
+  const isDoctor = !!((user as any)?.role === 'doctor' || (user as any)?.role === 'charge-nurse');
+  console.log('User role:', (user as any)?.role, 'isDoctor:', isDoctor);
   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
   const isChargeNurse = !!(user && 'role' in user && user.role === 'charge-nurse');
   const isStaffNurse = !!(user && 'role' in user && user.role === 'staff-nurse');
