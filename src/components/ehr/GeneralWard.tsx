@@ -204,6 +204,7 @@ export function GeneralWard() {
   const isChargeNurse = userRole === 'charge-nurse';
   const isStaffNurse = userRole === 'staff-nurse';
   const isNurse = isChargeNurse || isStaffNurse;
+  const canApproveTransfer = isGeneralWardDoctor || isChargeNurse;
 
   const wardPatients = patients.filter(p => p.department === 'general-ward');
 
@@ -242,7 +243,7 @@ export function GeneralWard() {
     
     setShowTransferApprovalModal(false);
     setSelectedPatient(null);
-    addToast("Transfer accepted. Charge Nurse can now assign bed.", "success");
+    addToast("Patient admitted. You can now assign a bed.", "success");
   };
 
   const handleAdmitPatient = () => {
@@ -970,7 +971,7 @@ export function GeneralWard() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      {isGeneralWardDoctor && getWorkflowStatus(patient) === 'pending_transfer' && !patient.transferApproved && (
+                      {canApproveTransfer && getWorkflowStatus(patient) === 'pending_transfer' && (
                         <button 
                           onClick={() => { setSelectedPatient(patient); setShowTransferApprovalModal(true); }} 
                           className="text-amber-600 hover:text-amber-700 text-sm font-medium"
@@ -1858,10 +1859,10 @@ Doctor&apos;s Notes
                 <p className="font-medium">{selectedPatient.department || 'OPD/ER'}</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600 mb-4">Review and accept this patient transfer to General Ward?</p>
+            <p className="text-sm text-slate-600 mb-4">Admit this patient to General Ward and assign a bed?</p>
             <div className="flex gap-3 pt-3">
               <button onClick={() => setShowTransferApprovalModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
-              <button onClick={handleAcceptTransfer} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Approve & Admit</button>
+              <button onClick={handleAcceptTransfer} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Admit Patient</button>
             </div>
           </div>
         </div>
