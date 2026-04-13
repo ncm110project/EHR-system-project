@@ -70,7 +70,8 @@ export function TriageDepartment() {
   };
 
 const pendingTriagePatients = patients.filter(p => 
-    p.department === 'triage' && p.triageStatus !== 'triaged'
+    p.department === 'triage' && 
+    (!p.triageStatus || p.triageStatus === 'pending')
   );
   
   const triagedPatients = patients.filter(p => 
