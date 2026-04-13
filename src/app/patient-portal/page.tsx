@@ -27,9 +27,17 @@ export default function PatientPortalPage() {
   }
   const patientId = user && 'id' in user ? (user as any).id : '';
   const patientName = user && 'name' in user ? (user as any).name : '';
+  
+  // Debug - log for troubleshooting
+  console.log('Patient ID:', patientId);
+  console.log('Patient Name:', patientName);
+  console.log('All Appointments:', storedAppointments);
+  
   const appointments = storedAppointments.filter((a: Appointment) => 
     a.patientId === patientId || a.patientName === patientName
   );
+  
+  console.log('Filtered Appointments:', appointments);
   const upcomingAppointments = appointments
     .filter((a: Appointment) => a.status === 'scheduled' && a.date >= new Date().toISOString().split('T')[0])
     .sort((a: Appointment, b: Appointment) => a.date.localeCompare(b.date));
@@ -133,6 +141,7 @@ export default function PatientPortalPage() {
               <div className="space-y-4">
                 <div className="card p-6">
                   <h2 className="text-xl font-bold mb-4">Upcoming Appointments</h2>
+                  <p className="text-xs text-slate-500 mb-2">Debug: Patient ID = "{patientId}" | Name = "{patientName}"</p>
                   {upcomingAppointments.length === 0 ? (
                     <p className="text-slate-500">No upcoming appointments.</p>
                   ) : (
