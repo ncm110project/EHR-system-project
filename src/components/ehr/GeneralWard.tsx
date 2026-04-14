@@ -200,8 +200,9 @@ export function GeneralWard() {
 
   const userRole = (user as any)?.role;
   const userName = (user as any)?.name || '';
-  // General Ward Doctor: can be any user with 'doctor' role logged into General Ward
-  const isGWDoctor = userRole === 'doctor' && user?.department === 'general-ward';
+  const userDept = (user as any)?.department;
+  // Any doctor in General Ward can approve transfers
+  const isGWDoctor = userRole === 'doctor' && userDept === 'general-ward';
   const isChargeNurse = userRole === 'charge-nurse';
   const isStaffNurse = userRole === 'staff-nurse';
   const isNurse = isChargeNurse || isStaffNurse;
