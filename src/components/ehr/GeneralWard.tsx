@@ -199,12 +199,14 @@ export function GeneralWard() {
   const [assignNurseForTask, setAssignNurseForTask] = useState("");
 
   const userRole = (user as any)?.role;
-  const userDepartment = (user as any)?.department;
-  const isGeneralWardDoctor = userRole === 'doctor' && userDepartment === 'general-ward';
+  const userName = (user as any)?.name || '';
+  // General Ward Doctor: can be any user with 'doctor' role logged into General Ward
+  const isGWDoctor = userRole === 'doctor' && user?.department === 'general-ward';
   const isChargeNurse = userRole === 'charge-nurse';
   const isStaffNurse = userRole === 'staff-nurse';
   const isNurse = isChargeNurse || isStaffNurse;
-  const canApproveTransfer = isGeneralWardDoctor || isChargeNurse;
+  // Both doctor and charge nurse can approve transfers
+  const canApproveTransfer = isGWDoctor || isChargeNurse;
 
   const wardPatients = patients.filter(p => p.department === 'general-ward');
 
@@ -774,10 +776,10 @@ export function GeneralWard() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">
-            {isChargeNurse ? 'General Ward - Charge Nurse' : isStaffNurse ? 'General Ward - Staff Nurse' : isGeneralWardDoctor ? 'General Ward - Doctor' : 'General Ward'}
+            {isChargeNurse ? 'General Ward - Charge Nurse' : isStaffNurse ? 'General Ward - Staff Nurse' : isGWDoctor ? 'General Ward - Doctor' : 'General Ward'}
           </h2>
           <p className="text-slate-500">
-            {isChargeNurse ? 'Patient flow & bed management' : isStaffNurse ? 'Patient care & documentation' : isGeneralWardDoctor ? 'Patient treatment & orders' : 'Bedside nursing & patient management'}
+            {isChargeNurse ? 'Patient flow & bed management' : isStaffNurse ? 'Patient care & documentation' : isGWDoctor ? 'Patient treatment & orders' : 'Bedside nursing & patient management'}
           </p>
         </div>
         <div className="flex gap-3">
@@ -838,7 +840,7 @@ export function GeneralWard() {
           { id: 'patients', label: 'My Patients' },
           { id: 'incidents', label: 'Incidents' },
           { id: 'handover', label: 'Handover Log' },
-        ] : isGeneralWardDoctor ? [
+        ] : isGWDoctor ? [
           { id: 'beds', label: 'Bed Grid' },
           { id: 'patients', label: 'Patients' },
           { id: 'rounds', label: 'Daily Rounds' },
@@ -950,7 +952,7 @@ export function GeneralWard() {
               {currentPatients.map(patient => {
                   const vitalsAlert = getAbnormalVitalsAlert(patient);
                   return (
-                <tr key={patient.id} className="hover:bg-slate-50">
+                <tr key={patient.id} className={`hover:bg-slate-50 ${getWorkflowStatus(patient) === 'pending_transfer' ? 'bg-orange-50' : ''}`}>
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-800">{patient.name}</p>
                     <p className="text-sm text-slate-500">{patient.age}y {patient.gender[0]}</p>
@@ -972,14 +974,19 @@ export function GeneralWard() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       {canApproveTransfer && getWorkflowStatus(patient) === 'pending_transfer' && (
-                        <button 
-                          onClick={() => { setSelectedPatient(patient); setShowTransferApprovalModal(true); }} 
-                          className="text-amber-600 hover:text-amber-700 text-sm font-medium"
-                        >
-                          Approve Transfer
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => { setSelectedPatient(patient); setShowTransferApprovalModal(true); }} 
+                            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium"
+                          >
+                            Approve
+                          </button>
+                          <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                        </>
                       )}
-                      <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                      {(!canApproveTransfer || getWorkflowStatus(patient) !== 'pending_transfer') && (
+                        <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -997,7 +1004,7 @@ export function GeneralWard() {
       {activeTab === 'tasks' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <h3 className="font-semibold mb-4">Nurse Tasks</h3>
-          {(isChargeNurse || isGeneralWardDoctor) && pendingTasks.length > 0 && (
+          {(isChargeNurse || isGWDoctor) && pendingTasks.length > 0 && (
             <div className="mb-4">
               <h4 className="text-sm font-medium text-slate-600 mb-2">All Pending Tasks ({pendingTasks.length})</h4>
               <div className="space-y-2">
@@ -1135,7 +1142,7 @@ export function GeneralWard() {
                 <p className="text-slate-500">{selectedPatient.id} • {selectedPatient.age}y {selectedPatient.gender}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {isGeneralWardDoctor && (
+                {isGWDoctor && (
                   <>
                     <button onClick={() => setShowMedicationOrderModal(true)} className="px-3 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">Medication Order</button>
                     <button onClick={() => setShowLabOrderModal(true)} className="px-3 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">Order Lab</button>
@@ -1638,7 +1645,7 @@ Doctor&apos;s Notes
                 <button onClick={() => setShowFdarModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
                 <button 
                   onClick={handleSaveFdar} 
-                  disabled={!fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response || isGeneralWardDoctor} 
+                  disabled={!fdarNote.focus || !fdarNote.data || !fdarNote.action || !fdarNote.response || isGWDoctor} 
                   className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   Add FDAR Entry
@@ -1803,7 +1810,7 @@ Doctor&apos;s Notes
               <div className="text-center py-4">
                 <p className="text-amber-600 mb-4">This patient is pending transfer approval.</p>
                 <p className="text-sm text-slate-500 mb-4">A doctor must approve the transfer before the patient can be admitted.</p>
-                {isGeneralWardDoctor && (
+                {isGWDoctor && (
                   <button 
                     onClick={() => setShowTransferApprovalModal(true)} 
                     className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
