@@ -4,6 +4,7 @@ import "./globals.css";
 import { EHRProvider } from "@/lib/ehr-context";
 import { AuthProviderWrapper } from "@/components/providers/AuthProviderWrapper";
 import { ToastProvider } from "@/components/providers/ToastProvider";
+import { NotificationProvider } from "@/lib/notifications";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -32,7 +33,9 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${ibmPlexSans.variable}`}>
         <EHRProvider>
           <AuthProviderWrapper>
-            <ToastProvider>{children}</ToastProvider>
+            <NotificationProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </NotificationProvider>
           </AuthProviderWrapper>
         </EHRProvider>
       </body>

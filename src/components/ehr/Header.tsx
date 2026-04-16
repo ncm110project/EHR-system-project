@@ -8,6 +8,7 @@ import { departments } from "@/lib/ehr-data";
 import { IncidentReportForm } from "./IncidentReportForm";
 import { StaffMessaging } from "./StaffMessaging";
 import { PasswordChangeModal } from "./PasswordChangeModal";
+import { NotificationBell } from "@/components/ui/NotificationBell";
 
 export function Header() {
   const router = useRouter();
@@ -162,6 +163,8 @@ export function Header() {
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
+
+        <NotificationBell />
 
         {user && (
           <>
