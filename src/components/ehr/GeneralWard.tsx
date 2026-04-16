@@ -42,7 +42,7 @@ const formatVitalTime = (timestamp: string): string => {
   return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-type WardWorkflowStatus = 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
+type WardWorkflowStatus = 'pending_admission' | 'pending_transfer' | 'approved_for_admission' | 'admitted' | 'active' | 'transferred' | 'discharged';
 
 const getWorkflowStatus = (patient: Patient): WardWorkflowStatus => {
   return patient.wardWorkflowStatus || 'pending_admission';
@@ -50,7 +50,7 @@ const getWorkflowStatus = (patient: Patient): WardWorkflowStatus => {
 
 const canAssignBed = (patient: Patient): boolean => {
   const status = getWorkflowStatus(patient);
-  return status === 'pending_admission' || status === 'pending_transfer';
+  return status === 'pending_admission' || status === 'pending_transfer' || status === 'approved_for_admission';
 };
 
 const canRecordVitals = (patient: Patient): boolean => {
@@ -67,6 +67,7 @@ const getWorkflowStatusLabel = (status: WardWorkflowStatus): string => {
   const labels: Record<WardWorkflowStatus, string> = {
     pending_admission: 'Pending Admission',
     pending_transfer: 'Pending Transfer',
+    approved_for_admission: 'Approved for Admission',
     admitted: 'Admitted',
     active: 'Active',
     transferred: 'Transferred',
@@ -79,6 +80,7 @@ const getWorkflowStatusColor = (status: WardWorkflowStatus): string => {
   const colors: Record<WardWorkflowStatus, string> = {
     pending_admission: 'bg-yellow-100 text-yellow-800',
     pending_transfer: 'bg-orange-100 text-orange-800',
+    approved_for_admission: 'bg-teal-100 text-teal-800',
     admitted: 'bg-blue-100 text-blue-800',
     active: 'bg-green-100 text-green-800',
     transferred: 'bg-purple-100 text-purple-800',
@@ -230,7 +232,7 @@ export function GeneralWard() {
     
     const updatedPatient: Patient = {
       ...selectedPatient,
-      wardWorkflowStatus: 'admitted',
+      wardWorkflowStatus: 'approved_for_admission',
       transferApproved: true,
       transferApprovedBy: user?.name,
       transferApprovedAt: new Date().toISOString()
@@ -243,13 +245,13 @@ export function GeneralWard() {
       department: 'general-ward',
       patientId: selectedPatient.id,
       patientName: selectedPatient.name,
-      description: `Transfer to General Ward accepted by ${user?.name}`,
+      description: `Transfer to General Ward approved by ${user?.name}. Waiting for bed assignment.`,
       timestamp: new Date().toISOString()
     });
     
     setShowTransferApprovalModal(false);
     setSelectedPatient(null);
-    addToast("Patient admitted. You can now assign a bed.", "success");
+    addToast("Patient approved for admission. Charge Nurse can now assign a bed.", "success");
   };
 
   const handleAdmitPatient = () => {
@@ -266,12 +268,12 @@ export function GeneralWard() {
       ...selectedPatient,
       department: 'general-ward',
       status: 'admitted',
+      wardWorkflowStatus: 'active',
       roomNumber: newAdmit.roomNumber,
       bedNumber: newAdmit.bedNumber,
       admittingPhysician: newAdmit.admittingPhysician || user?.name,
       admissionDiagnosis: newAdmit.admissionDiagnosis || selectedPatient.chiefComplaint,
       wardStatus: 'admitted',
-      wardWorkflowStatus: 'admitted',
       bedAssignedAt: new Date().toISOString(),
       admittedAt: new Date().toISOString(),
       wardNurse: isNurse ? user?.name : undefined

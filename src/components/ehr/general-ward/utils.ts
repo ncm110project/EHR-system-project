@@ -1,6 +1,6 @@
-import { Patient, WardBed, Equipment, MedicationRound, IVFluidRecord, ShiftHandover, DailyRounding, WardIncident, PainAssessment, VisitorRecord, VitalSigns, VitalSignsEntry, NotesEntry, NurseTask, MedicationOrder } from "@/lib/ehr-data";
+import { Patient, WardBed, Equipment, MedicationRound, IVFluidRecord, ShiftHandover, DailyRounding, WardIncident, PainAssessment, VisitorRecord, VitalSigns } from "@/lib/ehr-data";
 
-export type WardWorkflowStatus = 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
+export type WardWorkflowStatus = 'pending_admission' | 'pending_transfer' | 'approved_for_admission' | 'admitted' | 'active' | 'transferred' | 'discharged';
 
 export const getWorkflowStatus = (patient: Patient): WardWorkflowStatus => {
   return patient.wardWorkflowStatus || 'pending_admission';
@@ -8,7 +8,7 @@ export const getWorkflowStatus = (patient: Patient): WardWorkflowStatus => {
 
 export const canAssignBed = (patient: Patient): boolean => {
   const status = getWorkflowStatus(patient);
-  return status === 'pending_admission' || status === 'pending_transfer';
+  return status === 'pending_admission' || status === 'pending_transfer' || status === 'approved_for_admission';
 };
 
 export const canRecordVitals = (patient: Patient): boolean => {
@@ -25,6 +25,7 @@ export const getWorkflowStatusLabel = (status: WardWorkflowStatus): string => {
   const labels: Record<WardWorkflowStatus, string> = {
     pending_admission: 'Pending Admission',
     pending_transfer: 'Pending Transfer',
+    approved_for_admission: 'Approved for Admission',
     admitted: 'Admitted',
     active: 'Active',
     transferred: 'Transferred',
@@ -37,6 +38,7 @@ export const getWorkflowStatusColor = (status: WardWorkflowStatus): string => {
   const colors: Record<WardWorkflowStatus, string> = {
     pending_admission: 'bg-yellow-100 text-yellow-800',
     pending_transfer: 'bg-orange-100 text-orange-800',
+    approved_for_admission: 'bg-teal-100 text-teal-800',
     admitted: 'bg-blue-100 text-blue-800',
     active: 'bg-green-100 text-green-800',
     transferred: 'bg-purple-100 text-purple-800',

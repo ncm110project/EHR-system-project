@@ -274,7 +274,7 @@ export interface Patient {
   admittingPhysician?: string;
   admissionDiagnosis?: string;
   wardStatus?: 'admitted' | 'discharged' | 'transferred-out' | 'transferred-in' | 'active';
-  wardWorkflowStatus?: 'pending_admission' | 'pending_transfer' | 'admitted' | 'active' | 'transferred' | 'discharged';
+  wardWorkflowStatus?: 'pending_admission' | 'pending_transfer' | 'approved_for_admission' | 'admitted' | 'active' | 'transferred' | 'discharged';
   bedAssignedAt?: string;
   admittedAt?: string;
   activatedAt?: string;
