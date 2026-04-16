@@ -201,13 +201,16 @@ export function GeneralWard() {
   const userRole = (user as any)?.role;
   const userName = (user as any)?.name || '';
   const userDept = (user as any)?.department;
-  // Any doctor in General Ward can approve transfers
-  const isGWDoctor = userRole === 'doctor' && userDept === 'general-ward';
+  // Debug log
+  console.log('User:', userRole, userDept);
+  // Any doctor can approve transfers (temporarily widened for testing)
+  const isGWDoctor = userRole === 'doctor';
   const isChargeNurse = userRole === 'charge-nurse';
   const isStaffNurse = userRole === 'staff-nurse';
   const isNurse = isChargeNurse || isStaffNurse;
   // Both doctor and charge nurse can approve transfers
   const canApproveTransfer = isGWDoctor || isChargeNurse;
+  console.log('canApproveTransfer:', canApproveTransfer);
 
   const wardPatients = patients.filter(p => p.department === 'general-ward');
 
@@ -943,6 +946,14 @@ export function GeneralWard() {
                       <td className="px-4 py-3">
                         {isChargeNurse && canAssignBed(patient) && (
                           <button onClick={() => { setSelectedPatient(patient); setShowAdmitModal(true); }} className="text-blue-600 hover:text-blue-700 text-sm font-medium mr-2">Assign Bed</button>
+                        )}
+                        {canApproveTransfer && getWorkflowStatus(patient) === 'pending_transfer' && (
+                          <button 
+                            onClick={() => { setSelectedPatient(patient); setShowTransferApprovalModal(true); }} 
+                            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium mr-2"
+                          >
+                            Approve
+                          </button>
                         )}
                         <button onClick={() => setSelectedPatient(patient)} className="text-teal-600 hover:text-teal-700 text-sm font-medium">View</button>
                       </td>
