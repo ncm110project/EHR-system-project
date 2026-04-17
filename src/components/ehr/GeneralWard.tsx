@@ -200,19 +200,16 @@ export function GeneralWard() {
   });
   const [assignNurseForTask, setAssignNurseForTask] = useState("");
 
-  const userRole = (user as any)?.role;
-  const userName = (user as any)?.name || '';
-  const userDept = (user as any)?.department;
-  // Debug log
-  console.log('User:', userRole, userDept);
-  // Any doctor can approve transfers (temporarily widened for testing)
-  const isGWDoctor = userRole === 'doctor';
-  const isChargeNurse = userRole === 'charge-nurse';
-  const isStaffNurse = userRole === 'staff-nurse';
-  const isNurse = isChargeNurse || isStaffNurse;
-  // Both doctor and charge nurse can approve transfers
-  const canApproveTransfer = isGWDoctor || isChargeNurse;
-  console.log('canApproveTransfer:', canApproveTransfer);
+   const userRole = (user as any)?.role;
+   const userName = (user as any)?.name || '';
+   const userDept = (user as any)?.department;
+   // Any doctor can approve transfers (temporarily widened for testing)
+   const isGWDoctor = userRole === 'doctor';
+   const isChargeNurse = userRole === 'charge-nurse';
+   const isStaffNurse = userRole === 'staff-nurse';
+   const isNurse = isChargeNurse || isStaffNurse;
+   // Both doctor and charge nurse can approve transfers
+   const canApproveTransfer = isGWDoctor || isChargeNurse;
 
   const wardPatients = patients.filter(p => p.department === 'general-ward');
 

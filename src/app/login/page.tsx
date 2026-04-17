@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -55,23 +55,31 @@ export default function LoginPage() {
     }, 300);
   };
 
-  const handlePatientLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+   const handlePatientLogin = (e: React.FormEvent) => {
+     e.preventDefault();
+     setError("");
+     setLoading(true);
 
-    setTimeout(() => {
-      const success = loginAsPatient(username, password);
-      if (success) {
-        router.push("/patient-portal");
-      } else {
-        setError("Invalid credentials. Make sure you have a patient account created by the hospital.");
-      }
-      setLoading(false);
-    }, 500);
-  };
+     setTimeout(() => {
+       const success = loginAsPatient(username, password);
+       if (success) {
+         router.push("/patient-portal");
+       } else {
+         setError("Invalid credentials. Make sure you have a patient account created by the hospital.");
+       }
+       setLoading(false);
+     }, 500);
+   };
 
-  if (isAuthenticated) {
+   const handleEmployeeTabClick = useCallback(() => {
+     setActiveTab("employee");
+   }, []);
+
+   const handlePatientTabClick = useCallback(() => {
+     setActiveTab("patient");
+   }, []);
+
+   if (isAuthenticated) {
     return null;
   }
 
@@ -95,7 +103,7 @@ export default function LoginPage() {
 
         <div className="flex mb-6">
           <button
-            onClick={() => setActiveTab("employee")}
+            onClick={handleEmployeeTabClick}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
               activeTab === "employee" 
                 ? "bg-teal-600 text-white" 
@@ -105,7 +113,7 @@ export default function LoginPage() {
             Employee Portal
           </button>
           <button
-            onClick={() => setActiveTab("patient")}
+            onClick={handlePatientTabClick}
             className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
               activeTab === "patient" 
                 ? "bg-teal-600 text-white" 

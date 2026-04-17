@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Department } from "@/lib/ehr-data";
@@ -71,6 +71,10 @@ export function Sidebar() {
   const { currentDepartment, setCurrentDepartment } = useEHR();
   const { user } = useAuth();
 
+  const handleSetDepartment = useCallback((deptId: Department) => {
+    setCurrentDepartment(deptId);
+  }, [setCurrentDepartment]);
+
   const getVisibleDepartments = () => {
     if (!user) return allDepartments;
     
@@ -130,7 +134,7 @@ export function Sidebar() {
           {visibleDepartments.map((dept) => (
             <li key={dept.id}>
               <button
-                onClick={() => setCurrentDepartment(dept.id)}
+                onClick={() => handleSetDepartment(dept.id)}
                 className={`sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left ${
                   currentDepartment === dept.id 
                     ? 'active bg-teal-700' 

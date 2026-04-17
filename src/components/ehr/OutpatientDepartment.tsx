@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
 import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, Appointment, ALL_DIAGNOSES } from "@/lib/ehr-data";
@@ -160,7 +160,6 @@ export function OutpatientDepartment() {
   const [showTransferModal, setShowTransferModal] = useState<Patient | null>(null);
   const [showCreateAccount, setShowCreateAccount] = useState(false);
   const [createdPatient, setCreatedPatient] = useState<Patient | null>(null);
-  const [chartCreateAccount, setChartCreateAccount] = useState(false);
   const [accountForm, setAccountForm] = useState({
     firstName: '',
     lastName: '',
@@ -176,66 +175,57 @@ export function OutpatientDepartment() {
     confirmPassword: ''
   });
 
-  const isNurse = !!(user && 'role' in user && user.role === 'nurse');
-  const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
+   const isNurse = !!(user && 'role' in user && user.role === 'nurse');
+   const isDoctor = !!(user && 'role' in user && user.role === 'doctor');
 
-  const opdPatients = patients.filter(p => p.department === 'opd' && (p.registrationStatus === 'confirmed' || p.registrationStatus === 'pending'));
-  
-  const getQueuePatients = () => {
-    if (isNurse) {
-      return opdPatients.filter(p => !p.workflowStatus || p.workflowStatus === 'registered');
-    }
-    if (isDoctor) {
-      return opdPatients.filter(p => p.workflowStatus === 'nurse-completed');
-    }
-    return opdPatients;
-  };
-
-  const getOngoingPatients = () => {
-    if (isNurse) {
-      return opdPatients.filter(p => p.workflowStatus === 'nurse-pending' || p.workflowStatus === 'nurse-completed');
-    }
-    if (isDoctor) {
-      return opdPatients.filter(p => p.workflowStatus === 'doctor-pending' || p.workflowStatus === 'nurse-completed');
-    }
-    return [];
-  };
-
-  const getCompletedPatients = () => {
-    return opdPatients.filter(p => p.workflowStatus === 'doctor-completed');
-  };
-
-  const queuePatients = getQueuePatients();
-  const ongoingPatients = getOngoingPatients();
-  const completedPatients = getCompletedPatients();
-  
-  const getFilteredPatients = () => {
-    if (isNurse) {
-      const allNursePatients = [...queuePatients, ...ongoingPatients];
-      return allNursePatients.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        p.id.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    let patientsToFilter: Patient[] = [];
-    switch (activeTab) {
-      case 'queue':
-        patientsToFilter = queuePatients;
-        break;
-      case 'ongoing':
-        patientsToFilter = ongoingPatients;
-        break;
-      case 'completed':
-        patientsToFilter = completedPatients;
-        break;
-    }
-    return patientsToFilter.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  };
-
-  const filteredPatients = getFilteredPatients();
+   const opdPatients = useMemo(() => 
+     patients.filter(p => p.department === 'opd' && (p.registrationStatus === 'confirmed' || p.registrationStatus === 'pending')),
+     [patients]
+   );
+   
+   const queuePatients = useMemo(() => {
+     if (isNurse) {
+       return opdPatients.filter(p => !p.workflowStatus || p.workflowStatus === 'registered');
+     }
+     if (isDoctor) {
+       return opdPatients.filter(p => p.workflowStatus === 'nurse-completed');
+     }
+     return opdPatients;
+   }, [opdPatients, isNurse, isDoctor]);
+   
+   const ongoingPatients = useMemo(() => {
+     if (isNurse) {
+       return opdPatients.filter(p => p.workflowStatus === 'nurse-pending' || p.workflowStatus === 'nurse-completed');
+     }
+     if (isDoctor) {
+       return opdPatients.filter(p => p.workflowStatus === 'doctor-pending' || p.workflowStatus === 'nurse-completed');
+     }
+     return [];
+   }, [opdPatients, isNurse, isDoctor]);
+   
+   const completedPatients = useMemo(() => 
+     opdPatients.filter(p => p.workflowStatus === 'doctor-completed'),
+     [opdPatients]
+   );
+   
+   const filteredPatients = useMemo(() => {
+     let patientsToFilter: Patient[] = [];
+     switch (activeTab) {
+       case 'queue':
+         patientsToFilter = queuePatients;
+         break;
+       case 'ongoing':
+         patientsToFilter = ongoingPatients;
+         break;
+       case 'completed':
+         patientsToFilter = completedPatients;
+         break;
+     }
+     return patientsToFilter.filter(p => 
+       p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       p.id.toLowerCase().includes(searchTerm.toLowerCase())
+     );
+   }, [activeTab, queuePatients, ongoingPatients, completedPatients, searchTerm]);
 
   const getWaitTime = (admissionDate: string) => {
     const diff = renderTime - new Date(admissionDate).getTime();
@@ -424,7 +414,7 @@ export function OutpatientDepartment() {
       diagnosis,
       diagnosisHistory: [...(patient.diagnosisHistory || []), diagnosisEntry],
       workflowStatus: 'doctor-completed' as const,
-      status: 'admitted' as const,
+      status: 'discharged' as const,
       chartVerificationStatus: 'pending' as const
     };
     updatePatient(updated);

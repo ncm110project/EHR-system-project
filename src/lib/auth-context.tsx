@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { User, mockUsers, Patient } from '@/lib/ehr-data';
+import { MOCK_USERNAMES } from '@/lib/constants';
 
 interface AuthContextType {
   user: User | Patient | null;
@@ -69,17 +70,22 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
   }, [patientList]);
 
   const loginAsPatient = useCallback((username: string, password: string): boolean => {
-    const pendingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
-    const allPatients = [...(patientList || []), ...pendingPatients];
-    
-    const patientWithAccount = allPatients.find(
-      p => p.hasPatientAccount && p.username === username && p.password === password
-    );
-    
-    if (patientWithAccount) {
-      const permissions = rolePermissions['patient'] || [];
-      setUser({ ...patientWithAccount, role: 'patient', permissions } as unknown as User);
-      return true;
+    try {
+      const savedPatients = localStorage.getItem('pendingPatients');
+      const pendingPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+      const allPatients = [...(patientList || []), ...pendingPatients];
+      
+      const patientWithAccount = allPatients.find(
+        p => p.hasPatientAccount && p.username === username && p.password === password
+      );
+      
+      if (patientWithAccount) {
+        const permissions = rolePermissions['patient'] || [];
+        setUser({ ...patientWithAccount, role: 'patient', permissions } as unknown as User);
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to parse pendingPatients from localStorage:', error);
     }
     
     return false;
@@ -94,18 +100,36 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
     
     if (user.password !== currentPassword) return false;
 
+    // Update user state
+    const updatedUser = { ...user, password: newPassword };
+    setUser(updatedUser);
+    
+    // Update in mockUsers if it's a staff member (has role)
     if ('role' in user) {
-      const updatedUser = { ...user, password: newPassword };
-      setUser(updatedUser);
-      
       const userIndex = mockUsers.findIndex(u => u.id === user.id);
       if (userIndex >= 0) {
         mockUsers[userIndex] = { ...mockUsers[userIndex], password: newPassword };
       }
-      return true;
     }
     
-    return false;
+    // Update in localStorage if it's a patient (has patient account)
+    if ('hasPatientAccount' in user) {
+      try {
+        const savedPatients = localStorage.getItem('pendingPatients');
+        if (savedPatients) {
+          const localPatients: Patient[] = JSON.parse(savedPatients);
+          const updatedLocal = localPatients.map((p: Patient) => 
+            p.id === user.id ? { ...p, password: newPassword } : p
+          );
+          localStorage.setItem('pendingPatients', JSON.stringify(updatedLocal));
+        }
+      } catch (error) {
+        console.error('Failed to update patient password in localStorage:', error);
+        return false;
+      }
+    }
+    
+    return true;
   }, [user]);
 
   const hasPermission = useCallback((permission: string): boolean => {
@@ -119,7 +143,10 @@ export function AuthProvider({ children, patientList }: AuthProviderProps) {
     return false;
   }, [user]);
 
-  const isPatient = !!(user && ('role' in user ? user.role === 'patient' : 'hasPatientAccount' in user && (user as any).hasPatientAccount === true));
+  const isPatient = !!(user && (
+    ('role' in user && (user as User).role === 'patient') ||
+    ('hasPatientAccount' in user && (user as Patient).hasPatientAccount === true)
+  ));
 
   return (
     <AuthContext.Provider value={{

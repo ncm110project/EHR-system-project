@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Appointment, LabOrder } from "@/lib/ehr-data";
+import { Appointment, LabOrder, Patient } from "@/lib/ehr-data";
 
 type Tab = "appointments" | "prescriptions" | "lab-results" | "profile";
 
@@ -25,19 +25,19 @@ export default function PatientPortalPage() {
   if (!isClient) {
     return null;
   }
-  const patientId = user && 'id' in user ? (user as any).id : '';
-  const patientName = user && 'name' in user ? (user as any).name : '';
   
-  // Debug - log for troubleshooting
-  console.log('Patient ID:', patientId);
-  console.log('Patient Name:', patientName);
-  console.log('All Appointments:', storedAppointments);
+  if (!isPatient || !user) {
+    return null;
+  }
+  
+  const patient = user as Patient;
+  const patientId = patient.id;
+  const patientName = patient.name;
   
   const appointments = storedAppointments.filter((a: Appointment) => 
     a.patientId === patientId || a.patientName === patientName
   );
   
-  console.log('Filtered Appointments:', appointments);
   const upcomingAppointments = appointments
     .filter((a: Appointment) => a.status === 'scheduled' && a.date >= new Date().toISOString().split('T')[0])
     .sort((a: Appointment, b: Appointment) => a.date.localeCompare(b.date));
@@ -45,7 +45,6 @@ export default function PatientPortalPage() {
     .filter((a: Appointment) => a.status === 'completed' || a.date < new Date().toISOString().split('T')[0])
     .sort((a: Appointment, b: Appointment) => b.date.localeCompare(a.date));
 
-  const patient = user as any;
   const prescriptions = patient?.prescriptions || [];
   const labOrders = patient?.labOrders || [];
 

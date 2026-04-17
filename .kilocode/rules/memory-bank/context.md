@@ -8,6 +8,19 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 
 ## Recently Completed
 
+- [x] Add error handling for all localStorage JSON.parse operations
+- [x] Fix patient password change functionality (was broken for patients)
+- [x] Correct OPD visit completion status from 'admitted' to 'discharged'
+- [x] Add error boundaries (error.tsx, not-found.tsx)
+- [x] Memoize expensive computations in Header and OutpatientDepartment
+- [x] Extract magic strings (MOCK_USERNAMES) to constants
+- [x] Remove unused state variable (chartCreateAccount)
+- [x] Remove all debug console.log statements
+- [x] Wrap event handlers in useCallback (LoginPage, Sidebar)
+- [x] Improve type safety: replace `as any` with proper types in auth/patient portal
+- [x] Add basic accessibility attributes (aria-labels on NotificationBell)
+- [x] Add missing try-catch for localStorage in ehr-context and auth-context
+
 - [x] Base Next.js 16 setup with App Router
 - [x] TypeScript configuration with strict mode
 - [x] Tailwind CSS 4 integration
@@ -124,6 +137,7 @@ bun dev
 | Apr 12 2026 | Enhance landing page with better visuals: hero section, animated badges, gradient department cards with hover effects, instruction box; rename "Employee Login" to "Employee/Patient Portal" |
 | Apr 12 2026 | Fix OPD appointment scheduling: show "Schedule Follow-up" button for any non-completed workflow status |
 | Apr 12 2026 | Add Patient Portal: login tab with Employee/Patient switch, patient authentication via localStorage, dashboard showing appointments, prescriptions, lab results, profile |
+| Apr 17 2026 | Code quality & security refactor: added error handling for localStorage operations, fixed patient password change, corrected OPD discharge status, removed debug console logs, memoized expensive computations (Header, OutpatientDepartment), extracted magic string constants, removed unused state, added error boundaries, wrapped event handlers in useCallback, improved type safety (removed `as any` in critical paths), added basic accessibility attributes |
 
 ## Pending Improvements
 

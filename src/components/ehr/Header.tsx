@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
@@ -20,21 +20,47 @@ export function Header() {
 
   const currentDept = departments.find(d => d.id === currentDepartment);
   
-  const deptPatients = patients.filter(p => p.department === currentDepartment);
-  const deptLabOrders = labOrders.filter(o => {
-    const patient = patients.find(p => p.id === o.patientId);
-    return patient?.department === currentDepartment;
-  });
-  const deptPrescriptions = prescriptions.filter(rx => {
-    const patient = patients.find(p => p.id === rx.patientId);
-    return patient?.department === currentDepartment;
-  });
+  const deptPatients = useMemo(() => 
+    patients.filter(p => p.department === currentDepartment),
+    [patients, currentDepartment]
+  );
+  
+  const deptLabOrders = useMemo(() => 
+    labOrders.filter(o => {
+      const patient = patients.find(p => p.id === o.patientId);
+      return patient?.department === currentDepartment;
+    }),
+    [labOrders, patients, currentDepartment]
+  );
+  
+  const deptPrescriptions = useMemo(() => 
+    prescriptions.filter(rx => {
+      const patient = patients.find(p => p.id === rx.patientId);
+      return patient?.department === currentDepartment;
+    }),
+    [prescriptions, patients, currentDepartment]
+  );
 
-  const pendingLabResults = deptLabOrders.filter(o => o.status === 'pending').length;
-  const pendingPrescriptions = deptPrescriptions.filter(p => p.status === 'pending').length;
-  const criticalPatients = deptPatients.filter(p => p.status === 'critical').length;
-  const waitingPatients = deptPatients.filter(p => p.status === 'waiting').length;
-  const inTreatmentPatients = deptPatients.filter(p => p.status === 'in-treatment').length;
+  const pendingLabResults = useMemo(() => 
+    deptLabOrders.filter(o => o.status === 'pending').length,
+    [deptLabOrders]
+  );
+  const pendingPrescriptions = useMemo(() => 
+    deptPrescriptions.filter(p => p.status === 'pending').length,
+    [deptPrescriptions]
+  );
+  const criticalPatients = useMemo(() => 
+    deptPatients.filter(p => p.status === 'critical').length,
+    [deptPatients]
+  );
+  const waitingPatients = useMemo(() => 
+    deptPatients.filter(p => p.status === 'waiting').length,
+    [deptPatients]
+  );
+  const inTreatmentPatients = useMemo(() => 
+    deptPatients.filter(p => p.status === 'in-treatment').length,
+    [deptPatients]
+  );
 
   const handleLogout = () => {
     logout();

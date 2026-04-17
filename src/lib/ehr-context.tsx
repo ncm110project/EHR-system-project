@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useSyncExternalStore, useEffect, ReactNode } from 'react';
-import { 
+import {
   Patient,
   Medication,
   Prescription,
@@ -26,6 +26,7 @@ import {
   EMTNotification,
   TransferRecord
 } from '@/lib/ehr-data';
+import { MOCK_USERNAMES } from '@/lib/constants';
 
 interface EHRContextType {
   patients: Patient[];
@@ -185,26 +186,39 @@ export function EHRProvider({ children }: EHRProviderProps) {
   }, [localEmtNotifications]);
 
   const loadPendingPatients = useCallback(() => {
-    const savedPatients = localStorage.getItem('pendingPatients');
-    const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
-    setPatients([...mockPatients, ...localPatients]);
+    try {
+      const savedPatients = localStorage.getItem('pendingPatients');
+      const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+      setPatients([...mockPatients, ...localPatients]);
+    } catch (error) {
+      console.error('Failed to load pending patients from localStorage:', error);
+      setPatients([...mockPatients]);
+    }
   }, []);
 
   const updatePatient = useCallback((patient: Patient) => {
     setPatients(prev => prev.map(p => p.id === patient.id ? patient : p));
-    const savedPatients = localStorage.getItem('pendingPatients');
-    if (savedPatients) {
-      const localPatients: Patient[] = JSON.parse(savedPatients);
-      const updatedLocal = localPatients.map((p: Patient) => p.id === patient.id ? patient : p);
-      localStorage.setItem('pendingPatients', JSON.stringify(updatedLocal));
+    try {
+      const savedPatients = localStorage.getItem('pendingPatients');
+      if (savedPatients) {
+        const localPatients: Patient[] = JSON.parse(savedPatients);
+        const updatedLocal = localPatients.map((p: Patient) => p.id === patient.id ? patient : p);
+        localStorage.setItem('pendingPatients', JSON.stringify(updatedLocal));
+      }
+    } catch (error) {
+      console.error('Failed to update patient in localStorage:', error);
     }
   }, []);
 
   const addPatient = useCallback((patient: Patient) => {
     setPatients(prev => [...prev, patient]);
-    const savedPatients = localStorage.getItem('pendingPatients');
-    const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
-    localStorage.setItem('pendingPatients', JSON.stringify([...localPatients, patient]));
+    try {
+      const savedPatients = localStorage.getItem('pendingPatients');
+      const localPatients: Patient[] = savedPatients ? JSON.parse(savedPatients) : [];
+      localStorage.setItem('pendingPatients', JSON.stringify([...localPatients, patient]));
+    } catch (error) {
+      console.error('Failed to add patient to localStorage:', error);
+    }
   }, []);
 
   const updateMedication = useCallback((medication: Medication) => {
@@ -238,45 +252,65 @@ export function EHRProvider({ children }: EHRProviderProps) {
   const addIncidentReport = useCallback((report: IncidentReport) => {
     setIncidentReports(prev => [...prev, report]);
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('incidentReports');
-      const existing: IncidentReport[] = saved ? JSON.parse(saved) : [];
-      localStorage.setItem('incidentReports', JSON.stringify([...existing, report]));
+      try {
+        const saved = localStorage.getItem('incidentReports');
+        const existing: IncidentReport[] = saved ? JSON.parse(saved) : [];
+        localStorage.setItem('incidentReports', JSON.stringify([...existing, report]));
+      } catch (error) {
+        console.error('Failed to save incident report to localStorage:', error);
+      }
     }
   }, []);
 
   const updateIncidentReport = useCallback((report: IncidentReport) => {
     setIncidentReports(prev => prev.map(r => r.id === report.id ? report : r));
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('incidentReports');
-      if (saved) {
-        const existing: IncidentReport[] = JSON.parse(saved);
-        const updated = existing.map((r: IncidentReport) => r.id === report.id ? report : r);
-        localStorage.setItem('incidentReports', JSON.stringify(updated));
+      try {
+        const saved = localStorage.getItem('incidentReports');
+        if (saved) {
+          const existing: IncidentReport[] = JSON.parse(saved);
+          const updated = existing.map((r: IncidentReport) => r.id === report.id ? report : r);
+          localStorage.setItem('incidentReports', JSON.stringify(updated));
+        }
+      } catch (error) {
+        console.error('Failed to update incident report in localStorage:', error);
       }
     }
   }, []);
 
   const sendMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message]);
-    const saved = localStorage.getItem('messages');
-    const existing: Message[] = saved ? JSON.parse(saved) : [];
-    localStorage.setItem('messages', JSON.stringify([...existing, message]));
+    try {
+      const saved = localStorage.getItem('messages');
+      const existing: Message[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem('messages', JSON.stringify([...existing, message]));
+    } catch (error) {
+      console.error('Failed to save message to localStorage:', error);
+    }
   }, []);
 
   const addAppointment = useCallback((appointment: Appointment) => {
     setAppointments(prev => [...prev, appointment]);
-    const saved = localStorage.getItem('appointments');
-    const existing: Appointment[] = saved ? JSON.parse(saved) : [];
-    localStorage.setItem('appointments', JSON.stringify([...existing, appointment]));
+    try {
+      const saved = localStorage.getItem('appointments');
+      const existing: Appointment[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem('appointments', JSON.stringify([...existing, appointment]));
+    } catch (error) {
+      console.error('Failed to save appointment to localStorage:', error);
+    }
   }, []);
 
   const updateAppointment = useCallback((appointment: Appointment) => {
     setAppointments(prev => prev.map(a => a.id === appointment.id ? appointment : a));
-    const saved = localStorage.getItem('appointments');
-    if (saved) {
-      const existing: Appointment[] = JSON.parse(saved);
-      const updated = existing.map((a: Appointment) => a.id === appointment.id ? appointment : a);
-      localStorage.setItem('appointments', JSON.stringify(updated));
+    try {
+      const saved = localStorage.getItem('appointments');
+      if (saved) {
+        const existing: Appointment[] = JSON.parse(saved);
+        const updated = existing.map((a: Appointment) => a.id === appointment.id ? appointment : a);
+        localStorage.setItem('appointments', JSON.stringify(updated));
+      }
+    } catch (error) {
+      console.error('Failed to update appointment in localStorage:', error);
     }
   }, []);
 
@@ -357,18 +391,26 @@ export function EHRProvider({ children }: EHRProviderProps) {
 
   const addNotification = useCallback((notification: Notification) => {
     setNotifications(prev => [notification, ...prev]);
-    const saved = localStorage.getItem('notifications');
-    const existing: Notification[] = saved ? JSON.parse(saved) : [];
-    localStorage.setItem('notifications', JSON.stringify([notification, ...existing]));
+    try {
+      const saved = localStorage.getItem('notifications');
+      const existing: Notification[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem('notifications', JSON.stringify([notification, ...existing]));
+    } catch (error) {
+      console.error('Failed to save notification to localStorage:', error);
+    }
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    const saved = localStorage.getItem('notifications');
-    if (saved) {
-      const existing: Notification[] = JSON.parse(saved);
-      const updated = existing.map((n: Notification) => n.id === id ? { ...n, read: true } : n);
-      localStorage.setItem('notifications', JSON.stringify(updated));
+    try {
+      const saved = localStorage.getItem('notifications');
+      if (saved) {
+        const existing: Notification[] = JSON.parse(saved);
+        const updated = existing.map((n: Notification) => n.id === id ? { ...n, read: true } : n);
+        localStorage.setItem('notifications', JSON.stringify(updated));
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read in localStorage:', error);
     }
   }, []);
 
@@ -390,25 +432,32 @@ export function EHRProvider({ children }: EHRProviderProps) {
 
   const addEmtNotification = useCallback((notification: EMTNotification) => {
     setEmtNotifications(prev => [...prev, notification]);
-    const saved = localStorage.getItem('emtNotifications');
-    const existing: EMTNotification[] = saved ? JSON.parse(saved) : [];
-    localStorage.setItem('emtNotifications', JSON.stringify([...existing, notification]));
+    try {
+      const saved = localStorage.getItem('emtNotifications');
+      const existing: EMTNotification[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem('emtNotifications', JSON.stringify([...existing, notification]));
+    } catch (error) {
+      console.error('Failed to save EMT notification to localStorage:', error);
+    }
   }, []);
 
   const updateEmtNotification = useCallback((notification: EMTNotification) => {
     setEmtNotifications(prev => prev.map(n => n.id === notification.id ? notification : n));
-    const saved = localStorage.getItem('emtNotifications');
-    if (saved) {
-      const existing: EMTNotification[] = JSON.parse(saved);
-      const updated = existing.map((n: EMTNotification) => n.id === notification.id ? notification : n);
-      localStorage.setItem('emtNotifications', JSON.stringify(updated));
+    try {
+      const saved = localStorage.getItem('emtNotifications');
+      if (saved) {
+        const existing: EMTNotification[] = JSON.parse(saved);
+        const updated = existing.map((n: EMTNotification) => n.id === notification.id ? notification : n);
+        localStorage.setItem('emtNotifications', JSON.stringify(updated));
+      }
+    } catch (error) {
+      console.error('Failed to update EMT notification in localStorage:', error);
     }
   }, []);
 
   const checkUsernameExists = useCallback((username: string): boolean => {
     const existsInPatients = patients.some(p => p.username === username);
-    const mockUserNames = ['nurse_opd', 'doctor_opd', 'nurse_er', 'doctor_er', 'pharmacy', 'nursing_admin', 'lab', 'charge_nurse', 'staff_nurse_1', 'doctor_ward', 'staff_nurse_2', 'charge_nurse_er', 'doctor_er2', 'nurse_triage', 'triage_nurse', 'admin'];
-    return existsInPatients || mockUserNames.includes(username);
+    return existsInPatients || MOCK_USERNAMES.includes(username as any);
   }, [patients]);
 
   const createPatientAccount = useCallback((patientData: {
