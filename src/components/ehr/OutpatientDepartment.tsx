@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/providers/ToastProvider";
 import { Patient, VitalSigns, LabOrder, Prescription, VitalSignsEntry, NotesEntry, DiagnosisEntry, Appointment, ALL_DIAGNOSES } from "@/lib/ehr-data";
 import { PatientRecordPrint } from "./PatientRecordPrint";
 import { DepartmentTransfer } from "./DepartmentTransfer";
@@ -146,6 +147,7 @@ const labTestsByCategory: LabTestCategory[] = [
 const allLabTests = labTestsByCategory.flatMap(cat => cat.tests);
 
 export function OutpatientDepartment() {
+  const { addToast } = useToast();
   const { user } = useAuth();
   const { patients, medications, labOrders, prescriptions, addPatient, addLabOrder, addPrescription, addActivity, updatePatient, addAppointment, createPatientAccount, checkUsernameExists } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
@@ -555,15 +557,15 @@ export function OutpatientDepartment() {
 
   const handleCreatePatientAccount = () => {
     if (!accountForm.firstName || !accountForm.lastName || !accountForm.dob || !accountForm.phone || !accountForm.username || !accountForm.password) {
-      alert('Please fill in all required fields');
+      addToast('Please fill in all required fields', 'error');
       return;
     }
     if (accountForm.password !== accountForm.confirmPassword) {
-      alert('Passwords do not match');
+      addToast('Passwords do not match', 'error');
       return;
     }
     if (checkUsernameExists(accountForm.username)) {
-      alert('Username already exists. Please choose a different username.');
+      addToast('Username already exists. Please choose a different username.', 'error');
       return;
     }
     
@@ -600,9 +602,9 @@ export function OutpatientDepartment() {
         description: `Patient account created by OPD Nurse`,
         timestamp: new Date().toISOString()
       });
-    } else {
-      alert('Failed to create account. Username may already exist.');
-    }
+      } else {
+        addToast('Failed to create account. Username may already exist.', 'error');
+      }
   };
 
   const handleCloseAccountModal = () => {

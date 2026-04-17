@@ -55,31 +55,31 @@ export default function LoginPage() {
     }, 300);
   };
 
-   const handlePatientLogin = (e: React.FormEvent) => {
-     e.preventDefault();
-     setError("");
-     setLoading(true);
+  const handlePatientLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-     setTimeout(() => {
-       const success = loginAsPatient(username, password);
-       if (success) {
-         router.push("/patient-portal");
-       } else {
-         setError("Invalid credentials. Make sure you have a patient account created by the hospital.");
-       }
-       setLoading(false);
-     }, 500);
-   };
+    setTimeout(() => {
+      const success = loginAsPatient(username, password);
+      if (success) {
+        router.push("/patient-portal");
+      } else {
+        setError("Invalid credentials. Make sure you have a patient account created by the hospital.");
+      }
+      setLoading(false);
+    }, 500);
+  };
 
-   const handleEmployeeTabClick = useCallback(() => {
-     setActiveTab("employee");
-   }, []);
+  const handleEmployeeTabClick = useCallback(() => {
+    setActiveTab("employee");
+  }, []);
 
-   const handlePatientTabClick = useCallback(() => {
-     setActiveTab("patient");
-   }, []);
+  const handlePatientTabClick = useCallback(() => {
+    setActiveTab("patient");
+  }, []);
 
-   if (isAuthenticated) {
+  if (isAuthenticated) {
     return null;
   }
 
@@ -125,7 +125,7 @@ export default function LoginPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          <div className="card p-8">
+          <div className="card p-8 animate-fade-in-up" key={activeTab}>
             {activeTab === "employee" ? (
               <>
                 <h2 className="text-xl font-semibold mb-6">Employee Sign In</h2>
@@ -153,14 +153,24 @@ export default function LoginPage() {
                     />
                   </div>
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                      {error}
+                    </div>
                   )}
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full btn btn-primary py-3 disabled:opacity-50"
+                    className="w-full btn btn-primary py-3 disabled:opacity-70 flex items-center justify-center gap-2"
                   >
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                      </>
+                    ) : "Sign In"}
                   </button>
                 </form>
               </>
@@ -192,14 +202,24 @@ export default function LoginPage() {
                     />
                   </div>
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                      {error}
+                    </div>
                   )}
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full btn btn-primary py-3 disabled:opacity-50"
+                    className="w-full btn btn-primary py-3 disabled:opacity-70 flex items-center justify-center gap-2"
                   >
-                    {loading ? "Signing in..." : "Sign In to Patient Portal"}
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                      </>
+                    ) : "Sign In to Patient Portal"}
                   </button>
                 </form>
               </>
@@ -207,7 +227,6 @@ export default function LoginPage() {
           </div>
 
           {activeTab === "employee" && (
-          <div className="space-y-4">
             <div className="card p-6">
               <h3 className="font-semibold mb-4 text-slate-700">Quick Login - Demo Accounts</h3>
               <div className="space-y-3">
@@ -353,7 +372,6 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
-          </div>
           )}
         </div>
       </div>

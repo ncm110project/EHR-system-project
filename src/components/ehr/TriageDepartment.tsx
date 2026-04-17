@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/providers/ToastProvider";
 import { Patient, TriagePriority, VitalSigns } from "@/lib/ehr-data";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -21,6 +22,7 @@ const triageCategories = [
 ];
 
 export function TriageDepartment() {
+  const { addToast } = useToast();
   const { user } = useAuth();
   const { patients, updatePatient, addActivity, medications, addPatient } = useEHR();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -215,11 +217,11 @@ const pendingTriagePatients = patients.filter(p =>
     resetTriageForm();
   };
 
-  const handleRegisterPatient = () => {
-    if (!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone || !newPatientForm.esiLevel || !newPatientForm.departmentAssigned || !newPatientForm.chiefComplaint) {
-      alert("Please fill in all required fields: Patient Name, DOB, Phone, Chief Complaint, ESI Level, and Department Assignment");
-      return;
-    }
+   const handleRegisterPatient = () => {
+     if (!newPatientForm.firstName || !newPatientForm.lastName || !newPatientForm.dob || !newPatientForm.phone || !newPatientForm.esiLevel || !newPatientForm.departmentAssigned || !newPatientForm.chiefComplaint) {
+       addToast("Please fill in all required fields: Patient Name, DOB, Phone, Chief Complaint, ESI Level, and Department Assignment", "error");
+       return;
+     }
     const now = new Date().toISOString();
     const calculatedAge = calculateAge(newPatientForm.dob);
     

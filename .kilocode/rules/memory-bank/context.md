@@ -8,18 +8,16 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 
 ## Recently Completed
 
-- [x] Add error handling for all localStorage JSON.parse operations
-- [x] Fix patient password change functionality (was broken for patients)
-- [x] Correct OPD visit completion status from 'admitted' to 'discharged'
-- [x] Add error boundaries (error.tsx, not-found.tsx)
-- [x] Memoize expensive computations in Header and OutpatientDepartment
-- [x] Extract magic strings (MOCK_USERNAMES) to constants
-- [x] Remove unused state variable (chartCreateAccount)
-- [x] Remove all debug console.log statements
-- [x] Wrap event handlers in useCallback (LoginPage, Sidebar)
-- [x] Improve type safety: replace `as any` with proper types in auth/patient portal
-- [x] Add basic accessibility attributes (aria-labels on NotificationBell)
-- [x] Add missing try-catch for localStorage in ehr-context and auth-context
+- [x] Add loading states with spinners to registration and feedback forms for better UX
+- [x] Add smooth fade-in animations for modals, page content, and success screens
+- [x] Extend transition durations on interactive elements (300ms) for smoother feel
+- [x] Enhance focus states with animated ring shadows
+- [x] Improve button feedback with active scaling and disabled state styling
+- [x] Add loading spinners to login buttons
+- [x] Skeleton loading states prepared (future)
+
+--- 
+Previous items: (security, type safety, performance, etc.)
 
 - [x] Base Next.js 16 setup with App Router
 - [x] TypeScript configuration with strict mode

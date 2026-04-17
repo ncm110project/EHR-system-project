@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useEHR } from "@/lib/ehr-context";
+import { useToast } from "@/components/providers/ToastProvider";
 import { Medication, Prescription, medicationClassifications, drugInteractions } from "@/lib/ehr-data";
 
 const generateId = () => `A${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function Pharmacy() {
+  const { addToast } = useToast();
   const { medications, prescriptions, patients, updatePrescription, addActivity, updateMedication } = useEHR();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<'inventory' | 'prescriptions'>('prescriptions');
@@ -171,11 +173,11 @@ export function Pharmacy() {
     setDispenseWarning(null);
   };
 
-  const handlePartialDispense = () => {
-    if (!showPartialDispense) return;
-    const medication = medications.find(m => m.name === showPartialDispense.medication);
-    if (!medication) { alert('Medication not found'); return; }
-    if (medication.stock < partialQuantity) { alert('Insufficient stock'); return; }
+   const handlePartialDispense = () => {
+     if (!showPartialDispense) return;
+     const medication = medications.find(m => m.name === showPartialDispense.medication);
+     if (!medication) { addToast('Medication not found', 'error'); return; }
+     if (medication.stock < partialQuantity) { addToast('Insufficient stock', 'error'); return; }
     const newDispensed = (showPartialDispense.dispensedQuantity || 0) + partialQuantity;
     const total = showPartialDispense.quantity || 1;
     const newStatus = newDispensed >= total ? 'dispensed' : 'partial';

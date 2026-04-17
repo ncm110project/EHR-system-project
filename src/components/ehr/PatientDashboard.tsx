@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useEHR } from "@/lib/ehr-context";
+import { useToast } from "@/components/providers/ToastProvider";
 import { Patient, Prescription, LabOrder, Appointment, BillingRecord, Message } from "@/lib/ehr-data";
 import { PasswordChangeModal } from "./PasswordChangeModal";
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
 export function PatientDashboard() {
+  const { addToast } = useToast();
   const { user } = useAuth();
   const { prescriptions, labOrders, patients, appointments, updatePatient, sendMessage, addAppointment, notifications, markNotificationRead, updateAppointment } = useEHR();
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -54,10 +56,10 @@ export function PatientDashboard() {
       (apt.status === 'scheduled' || apt.status === 'pending')
     );
     
-    if (conflict) {
-      alert('You already have an appointment scheduled at this date and time. Please choose a different time.');
-      return;
-    }
+     if (conflict) {
+       addToast('You already have an appointment scheduled at this date and time. Please choose a different time.', 'error');
+       return;
+     }
 
     const newAppointment: Appointment = {
       id: generateId(),

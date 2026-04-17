@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Patient } from "@/lib/ehr-data";
+import { useToast } from "@/components/providers/ToastProvider";
 
 const generateId = () => `P${String(Date.now()).slice(-6)}`;
 
@@ -77,9 +78,13 @@ export default function LandingPage() {
     consent: false,
     signatureName: "",
     signatureDate: ""
-  });
+   });
 
-  const autoFillForm = () => {
+   const { addToast } = useToast();
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+   const autoFillForm = () => {
     setFormData({
       firstName: "Test",
       middleName: "M",
@@ -152,77 +157,82 @@ export default function LandingPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newPatientId = generateId();
-    setPatientId(newPatientId);
-    
-    const age = calculateAge(formData.dob);
-    
-    const medicalConditions: string[] = [];
-    if (formData.hypertension) medicalConditions.push("Hypertension");
-    if (formData.diabetes) medicalConditions.push("Diabetes");
-    if (formData.asthma) medicalConditions.push("Asthma");
-    if (formData.heartDisease) medicalConditions.push("Heart Disease");
-    if (formData.kidneyDisease) medicalConditions.push("Kidney Disease");
-    if (formData.stroke) medicalConditions.push("Stroke");
-    if (formData.cancer) medicalConditions.push("Cancer");
-    if (formData.tuberculosis) medicalConditions.push("Tuberculosis");
-    if (formData.arthritis) medicalConditions.push("Arthritis");
-    if (formData.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
-    if (formData.epilepsy) medicalConditions.push("Epilepsy / Seizure Disorder");
-    if (formData.chronicLungDisease) medicalConditions.push("Chronic Lung Disease (COPD)");
-    if (formData.conditionsOther) medicalConditions.push(formData.conditionsOther);
+    setIsSubmitting(true);
 
-    const allergiesList: string[] = [];
-    if (formData.allergyPeanuts) allergiesList.push("Peanuts");
-    if (formData.allergyTreeNuts) allergiesList.push("Tree Nuts");
-    if (formData.allergyShellfish) allergiesList.push("Shellfish");
-    if (formData.allergyFish) allergiesList.push("Fish");
-    if (formData.allergyEggs) allergiesList.push("Eggs");
-    if (formData.allergyDairy) allergiesList.push("Dairy");
-    if (formData.allergySoy) allergiesList.push("Soy");
-    if (formData.allergyGluten) allergiesList.push("Gluten");
-    if (formData.allergyPollen) allergiesList.push("Pollen");
-    if (formData.allergyLatex) allergiesList.push("Latex");
-    if (formData.allergyDustMites) allergiesList.push("Dust Mites");
-    if (formData.allergiesOther) allergiesList.push(formData.allergiesOther);
+    setTimeout(() => {
+      const newPatientId = generateId();
+      setPatientId(newPatientId);
+      
+      const age = calculateAge(formData.dob);
+      
+      const medicalConditions: string[] = [];
+      if (formData.hypertension) medicalConditions.push("Hypertension");
+      if (formData.diabetes) medicalConditions.push("Diabetes");
+      if (formData.asthma) medicalConditions.push("Asthma");
+      if (formData.heartDisease) medicalConditions.push("Heart Disease");
+      if (formData.kidneyDisease) medicalConditions.push("Kidney Disease");
+      if (formData.stroke) medicalConditions.push("Stroke");
+      if (formData.cancer) medicalConditions.push("Cancer");
+      if (formData.tuberculosis) medicalConditions.push("Tuberculosis");
+      if (formData.arthritis) medicalConditions.push("Arthritis");
+      if (formData.thyroidDisorder) medicalConditions.push("Thyroid Disorder");
+      if (formData.epilepsy) medicalConditions.push("Epilepsy / Seizure Disorder");
+      if (formData.chronicLungDisease) medicalConditions.push("Chronic Lung Disease (COPD)");
+      if (formData.conditionsOther) medicalConditions.push(formData.conditionsOther);
 
-    const religionValue = formData.religion === "Others" ? formData.religionOther : formData.religion;
+      const allergiesList: string[] = [];
+      if (formData.allergyPeanuts) allergiesList.push("Peanuts");
+      if (formData.allergyTreeNuts) allergiesList.push("Tree Nuts");
+      if (formData.allergyShellfish) allergiesList.push("Shellfish");
+      if (formData.allergyFish) allergiesList.push("Fish");
+      if (formData.allergyEggs) allergiesList.push("Eggs");
+      if (formData.allergyDairy) allergiesList.push("Dairy");
+      if (formData.allergySoy) allergiesList.push("Soy");
+      if (formData.allergyGluten) allergiesList.push("Gluten");
+      if (formData.allergyPollen) allergiesList.push("Pollen");
+      if (formData.allergyLatex) allergiesList.push("Latex");
+      if (formData.allergyDustMites) allergiesList.push("Dust Mites");
+      if (formData.allergiesOther) allergiesList.push(formData.allergiesOther);
 
-    const newPatient: Patient = {
-      id: newPatientId,
-      name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
-      age: age,
-      gender: formData.sex,
-      dob: formData.dob,
-      phone: formData.phone,
-      address: `${formData.streetAddress}, ${formData.city}, ${formData.province}`.trim(),
-      bloodType: 'Unknown',
-      allergies: allergiesList,
-      status: 'waiting',
-      department: 'opd',
-      registrationStatus: 'pending',
-      admissionDate: new Date().toISOString().split('T')[0],
-      email: formData.email,
-      emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
-      emergencyPhone: formData.emergencyPhone,
-      workflowStatus: 'registered',
-      religion: religionValue,
-      registrationSource: 'OPD',
-      vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() },
-      notes: `Religion: ${religionValue || 'Not specified'}. Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
-    };
+      const religionValue = formData.religion === "Others" ? formData.religionOther : formData.religion;
 
-    const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
-    localStorage.setItem('pendingPatients', JSON.stringify([...existingPatients, newPatient]));
-    
-    setSubmitted(true);
+      const newPatient: Patient = {
+        id: newPatientId,
+        name: `${formData.firstName} ${formData.middleName} ${formData.lastName}`.trim(),
+        age: age,
+        gender: formData.sex,
+        dob: formData.dob,
+        phone: formData.phone,
+        address: `${formData.streetAddress}, ${formData.city}, ${formData.province}`.trim(),
+        bloodType: 'Unknown',
+        allergies: allergiesList,
+        status: 'waiting',
+        department: 'opd',
+        registrationStatus: 'pending',
+        admissionDate: new Date().toISOString().split('T')[0],
+        email: formData.email,
+        emergencyContact: `${formData.emergencyName} (${formData.emergencyRelationship}) - ${formData.emergencyPhone}`,
+        emergencyPhone: formData.emergencyPhone,
+        workflowStatus: 'registered',
+        religion: religionValue,
+        registrationSource: 'OPD',
+        vitalSigns: { bloodPressure: '-', heartRate: 0, temperature: 0, respiratoryRate: 0, oxygenSaturation: 0, recordedAt: new Date().toISOString() },
+        notes: `Religion: ${religionValue || 'Not specified'}. Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
+      };
+
+      const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
+      localStorage.setItem('pendingPatients', JSON.stringify([...existingPatients, newPatient]));
+      
+      setSubmitted(true);
+      addToast('Registration submitted successfully!', 'success');
+      setIsSubmitting(false);
+    }, 600);
   };
 
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="card p-8 max-w-lg text-center">
+        <div className="card p-8 max-w-lg text-center animate-fade-in-up">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2">
               <polyline points="20 6 9 17 4 12"></polyline>
@@ -312,15 +322,20 @@ export default function LandingPage() {
 
   const handleFeedbackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const existingFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]');
-    localStorage.setItem('patientFeedback', JSON.stringify([...existingFeedback, { 
-      ...feedbackForm, 
-      id: generateId(),
-      dateSubmitted: new Date().toISOString() 
-    }]));
-    setShowFeedbackModal(false);
-    setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", department: "er", serviceArea: "nursing", rating: 3, visitType: "", message: "" });
-    alert("Thank you! Your feedback has been submitted.");
+    setFeedbackLoading(true);
+
+    setTimeout(() => {
+      const existingFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]');
+      localStorage.setItem('patientFeedback', JSON.stringify([...existingFeedback, { 
+        ...feedbackForm, 
+        id: generateId(),
+        dateSubmitted: new Date().toISOString() 
+      }]));
+      setShowFeedbackModal(false);
+      setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", department: "er", serviceArea: "nursing", rating: 3, visitType: "", message: "" });
+      addToast('Thank you! Your feedback has been submitted.', 'success');
+      setFeedbackLoading(false);
+    }, 400);
   };
 
   return (
@@ -353,8 +368,8 @@ export default function LandingPage() {
       </header>
 
       {showFeedbackModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white rounded-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto animate-fade-in-up">
             <h3 className="text-lg font-semibold mb-4">Patient Feedback</h3>
             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
               <div>
@@ -430,7 +445,17 @@ export default function LandingPage() {
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowFeedbackModal(false)} className="flex-1 px-4 py-2 border rounded-lg hover:bg-slate-50">Cancel</button>
-                <button type="submit" className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Submit</button>
+                <button type="submit" disabled={feedbackLoading} className={`flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 ${feedbackLoading ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                  {feedbackLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Submitting...
+                    </>
+                  ) : 'Submit'}
+                </button>
               </div>
             </form>
           </div>
@@ -480,7 +505,7 @@ export default function LandingPage() {
             <p className="text-sm text-slate-300">Please have your valid ID, insurance card (if applicable), and list of current medications ready. Fields marked with * are required.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up">
             {/* SECTION 1 - PERSONAL INFORMATION */}
             <div className={sectionClass}>
               <h2 className={sectionTitleClass}>PERSONAL INFORMATION</h2>
@@ -809,8 +834,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <button type="submit" id="submit-btn" className="w-full btn btn-primary py-4 text-lg font-semibold">
-              Submit Registration
+            <button type="submit" id="submit-btn" disabled={isSubmitting} className={`w-full btn btn-primary py-4 text-lg font-semibold ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </>
+              ) : 'Submit Registration'}
             </button>
           </form>
         </div>
