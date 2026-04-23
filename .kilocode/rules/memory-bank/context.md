@@ -18,6 +18,7 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 - [x] Replace all alert() calls with toast notifications for better UX
 - [x] Add entrance animations for forms and modals with staggered timing
 - [x] Implement optimistic UI updates for form submissions
+- [x] **OPD Nurse Workflow Enhancement**: Allow nurses to reopen and update patient charts after submission
 - [x] **Code Architecture Refactoring Started:**
   - [x] Created reusable `useModal` hook to eliminate 33+ modal state patterns
   - [x] Built centralized data layer with `DataStorage` class and service abstractions
@@ -146,7 +147,7 @@ bun dev
 | Apr 12 2026 | Fix OPD appointment scheduling: show "Schedule Follow-up" button for any non-completed workflow status |
 | Apr 12 2026 | Add Patient Portal: login tab with Employee/Patient switch, patient authentication via localStorage, dashboard showing appointments, prescriptions, lab results, profile |
 | Apr 17 2026 | Code quality & security refactor: added error handling for localStorage operations, fixed patient password change, corrected OPD discharge status, removed debug console logs, memoized expensive computations (Header, OutpatientDepartment), extracted magic string constants, removed unused state, added error boundaries, wrapped event handlers in useCallback, improved type safety (removed `as any` in critical paths), added basic accessibility attributes |
-| Apr 23 2026 | Enhanced UX smoothness: replaced alert() calls with toast notifications, added entrance animations for forms/modals with staggered timing, implemented optimistic UI updates for form submissions with loading states and visual feedback |
+| Apr 23 2026 | Enhanced UX smoothness: replaced alert() calls with toast notifications, added entrance animations for forms/modals with staggered timing, implemented optimistic UI updates for form submissions with loading states and visual feedback. Added OPD nurse chart reopening functionality - nurses can now reopen and update patient charts after submission instead of them disappearing. |
 
 ## Pending Improvements
 

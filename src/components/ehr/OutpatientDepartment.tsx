@@ -613,9 +613,9 @@ export function OutpatientDepartment() {
         description: `Patient account created by OPD Nurse`,
         timestamp: new Date().toISOString()
       });
-      } else {
-        addToast('Failed to create account. Username may already exist.', 'error');
-      }
+    } else {
+      addToast('Failed to create account. Username may already exist.', 'error');
+    }
   };
 
   const handleCloseAccountModal = () => {
@@ -953,7 +953,7 @@ function PatientDetailModal({
   medications: any[];
   labOrders?: any[];
   onClose: () => void;
-  onSaveNurseNotes: (patient: Patient, vitals: VitalSigns, notes: string) => void;
+  onSaveNurseNotes: (patient: Patient, vitals: VitalSigns, notes: string, isUpdate?: boolean) => void;
   onSendToDoctor: (patient: Patient) => void;
   onOrderLab: (patient: Patient, testName: string, testType: any) => void;
   onPrescribe: (patient: Patient, medication: string, dosage: string, frequency: string, duration: string) => void;
@@ -1013,7 +1013,7 @@ function PatientDetailModal({
 
   const handleSave = () => {
     if (isNurse) {
-      onSaveNurseNotes(patient, vitals, notes);
+      onSaveNurseNotes(patient, vitals, notes, patient.workflowStatus === 'nurse-completed');
     }
   };
 
@@ -1184,7 +1184,7 @@ function PatientDetailModal({
             </div>
           </div>
 
-          {isNurse && patient.workflowStatus !== 'nurse-completed' && (
+          {isNurse && (
             <>
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="font-semibold mb-3">Vital Signs</h4>
@@ -1254,7 +1254,7 @@ function PatientDetailModal({
               </div>
 
               <button className="btn btn-primary w-full" onClick={handleSave}>
-                Save Assessment & Send to Doctor
+                {patient.workflowStatus === 'nurse-completed' ? 'Update Assessment' : 'Save Assessment & Send to Doctor'}
               </button>
             </>
           )}
