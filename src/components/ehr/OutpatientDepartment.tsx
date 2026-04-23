@@ -298,19 +298,19 @@ export function OutpatientDepartment() {
   const handleSaveNurseNotes = (patient: Patient, vitals: VitalSigns, notes: string) => {
     const now = new Date().toISOString();
     const nurseName = user?.name || 'Nurse';
-    
+
     const vitalsEntry: VitalSignsEntry = {
       vitals: { ...vitals, recordedAt: now },
       timestamp: now,
       recordedBy: nurseName
     };
-    
+
     const notesEntry: NotesEntry = {
       notes,
       timestamp: now,
       recordedBy: nurseName
     };
-    
+
     const updated = {
       ...patient,
       nurseVitals: vitals,
@@ -322,16 +322,21 @@ export function OutpatientDepartment() {
       status: 'in-treatment' as const
     };
     updatePatient(updated);
+
+    // Update the selected patient to show the updated data
+    setSelectedPatient(updated);
+
     addActivity({
       id: generateId(),
       type: 'nurse-assign',
       department: 'opd',
       patientId: patient.id,
       patientName: patient.name,
-      description: `Nurse completed assessment - sent to doctor`,
+      description: `Nurse completed assessment - patient now in ongoing status`,
       timestamp: now
     });
-    setSelectedPatient(null);
+
+    addToast('Patient assessment completed successfully. Patient moved to Ongoing status.', 'success');
   };
 
   const handleSendToDoctor = (patient: Patient) => {
@@ -341,6 +346,10 @@ export function OutpatientDepartment() {
       workflowStatus: 'nurse-completed' as const
     };
     updatePatient(updated);
+
+    // Update the selected patient to show the updated data
+    setSelectedPatient(updated);
+
     addActivity({
       id: generateId(),
       type: 'transfer',
@@ -350,6 +359,8 @@ export function OutpatientDepartment() {
       description: `Sent to doctor for consultation`,
       timestamp: now
     });
+
+    addToast('Patient sent to doctor successfully. Patient moved to Ongoing status.', 'success');
   };
 
   const handleOrderLab = (patient: Patient, testName: string, testType: 'blood' | 'urine' | 'imaging' | 'pathology') => {
