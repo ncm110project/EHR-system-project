@@ -18,6 +18,13 @@ A comprehensive Electronic Health Record (EHR) system connecting hospital depart
 - [x] Replace all alert() calls with toast notifications for better UX
 - [x] Add entrance animations for forms and modals with staggered timing
 - [x] Implement optimistic UI updates for form submissions
+- [x] **Code Architecture Refactoring Started:**
+  - [x] Created reusable `useModal` hook to eliminate 33+ modal state patterns
+  - [x] Built centralized data layer with `DataStorage` class and service abstractions
+  - [x] Created reusable `Modal` and `FormModal` components
+  - [x] Extracted business logic into custom hooks (`usePatientActions`)
+  - [x] Added comprehensive validation utilities
+  - [x] Successfully refactored Pharmacy component as proof of concept
 
 --- 
 Previous items: (security, type safety, performance, etc.)
