@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Patient } from "@/lib/ehr-data";
 import { useToast } from "@/components/providers/ToastProvider";
+import { DataStorage } from "@/lib/data/storage";
 
 const generateId = () => `P${String(Date.now()).slice(-6)}`;
 
@@ -220,8 +221,8 @@ export default function LandingPage() {
         notes: `Religion: ${religionValue || 'Not specified'}. Medical Conditions: ${medicalConditions.join(', ') || 'None'}. Allergies: ${allergiesList.join(', ') || 'None'}. Current Medications: ${formData.currentMedications || 'None'}. Past Surgeries: ${formData.pastSurgeries || 'None'}. Smoking: ${formData.smoking}. Alcohol: ${formData.alcoholUse}. Occupation: ${formData.occupation}. Insurance: ${formData.selfPay ? 'Self Pay' : `${formData.insuranceProvider} (Policy: ${formData.policyNumber}, Member ID: ${formData.memberId})`}`
       };
 
-      const existingPatients = JSON.parse(localStorage.getItem('pendingPatients') || '[]');
-      localStorage.setItem('pendingPatients', JSON.stringify([...existingPatients, newPatient]));
+      const existingPatients = DataStorage.getOrDefault('pendingPatients', []);
+      DataStorage.set('pendingPatients', [...existingPatients, newPatient]);
       
       setSubmitted(true);
       addToast('Registration submitted successfully!', 'success');
@@ -325,12 +326,12 @@ export default function LandingPage() {
     setFeedbackLoading(true);
 
     setTimeout(() => {
-      const existingFeedback = JSON.parse(localStorage.getItem('patientFeedback') || '[]');
-      localStorage.setItem('patientFeedback', JSON.stringify([...existingFeedback, { 
-        ...feedbackForm, 
+      const existingFeedback = DataStorage.getOrDefault('patientFeedback', []);
+      DataStorage.set('patientFeedback', [...existingFeedback, {
+        ...feedbackForm,
         id: generateId(),
-        dateSubmitted: new Date().toISOString() 
-      }]));
+        dateSubmitted: new Date().toISOString()
+      }]);
       setShowFeedbackModal(false);
       setFeedbackForm({ patientName: "", contactInfo: "", feedbackType: "complaint", department: "er", serviceArea: "nursing", rating: 3, visitType: "", message: "" });
       addToast('Thank you! Your feedback has been submitted.', 'success');
