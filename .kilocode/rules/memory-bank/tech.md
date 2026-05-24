@@ -106,6 +106,13 @@ bun typecheck      # Run TypeScript type checking
         ├── index.ts        # Database client
         ├── migrate.ts      # Migration script
         └── migrations/     # SQL migration files
+    └── components/ehr/     # EHR components
+        ├── forms/          # Standardized form components
+        │   ├── VitalSignsForm.tsx
+        │   ├── DiagnosisSearch.tsx
+        │   ├── PatientHeader.tsx
+        │   └── NotesForm.tsx
+        └── *.tsx           # Department components
 ```
 
 ## Database Schema
