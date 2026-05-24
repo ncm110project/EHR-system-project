@@ -165,8 +165,13 @@ The following tables are defined in `src/db/schema.ts`:
 
 ### Build Output
 
-- Server-rendered pages by default
-- Can be configured for static export
+- Static site generation (SSG) for GitHub Pages deployment
+- `output: "export"` in next.config.ts for static export
+
+### GitHub Actions
+
+- Uses Bun for package management
+- Deploys to GitHub Pages on push to main
 
 ### Environment Variables
 
