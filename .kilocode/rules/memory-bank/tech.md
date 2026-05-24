@@ -59,7 +59,9 @@ bun typecheck      # Run TypeScript type checking
 {
   "next": "^16.1.3", // Framework
   "react": "^19.2.3", // UI library
-  "react-dom": "^19.2.3" // React DOM
+  "react-dom": "^19.2.3", // React DOM
+  "drizzle-orm": "^0.45.2", // Database ORM
+  "@kilocode/app-builder-db": "github:Kilo-Org/app-builder-db#main" // Database client
 }
 ```
 
@@ -74,7 +76,8 @@ bun typecheck      # Run TypeScript type checking
   "@tailwindcss/postcss": "^4.1.17",
   "tailwindcss": "^4.1.17",
   "eslint": "^9.39.1",
-  "eslint-config-next": "^16.0.0"
+  "eslint-config-next": "^16.0.0",
+  "drizzle-kit": "^0.31.10" // Database migrations
 }
 ```
 
@@ -89,6 +92,7 @@ bun typecheck      # Run TypeScript type checking
 ├── tsconfig.json           # TypeScript configuration
 ├── postcss.config.mjs      # PostCSS (Tailwind) config
 ├── eslint.config.mjs       # ESLint configuration
+├── drizzle.config.ts       # Drizzle ORM configuration
 ├── public/                 # Static assets
 │   └── .gitkeep
 └── src/                    # Source code
@@ -97,7 +101,28 @@ bun typecheck      # Run TypeScript type checking
         ├── page.tsx        # Home page
         ├── globals.css     # Global styles
         └── favicon.ico     # Site icon
+    └── db/                 # Database layer
+        ├── schema.ts       # Table definitions
+        ├── index.ts        # Database client
+        ├── migrate.ts      # Migration script
+        └── migrations/     # SQL migration files
 ```
+
+## Database Schema
+
+The following tables are defined in `src/db/schema.ts`:
+
+| Table | Purpose |
+|-------|---------|
+| `patients` | Patient records with demographics, medical history, and status |
+| `staff` | Healthcare staff with roles and department assignments |
+| `medications` | Pharmacy inventory |
+| `lab_orders` | Laboratory test orders and results |
+| `prescriptions` | Medication prescriptions |
+| `appointments` | Patient appointment scheduling |
+| `activities` | System activity log |
+| `incidents` | Incident reports for review |
+| `shifts` | Nurse shift scheduling |
 
 ## Technical Constraints
 
