@@ -151,7 +151,8 @@ bun dev
 | Apr 17 2026 | Code quality & security refactor: added error handling for localStorage operations, fixed patient password change, corrected OPD discharge status, removed debug console logs, memoized expensive computations (Header, OutpatientDepartment), extracted magic string constants, removed unused state, added error boundaries, wrapped event handlers in useCallback, improved type safety (removed `as any` in critical paths), added basic accessibility attributes |
 | Apr 23 2026 | Enhanced UX smoothness: replaced alert() calls with toast notifications, added entrance animations for forms/modals with staggered timing, implemented optimistic UI updates for form submissions with loading states and visual feedback. Added OPD nurse chart reopening functionality - nurses can now reopen and update patient charts after submission instead of them disappearing. |
 | May 24 2026 | Added database persistence with Drizzle ORM + SQLite: patients, staff, medications, lab orders, prescriptions, appointments, activities, incidents, and shifts tables created with full schema. |
-| May 24 2026 | Updated Next.js to 16.2.6 for OpenNext compatibility. Created standardized form components (VitalSignsForm, DiagnosisSearch, PatientHeader, NotesForm) for uniform UI across departments.
+| May 24 2026 | Updated Next.js to 16.2.6 for OpenNext compatibility. Created standardized form components (VitalSignsForm, DiagnosisSearch, PatientHeader, NotesForm) for uniform UI across departments. |
+| May 24 2026 | Fixed deployment: Changed to static export output, updated GitHub Actions workflow to use Bun instead of npm.
 
 ## Pending Improvements
 
