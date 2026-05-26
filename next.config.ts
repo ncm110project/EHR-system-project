@@ -1,12 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: "export",
   reactStrictMode: true,
   trailingSlash: true,
   images: {
     unoptimized: true,
   },
+  distDir: ".next",
 };
 
 export default nextConfig;
