@@ -26,7 +26,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "bun"
       
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -42,7 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.bun/cache
+            ~/.bun
             .next/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
