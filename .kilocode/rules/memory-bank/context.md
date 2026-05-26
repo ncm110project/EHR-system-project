@@ -152,7 +152,8 @@ bun dev
 | Apr 23 2026 | Enhanced UX smoothness: replaced alert() calls with toast notifications, added entrance animations for forms/modals with staggered timing, implemented optimistic UI updates for form submissions with loading states and visual feedback. Added OPD nurse chart reopening functionality - nurses can now reopen and update patient charts after submission instead of them disappearing. |
 | May 24 2026 | Added database persistence with Drizzle ORM + SQLite: patients, staff, medications, lab orders, prescriptions, appointments, activities, incidents, and shifts tables created with full schema. |
 | May 24 2026 | Updated Next.js to 16.2.6 for OpenNext compatibility. Created standardized form components (VitalSignsForm, DiagnosisSearch, PatientHeader, NotesForm) for uniform UI across departments. |
-| May 24 2026 | Fixed deployment: Changed to static export output, updated GitHub Actions workflow to use Bun instead of npm.
+| May 24 2026 | Fixed deployment: Changed to static export output, updated GitHub Actions workflow to use Bun instead of npm. |
+| May 24 2026 | Cleaned up duplicate notification system: removed unused useToast from notifications.tsx, simplified NotificationBell component.
 
 ## Pending Improvements
 
