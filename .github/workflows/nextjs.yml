@@ -37,16 +37,6 @@ jobs:
         with:
           static_site_generator: next
       
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.bun
-            .next/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}-
-      
       - name: Install dependencies
         run: bun install
       
